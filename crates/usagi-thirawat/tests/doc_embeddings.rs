@@ -48,6 +48,13 @@ fn writes_manifest_backed_doc_embedding_artifact_atomically() {
         doc_embedding_dir: doc_dir.clone(),
     })
     .unwrap();
+    let token_vector_bytes = fs::read(doc_dir.join("token_vectors.npy")).unwrap();
+    let header_len = token_vector_bytes.len().min(128);
+    let header = String::from_utf8_lossy(&token_vector_bytes[..header_len]);
+    assert!(
+        header.contains("'descr': '<f2'"),
+        "Tachiom requires f16 token vectors, got header {header:?}"
+    );
 
     let manifest: serde_json::Value =
         serde_json::from_slice(&fs::read(doc_dir.join("manifest.json")).unwrap()).unwrap();

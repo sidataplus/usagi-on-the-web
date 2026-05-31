@@ -10,6 +10,9 @@ use usagi_thirawat::doc_embeddings::{
 };
 use usagi_thirawat::mapper::{PrecomputedQueryEmbedding, PrecomputedQueryEmbeddings};
 
+const THIRAWAT_TOKEN_DIMENSION: usize = 128;
+const TOKENS_PER_FIXTURE_DOCUMENT: usize = 6;
+
 #[derive(Debug, Deserialize)]
 struct StandardDrugConceptRow {
     concept_id: i64,
@@ -127,20 +130,23 @@ fn write_fixture_artifacts(
     source_terms: Vec<SourceTermRow>,
 ) -> Result<()> {
     std::fs::create_dir_all(artifact_dir)?;
-    let dimension = concepts.len();
-    let concept_offsets = concepts
+    let dimension = THIRAWAT_TOKEN_DIMENSION;
+    let concept_ids = concepts
         .iter()
-        .enumerate()
-        .map(|(index, concept)| (concept.concept_id, index))
+        .map(|concept| (concept.concept_id, ()))
         .collect::<BTreeMap<_, _>>();
 
     let documents = concepts
         .into_iter()
         .map(|concept| {
-            let index = concept_offsets[&concept.concept_id];
+            let vector = concept_vector(concept.concept_id, dimension);
             ThirawatDocEmbeddingDocument {
-                token_ids: vec![concept.concept_id],
-                token_vectors: vec![basis_vector(index, dimension)],
+                token_ids: (0..TOKENS_PER_FIXTURE_DOCUMENT)
+                    .map(|offset| concept.concept_id * 100 + offset as i64)
+                    .collect(),
+                token_vectors: (0..TOKENS_PER_FIXTURE_DOCUMENT)
+                    .map(|_| vector.clone())
+                    .collect(),
                 concept,
             }
         })
@@ -160,7 +166,7 @@ fn write_fixture_artifacts(
     let query_embeddings = source_terms
         .into_iter()
         .map(|row| {
-            let index = concept_offsets
+            concept_ids
                 .get(&row.expected_target_concept_id)
                 .ok_or_else(|| {
                     UsagiError::bad_request(format!(
@@ -171,7 +177,7 @@ fn write_fixture_artifacts(
             Ok(PrecomputedQueryEmbedding {
                 source_name: row.source_name,
                 source_code: Some(row.source_code),
-                token_vectors: vec![basis_vector(*index, dimension)],
+                token_vectors: vec![concept_vector(row.expected_target_concept_id, dimension)],
             })
         })
         .collect::<Result<Vec<_>>>()?;
@@ -186,8 +192,27 @@ fn write_fixture_artifacts(
     Ok(())
 }
 
-fn basis_vector(index: usize, dimension: usize) -> Vec<f32> {
-    let mut vector = vec![0.0; dimension];
-    vector[index] = 1.0;
+fn concept_vector(concept_id: i64, dimension: usize) -> Vec<f32> {
+    let mut state = concept_id as u64 ^ 0x9e37_79b9_7f4a_7c15;
+    let mut vector = Vec::with_capacity(dimension);
+    for _ in 0..dimension {
+        state = splitmix64(state);
+        let unit = ((state >> 40) as f32) / ((1_u32 << 24) as f32);
+        vector.push(unit.mul_add(2.0, -1.0));
+    }
+    let norm = vector.iter().map(|value| value * value).sum::<f32>().sqrt();
+    if norm > 0.0 {
+        for value in &mut vector {
+            *value /= norm;
+        }
+    }
     vector
+}
+
+fn splitmix64(mut value: u64) -> u64 {
+    value = value.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    let mut mixed = value;
+    mixed = (mixed ^ (mixed >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    mixed = (mixed ^ (mixed >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    mixed ^ (mixed >> 31)
 }

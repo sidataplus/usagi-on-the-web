@@ -2823,6 +2823,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "csv",
+ "half",
  "serde",
  "serde_json",
  "tempfile",

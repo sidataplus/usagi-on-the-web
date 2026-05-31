@@ -2,6 +2,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use chrono::Utc;
+use half::f16;
 use serde::{Deserialize, Serialize};
 use usagi_common::error::{ErrorCode, Result, UsagiError};
 use usagi_common::manifest::{sha256_file, ArtifactManifest, ManifestFile};
@@ -89,7 +90,7 @@ pub fn write_thirawat_doc_embedding_artifact(
         .iter()
         .map(|document| document.concept.concept_id)
         .collect::<Vec<_>>();
-    write_npy_f32_2d(
+    write_npy_f16_2d(
         temp_dir.join("token_vectors.npy"),
         &token_vectors,
         token_count,
@@ -246,16 +247,16 @@ fn manifest_outputs(dir: &std::path::Path) -> Result<Vec<ManifestFile>> {
     .collect()
 }
 
-fn write_npy_f32_2d(
+fn write_npy_f16_2d(
     path: impl AsRef<std::path::Path>,
     values: &[f32],
     rows: usize,
     cols: usize,
 ) -> Result<()> {
     let mut file = std::fs::File::create(path)?;
-    write_npy_header(&mut file, "<f4", &[rows, cols])?;
+    write_npy_header(&mut file, "<f2", &[rows, cols])?;
     for value in values {
-        file.write_all(&value.to_le_bytes())?;
+        file.write_all(&f16::from_f32(*value).to_bits().to_le_bytes())?;
     }
     Ok(())
 }
