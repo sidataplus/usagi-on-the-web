@@ -7,7 +7,6 @@ class MappingCandidate < ApplicationRecord
   belongs_to :source_term
   belongs_to :mapping
   belongs_to :engine_job, optional: true
-  belongs_to :engine_job, optional: true
 
   validates :concept_id, :concept_name, :rank, :method, presence: true
 
