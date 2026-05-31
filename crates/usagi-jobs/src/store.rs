@@ -194,14 +194,35 @@ impl JobStore {
     }
 
     pub fn record_item_failure(&self, job_id: &str, item_key: &str, error: Value) -> Result<()> {
+        self.record_item_failure_inner(job_id, item_key, None, error)
+    }
+
+    pub fn record_item_failure_with_input(
+        &self,
+        job_id: &str,
+        item_key: &str,
+        input: Value,
+        error: Value,
+    ) -> Result<()> {
+        self.record_item_failure_inner(job_id, item_key, Some(input), error)
+    }
+
+    fn record_item_failure_inner(
+        &self,
+        job_id: &str,
+        item_key: &str,
+        input: Option<Value>,
+        error: Value,
+    ) -> Result<()> {
         let conn = self.connection()?;
         let now = now();
         conn.execute(
             "INSERT INTO job_items (
-                id, job_id, item_key, state, error_json, attempt_count, created_at, updated_at
-             ) VALUES (?1, ?2, ?3, 'failed', ?4, 1, ?5, ?5)
+                id, job_id, item_key, state, input_json, error_json, attempt_count, created_at, updated_at
+             ) VALUES (?1, ?2, ?3, 'failed', ?4, ?5, 1, ?6, ?6)
              ON CONFLICT(job_id, item_key) DO UPDATE SET
                 state = 'failed',
+                input_json = COALESCE(excluded.input_json, job_items.input_json),
                 error_json = excluded.error_json,
                 attempt_count = job_items.attempt_count + 1,
                 updated_at = excluded.updated_at",
@@ -209,6 +230,11 @@ impl JobStore {
                 format!("job_item_{}", Uuid::new_v4().simple()),
                 job_id,
                 item_key,
+                input
+                    .as_ref()
+                    .map(serde_json::to_string)
+                    .transpose()
+                    .map_err(UsagiError::from)?,
                 serde_json::to_string(&error)?,
                 now,
             ],
@@ -218,6 +244,46 @@ impl JobStore {
             "UPDATE jobs
              SET failed = (SELECT COUNT(*) FROM job_items WHERE job_id = ?1 AND state = 'failed'),
                  updated_at = ?2
+             WHERE id = ?1",
+            params![job_id, now],
+        )
+        .map_err(db_error)?;
+        Ok(())
+    }
+
+    pub fn record_item_success(
+        &self,
+        job_id: &str,
+        item_key: &str,
+        input: Value,
+        result: Value,
+    ) -> Result<()> {
+        let conn = self.connection()?;
+        let now = now();
+        conn.execute(
+            "INSERT INTO job_items (
+                id, job_id, item_key, state, input_json, result_json, attempt_count, created_at, updated_at
+             ) VALUES (?1, ?2, ?3, 'succeeded', ?4, ?5, 1, ?6, ?6)
+             ON CONFLICT(job_id, item_key) DO UPDATE SET
+                state = 'succeeded',
+                input_json = excluded.input_json,
+                result_json = excluded.result_json,
+                error_json = NULL,
+                attempt_count = job_items.attempt_count + 1,
+                updated_at = excluded.updated_at",
+            params![
+                format!("job_item_{}", Uuid::new_v4().simple()),
+                job_id,
+                item_key,
+                serde_json::to_string(&input)?,
+                serde_json::to_string(&result)?,
+                now,
+            ],
+        )
+        .map_err(db_error)?;
+        conn.execute(
+            "UPDATE jobs
+             SET updated_at = ?2
              WHERE id = ?1",
             params![job_id, now],
         )

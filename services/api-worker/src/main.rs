@@ -358,6 +358,7 @@ async fn main() -> anyhow::Result<()> {
                 .input_json(&job.id)?
                 .ok_or_else(|| anyhow::anyhow!("claimed job {} has no input", job.id))?;
             let payload: MapperDrugBatchJobRequest = serde_json::from_value(input)?;
+            let payload_input_items = payload.items.clone();
             if payload.items.is_empty() {
                 set_stage(
                     &store,
@@ -507,8 +508,21 @@ async fn main() -> anyhow::Result<()> {
                         }
                     };
                     for item in &batch.items {
+                        let input_item = payload_input_item(&item.id, &payload_input_items)?;
                         if let Some(error) = &item.error {
-                            store.record_item_failure(&job.id, &item.id, error.clone())?;
+                            store.record_item_failure_with_input(
+                                &job.id,
+                                &item.id,
+                                input_item,
+                                error.clone(),
+                            )?;
+                        } else {
+                            store.record_item_success(
+                                &job.id,
+                                &item.id,
+                                input_item,
+                                serde_json::to_value(item)?,
+                            )?;
                         }
                     }
                     let results_root = PathBuf::from(
@@ -576,6 +590,17 @@ fn error_json(err: &UsagiError) -> serde_json::Value {
         "code": err.code().as_str(),
         "message": err.message()
     })
+}
+
+fn payload_input_item(
+    item_id: &str,
+    items: &[usagi_contracts::mapper::MapperDrugBatchItemRequest],
+) -> anyhow::Result<serde_json::Value> {
+    let item = items
+        .iter()
+        .find(|item| item.id == item_id)
+        .ok_or_else(|| anyhow::anyhow!("missing input item for mapper batch result {item_id}"))?;
+    Ok(serde_json::to_value(item)?)
 }
 
 fn set_stage(

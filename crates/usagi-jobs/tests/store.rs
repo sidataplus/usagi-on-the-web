@@ -82,6 +82,90 @@ fn partial_failure_marks_succeeded_with_errors() {
 }
 
 #[test]
+fn job_items_store_success_input_and_result_json() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("jobs.sqlite");
+    let store = JobStore::open(&db_path).unwrap();
+    store.migrate().unwrap();
+
+    let job = store
+        .create_job(CreateJob {
+            kind: JobKind::MapperDrugsBatch,
+            queue: "map".to_string(),
+            idempotency_key: "map-item-success-v1".to_string(),
+            input: json!({}),
+            total: 1,
+        })
+        .unwrap();
+
+    store
+        .record_item_success(
+            &job.id,
+            "src_good",
+            json!({"source_name": "aspirin 81 mg tablet"}),
+            json!({"candidates": [{"concept": {"concept_id": 111}}]}),
+        )
+        .unwrap();
+
+    let conn = rusqlite::Connection::open(db_path).unwrap();
+    let (state, input_json, result_json): (String, String, String) = conn
+        .query_row(
+            "SELECT state, input_json, result_json FROM job_items WHERE job_id = ?1 AND item_key = ?2",
+            (&job.id, "src_good"),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .unwrap();
+    let input: serde_json::Value = serde_json::from_str(&input_json).unwrap();
+    let result: serde_json::Value = serde_json::from_str(&result_json).unwrap();
+
+    assert_eq!(state, "succeeded");
+    assert_eq!(input["source_name"], "aspirin 81 mg tablet");
+    assert_eq!(result["candidates"][0]["concept"]["concept_id"], 111);
+}
+
+#[test]
+fn job_items_store_failure_input_and_error_json() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("jobs.sqlite");
+    let store = JobStore::open(&db_path).unwrap();
+    store.migrate().unwrap();
+
+    let job = store
+        .create_job(CreateJob {
+            kind: JobKind::MapperDrugsBatch,
+            queue: "map".to_string(),
+            idempotency_key: "map-item-failure-v1".to_string(),
+            input: json!({}),
+            total: 1,
+        })
+        .unwrap();
+
+    store
+        .record_item_failure_with_input(
+            &job.id,
+            "src_bad",
+            json!({"source_name": "missing query"}),
+            json!({"code": "EMBEDDING_FAILED"}),
+        )
+        .unwrap();
+
+    let conn = rusqlite::Connection::open(db_path).unwrap();
+    let (state, input_json, error_json): (String, String, String) = conn
+        .query_row(
+            "SELECT state, input_json, error_json FROM job_items WHERE job_id = ?1 AND item_key = ?2",
+            (&job.id, "src_bad"),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .unwrap();
+    let input: serde_json::Value = serde_json::from_str(&input_json).unwrap();
+    let error: serde_json::Value = serde_json::from_str(&error_json).unwrap();
+
+    assert_eq!(state, "failed");
+    assert_eq!(input["source_name"], "missing query");
+    assert_eq!(error["code"], "EMBEDDING_FAILED");
+}
+
+#[test]
 fn finish_success_stores_result_json() {
     let dir = tempfile::tempdir().unwrap();
     let store = JobStore::open(dir.path().join("jobs.sqlite")).unwrap();
