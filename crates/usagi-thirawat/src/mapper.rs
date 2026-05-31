@@ -396,9 +396,9 @@ fn retrieve_with_tachiom_cli(
         ));
     }
     let docs = load_doc_embedding_sidecar(index_dir)?;
-    let work_dir = create_tachiom_query_work_dir()?;
-    let query_path = work_dir.join("query.npy");
-    let results_path = work_dir.join("results.tsv");
+    let work_dir = TachiomQueryWorkDir::create()?;
+    let query_path = work_dir.path().join("query.npy");
+    let results_path = work_dir.path().join("results.tsv");
     write_query_npy(&query_path, query_vectors)?;
     let output = Command::new(&search_bin)
         .arg("-i")
@@ -413,7 +413,6 @@ fn retrieve_with_tachiom_cli(
         .arg("1")
         .output()?;
     if !output.status.success() {
-        let _ = std::fs::remove_dir_all(&work_dir);
         return Err(UsagiError::new(
             ErrorCode::TachiomFailed,
             format!(
@@ -425,7 +424,6 @@ fn retrieve_with_tachiom_cli(
         ));
     }
     let rows = parse_tachiom_results(&results_path)?;
-    let _ = std::fs::remove_dir_all(&work_dir);
     let mut retrieved = Vec::new();
     for row in rows.into_iter().take(options.candidate_top_k) {
         if let Some(document) = document_for_tachiom_id(&docs.documents, &row.doc_id) {
@@ -539,17 +537,33 @@ fn document_for_tachiom_id<'a>(
         })
 }
 
-fn create_tachiom_query_work_dir() -> Result<PathBuf> {
-    let root =
-        PathBuf::from(std::env::var("USAGI_TEMP_DIR").unwrap_or_else(|_| "temp".to_string()));
-    std::fs::create_dir_all(&root)?;
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|err| UsagiError::internal(format!("system clock before Unix epoch: {err}")))?
-        .as_nanos();
-    let path = root.join(format!("tachiom-query-{}-{nanos}", std::process::id()));
-    std::fs::create_dir_all(&path)?;
-    Ok(path)
+struct TachiomQueryWorkDir {
+    path: PathBuf,
+}
+
+impl TachiomQueryWorkDir {
+    fn create() -> Result<Self> {
+        let root =
+            PathBuf::from(std::env::var("USAGI_TEMP_DIR").unwrap_or_else(|_| "temp".to_string()));
+        std::fs::create_dir_all(&root)?;
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|err| UsagiError::internal(format!("system clock before Unix epoch: {err}")))?
+            .as_nanos();
+        let path = root.join(format!("tachiom-query-{}-{nanos}", std::process::id()));
+        std::fs::create_dir_all(&path)?;
+        Ok(Self { path })
+    }
+
+    fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl Drop for TachiomQueryWorkDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
+    }
 }
 
 fn write_query_npy(path: &Path, query_vectors: &[Vec<f32>]) -> Result<()> {

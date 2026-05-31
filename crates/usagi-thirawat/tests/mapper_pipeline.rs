@@ -1,4 +1,5 @@
 use serde_json::json;
+use std::sync::Mutex;
 use usagi_common::manifest::sha256_file;
 use usagi_contracts::catalog::ConceptSummary;
 use usagi_contracts::mapper::{MapperDrugBatchItemRequest, MapperDrugBatchRequest};
@@ -8,6 +9,8 @@ use usagi_thirawat::mapper::{
     PrecomputedQueryEmbedding, PrecomputedQueryEmbeddings, TachiomFixtureDocument,
     TachiomFixtureIndex,
 };
+
+static ENV_LOCK: Mutex<()> = Mutex::new(());
 
 #[test]
 fn mapper_pipeline_retrieves_reranks_and_tiebreaks_from_tachiom_artifact() {
@@ -152,6 +155,7 @@ fn mapper_pipeline_queries_native_tachiom_cli_index() {
 
     let args_path = dir.path().join("tachiom-search-args.txt");
     let fake_search = write_fake_tachiom_search(dir.path(), &args_path);
+    let _env_guard = ENV_LOCK.lock().unwrap();
     let old_search_bin = std::env::var_os("TACHIOM_SEARCH_BIN");
     std::env::set_var("TACHIOM_SEARCH_BIN", &fake_search);
 
@@ -184,6 +188,55 @@ fn mapper_pipeline_queries_native_tachiom_cli_index() {
     assert!(args.contains("results.tsv"));
     assert!(args.contains("--k"));
     assert!(args.contains("2"));
+}
+
+#[test]
+fn mapper_pipeline_removes_native_tachiom_temp_dir_when_search_results_are_invalid() {
+    let dir = tempfile::tempdir().unwrap();
+    let doc_dir = dir.path().join("doc_embeddings");
+    let index_dir = dir.path().join("tachiom");
+    let temp_root = dir.path().join("temp");
+    std::fs::create_dir_all(&doc_dir).unwrap();
+    std::fs::create_dir_all(&index_dir).unwrap();
+    std::fs::create_dir_all(&temp_root).unwrap();
+    write_doc_embedding_sidecar(
+        &doc_dir,
+        &TachiomFixtureIndex {
+            documents: vec![TachiomFixtureDocument {
+                concept: concept(1, "Aspirin 81 MG Oral Tablet", "Clinical Drug"),
+                token_vectors: vec![vec![1.0, 0.0]],
+            }],
+        },
+    );
+    write_native_tachiom_manifest(&index_dir);
+
+    let fake_search = write_fake_tachiom_search_with_results(dir.path(), "malformed\n");
+    let _env_guard = ENV_LOCK.lock().unwrap();
+    let old_search_bin = std::env::var_os("TACHIOM_SEARCH_BIN");
+    let old_temp_dir = std::env::var_os("USAGI_TEMP_DIR");
+    std::env::set_var("TACHIOM_SEARCH_BIN", &fake_search);
+    std::env::set_var("USAGI_TEMP_DIR", &temp_root);
+
+    let err = map_drug_query_with_vectors(
+        "aspirin 81 mg tablet",
+        None,
+        vec![vec![1.0, 0.0]],
+        &index_dir,
+        MapperRuntimeOptions {
+            candidate_top_k: 1,
+            rerank_top_n: 1,
+            limit: 1,
+            epsilon: 0.01,
+            tiebreak_top_n: 100,
+        },
+    )
+    .unwrap_err();
+
+    restore_env("TACHIOM_SEARCH_BIN", old_search_bin);
+    restore_env("USAGI_TEMP_DIR", old_temp_dir);
+
+    assert_eq!(err.code().as_str(), "TACHIOM_FAILED");
+    assert_eq!(std::fs::read_dir(&temp_root).unwrap().count(), 0);
 }
 
 #[test]
@@ -394,6 +447,42 @@ done
 printf '0\t0\t1\t2.0\n0\t1\t2\t1.8\n' > "$output"
 "#,
             args_path.display()
+        ),
+    )
+    .unwrap();
+    let mut permissions = std::fs::metadata(&bin).unwrap().permissions();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        permissions.set_mode(0o755);
+    }
+    std::fs::set_permissions(&bin, permissions).unwrap();
+    bin
+}
+
+fn write_fake_tachiom_search_with_results(
+    dir: &std::path::Path,
+    results: &str,
+) -> std::path::PathBuf {
+    let bin = dir.join("fake-tachiom-search-results.sh");
+    std::fs::write(
+        &bin,
+        format!(
+            r#"#!/usr/bin/env bash
+set -euo pipefail
+output=""
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "-o" ]; then
+    shift
+    output="$1"
+  fi
+  shift || true
+done
+cat > "$output" <<'EOF'
+{}
+EOF
+"#,
+            results
         ),
     )
     .unwrap();
