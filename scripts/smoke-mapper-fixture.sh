@@ -15,6 +15,7 @@ THIRAWAT_ARTIFACT_DIR="${WORK_DIR}/thirawat-drug" \
 THIRAWAT_DOC_EMBEDDING_DIR="${WORK_DIR}/thirawat-drug/doc_embeddings" \
 TACHIOM_INDEX_DIR="${WORK_DIR}/thirawat-drug/tachiom" \
 TACHIOM_ARTIFACT_ID="fixture-thirawat-drug-tachiom-v1" \
+TACHIOM_BACKEND=fixture \
 cargo run -q -p usagi-tachiom --bin usagi-tachiom-build
 
 THIRAWAT_ARTIFACT_DIR="${WORK_DIR}/thirawat-drug" \

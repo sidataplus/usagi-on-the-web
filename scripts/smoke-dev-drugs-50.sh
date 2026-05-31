@@ -18,6 +18,7 @@ THIRAWAT_ARTIFACT_DIR="${WORK_DIR}/thirawat-drug" \
 THIRAWAT_DOC_EMBEDDING_DIR="${WORK_DIR}/thirawat-drug/doc_embeddings" \
 TACHIOM_INDEX_DIR="${WORK_DIR}/thirawat-drug/tachiom" \
 TACHIOM_ARTIFACT_ID="fixture-dev-drugs-50-tachiom-v1" \
+TACHIOM_BACKEND=fixture \
 cargo run -q -p usagi-tachiom --bin usagi-tachiom-build >/dev/null
 
 MAPPER_API_ADDR="127.0.0.1:${PORT}" \

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use usagi_tachiom::build::{build_tachiom_index, TachiomBuildOptions};
+use usagi_tachiom::build::{build_tachiom_index, tachiom_backend_from_env, TachiomBuildOptions};
 
 fn main() -> anyhow::Result<()> {
     let doc_embedding_dir = PathBuf::from(
@@ -16,6 +16,7 @@ fn main() -> anyhow::Result<()> {
         index_dir,
         artifact_id: std::env::var("TACHIOM_ARTIFACT_ID").ok(),
         overwrite: true,
+        backend: tachiom_backend_from_env()?,
     })?;
     println!("{}", serde_json::to_string_pretty(&summary)?);
     Ok(())

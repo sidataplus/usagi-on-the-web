@@ -22,7 +22,7 @@ use usagi_search::dense_index::{
     SapbertDenseBuildOptions, SapbertPrecomputedBuildOptions,
 };
 use usagi_search::tantivy_index::{build_tantivy_index, TantivyBuildOptions};
-use usagi_tachiom::build::{build_tachiom_index, TachiomBuildOptions};
+use usagi_tachiom::build::{build_tachiom_index, tachiom_backend_from_env, TachiomBuildOptions};
 use usagi_thirawat::artifact::{
     validate_tachiom_artifact, validate_thirawat_doc_embedding_artifact,
     validate_thirawat_model_artifact, TachiomArtifactPaths, ThirawatDocEmbeddingArtifactPaths,
@@ -331,11 +331,19 @@ pub async fn run_worker() -> anyhow::Result<()> {
                                 |_| artifact_dir.join("tachiom").display().to_string(),
                             ));
                         set_stage(&store, &job.id, "building_tachiom_index", None)?;
+                        let backend = match tachiom_backend_from_env() {
+                            Ok(backend) => backend,
+                            Err(err) => {
+                                store.finish_failed(&job.id, error_json(&err))?;
+                                continue;
+                            }
+                        };
                         match build_tachiom_index(TachiomBuildOptions {
                             doc_embedding_dir: artifact_dir.join("doc_embeddings"),
                             index_dir: tachiom_index_dir,
                             artifact_id: Some("local-thirawat-drug-tachiom-v1".to_string()),
                             overwrite: true,
+                            backend,
                         }) {
                             Ok(summary) => {
                                 set_stage(&store, &job.id, "validating_artifact", None)?;
