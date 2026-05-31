@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use axum::body::{to_bytes, Body};
-use axum::extract::{Request, State};
+use axum::extract::{DefaultBodyLimit, Request, State};
 use axum::http::{header, HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{from_fn, Next};
 use axum::response::{IntoResponse, Response};
@@ -13,7 +13,8 @@ use serde_json::json;
 use usagi_artifacts::job_results::job_results_response;
 use usagi_common::error::{ErrorCode, ErrorEnvelope, UsagiError};
 use usagi_common::http::{
-    api_key_is_authorized, error_envelope_body, is_public_probe_path, API_KEY_HEADER,
+    api_body_limit_bytes, api_key_is_authorized, error_envelope_body, is_public_probe_path,
+    API_KEY_HEADER,
 };
 use usagi_common::request::{generate_request_id, REQUEST_ID_HEADER};
 use usagi_contracts::catalog::Provenance;
@@ -61,6 +62,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/jobs/{id}/results", get(job_results))
         .route("/jobs/{id}/cancel", post(job_cancel))
         .route("/jobs/{id}/retry", post(job_retry))
+        .layer(DefaultBodyLimit::max(api_body_limit_bytes()))
         .layer(from_fn(request_id_middleware));
     let app = app.with_state(state);
     let addr: SocketAddr = std::env::var("SEARCH_API_ADDR")
@@ -150,7 +152,8 @@ fn fallback_error_code(status: StatusCode) -> ErrorCode {
     match status {
         StatusCode::BAD_REQUEST
         | StatusCode::UNPROCESSABLE_ENTITY
-        | StatusCode::UNSUPPORTED_MEDIA_TYPE => ErrorCode::BadRequest,
+        | StatusCode::UNSUPPORTED_MEDIA_TYPE
+        | StatusCode::PAYLOAD_TOO_LARGE => ErrorCode::BadRequest,
         StatusCode::NOT_FOUND => ErrorCode::NotFound,
         StatusCode::SERVICE_UNAVAILABLE => ErrorCode::IndexNotReady,
         _ => ErrorCode::InternalError,

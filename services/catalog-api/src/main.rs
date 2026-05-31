@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use axum::body::{to_bytes, Body};
-use axum::extract::{Path, Query, Request, State};
+use axum::extract::{DefaultBodyLimit, Path, Query, Request, State};
 use axum::http::{header, HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{from_fn, Next};
 use axum::response::{IntoResponse, Response};
@@ -14,7 +14,8 @@ use usagi_artifacts::job_results::job_results_response;
 use usagi_catalog::store::CatalogStore;
 use usagi_common::error::{ErrorCode, ErrorEnvelope, UsagiError};
 use usagi_common::http::{
-    api_key_is_authorized, error_envelope_body, is_public_probe_path, API_KEY_HEADER,
+    api_body_limit_bytes, api_key_is_authorized, error_envelope_body, is_public_probe_path,
+    API_KEY_HEADER,
 };
 use usagi_common::request::{generate_request_id, REQUEST_ID_HEADER};
 use usagi_contracts::catalog::{
@@ -91,6 +92,7 @@ fn router(state: AppState) -> Router {
         .route("/jobs/{id}/results", get(job_results))
         .route("/jobs/{id}/cancel", post(job_cancel))
         .route("/jobs/{id}/retry", post(job_retry))
+        .layer(DefaultBodyLimit::max(api_body_limit_bytes()))
         .layer(from_fn(request_id_middleware))
         .with_state(state)
 }
@@ -174,7 +176,8 @@ fn fallback_error_code(status: StatusCode) -> ErrorCode {
     match status {
         StatusCode::BAD_REQUEST
         | StatusCode::UNPROCESSABLE_ENTITY
-        | StatusCode::UNSUPPORTED_MEDIA_TYPE => ErrorCode::BadRequest,
+        | StatusCode::UNSUPPORTED_MEDIA_TYPE
+        | StatusCode::PAYLOAD_TOO_LARGE => ErrorCode::BadRequest,
         StatusCode::NOT_FOUND => ErrorCode::NotFound,
         StatusCode::SERVICE_UNAVAILABLE => ErrorCode::CatalogNotReady,
         _ => ErrorCode::InternalError,

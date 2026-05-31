@@ -1,6 +1,18 @@
 use crate::error::{ErrorCode, ErrorEnvelope, UsagiError};
 
 pub const API_KEY_HEADER: &str = "x-api-key";
+pub const DEFAULT_API_BODY_LIMIT_BYTES: usize = 262_144;
+
+pub fn api_body_limit_bytes() -> usize {
+    api_body_limit_bytes_from_env_value(std::env::var("USAGI_API_BODY_LIMIT_BYTES").ok().as_deref())
+}
+
+pub fn api_body_limit_bytes_from_env_value(value: Option<&str>) -> usize {
+    value
+        .and_then(|value| value.trim().parse::<usize>().ok())
+        .filter(|limit| *limit > 0)
+        .unwrap_or(DEFAULT_API_BODY_LIMIT_BYTES)
+}
 
 pub fn rewrite_error_envelope_request_id(body: &[u8], request_id: &str) -> Option<Vec<u8>> {
     let mut value = serde_json::from_slice::<serde_json::Value>(body).ok()?;
@@ -78,8 +90,8 @@ fn bearer_token(authorization: Option<&str>) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::{
-        api_key_is_authorized, error_envelope_body, is_public_probe_path,
-        rewrite_error_envelope_request_id,
+        api_body_limit_bytes_from_env_value, api_key_is_authorized, error_envelope_body,
+        is_public_probe_path, rewrite_error_envelope_request_id,
     };
     use crate::error::ErrorCode;
 
@@ -145,5 +157,18 @@ mod tests {
         assert!(is_public_probe_path("/mapper/status"));
         assert!(!is_public_probe_path("/search/concepts"));
         assert!(!is_public_probe_path("/jobs/job_1/status"));
+    }
+
+    #[test]
+    fn api_body_limit_defaults_to_tight_json_payload_cap() {
+        assert_eq!(api_body_limit_bytes_from_env_value(None), 262_144);
+        assert_eq!(api_body_limit_bytes_from_env_value(Some("")), 262_144);
+        assert_eq!(api_body_limit_bytes_from_env_value(Some("nope")), 262_144);
+    }
+
+    #[test]
+    fn api_body_limit_accepts_positive_env_override() {
+        assert_eq!(api_body_limit_bytes_from_env_value(Some("1024")), 1024);
+        assert_eq!(api_body_limit_bytes_from_env_value(Some("0")), 262_144);
     }
 }
