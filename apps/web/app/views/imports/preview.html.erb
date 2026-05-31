@@ -1,0 +1,66 @@
+<% content_for :title, "Import preview" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Import preview</h1>
+    <p class="page-head__subtitle"><%= @project.name %> · <%= @import_batch.filename %></p>
+  </div>
+</div>
+
+<div class="grid grid--tiles">
+  <div class="stat"><div class="stat__label">Rows detected</div><div class="stat__value"><%= @import_batch.row_count %></div></div>
+  <div class="stat"><div class="stat__label">Preview rows</div><div class="stat__value"><%= @preview_rows.size %></div></div>
+  <div class="stat"><div class="stat__label">Columns</div><div class="stat__value"><%= @import_batch.detected_columns.size %></div></div>
+  <div class="stat"><div class="stat__label">Status</div><div class="stat__value" style="font-size: 1.25rem"><%= @import_batch.status.humanize %></div></div>
+</div>
+
+<div class="box" style="margin-block-start: var(--space)">
+  <%= form_with model: [@project, @import_batch], url: confirm_project_import_session_path(@project, @import_batch), method: :post, class: "stack" do %>
+    <div class="grid grid--tiles">
+      <% {
+        "source_code" => "Source code",
+        "source_name" => "Source name",
+        "source_frequency" => "Frequency",
+        "source_domain_hint" => "Domain hint"
+      }.each do |logical_name, label| %>
+        <div class="field">
+          <%= label_tag "import_session_column_mapping_#{logical_name}", label, class: "field__label" %>
+          <%= select_tag "import_session[column_mapping][#{logical_name}]",
+                         options_for_select([["Not mapped", ""]] + @import_batch.detected_columns.map { |column| [column, column] }, @import_batch.column_mapping[logical_name]),
+                         id: "import_session_column_mapping_#{logical_name}",
+                         class: "input" %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="row">
+      <%= submit_tag "Confirm import", class: "btn btn--primary" %>
+      <%= link_to "Start over", new_project_import_session_path(@project), class: "btn" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="box box--flush" style="margin-block-start: var(--space)">
+  <table class="table">
+    <thead>
+      <tr>
+        <th class="num">Row</th>
+        <th>Source code</th>
+        <th>Source name</th>
+        <th class="num">Freq</th>
+        <th>Domain</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @preview_rows.each do |row| %>
+        <tr>
+          <td class="num"><%= row.fetch(:source_row_number) %></td>
+          <td class="mono"><%= row.fetch(:source_code) %></td>
+          <td><%= row.fetch(:source_name) %></td>
+          <td class="num"><%= row.fetch(:source_frequency) %></td>
+          <td><%= row.fetch(:source_domain_hint) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

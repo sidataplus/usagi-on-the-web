@@ -21,6 +21,54 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal "UNCHECKED", @project.mappings.first.mapping_status
   end
 
+  test "import preview detects columns without creating source terms" do
+    post preview_project_import_sessions_path(@project), params: {
+      import_session: {
+        filename: "detected.csv",
+        rows_text: "Code,Description,Count,Domain\nSRC_TRAMADOL,tramadol hcl 50mg cap,12,Drug\nSRC_METFORMIN,metformin hcl 500 mg tab,7,Drug\n"
+      }
+    }
+
+    import = @project.import_sessions.last
+
+    assert_response :success
+    assert_equal "previewed", import.state
+    assert_equal "Code", import.column_mapping.fetch("source_code")
+    assert_equal "Description", import.column_mapping.fetch("source_name")
+    assert_equal %w[Code Description Count Domain], import.detected_columns
+    assert_equal({ "rows_seen" => 2, "preview_rows" => 2 }, import.summary.slice("rows_seen", "preview_rows"))
+    assert_equal 0, @project.source_terms.count
+    assert_includes response.body, "Import preview"
+    assert_includes response.body, "Confirm import"
+    assert_includes response.body, "SRC_TRAMADOL"
+  end
+
+  test "confirm imports previewed rows using detected column mapping" do
+    post preview_project_import_sessions_path(@project), params: {
+      import_session: {
+        filename: "detected.csv",
+        rows_text: "Code,Description,Count,Domain\nSRC_TRAMADOL,tramadol hcl 50mg cap,12,Drug\n"
+      }
+    }
+    import = @project.import_sessions.last
+
+    post confirm_project_import_session_path(@project, import), params: {
+      import_session: {
+        column_mapping: import.column_mapping
+      }
+    }
+
+    assert_redirected_to project_import_session_path(@project, import)
+    follow_redirect!
+    assert_response :success
+    assert_includes response.body, "Auto-map"
+    assert_equal "succeeded", import.reload.state
+    assert_equal ["SRC_TRAMADOL"], @project.source_terms.pluck(:source_code)
+    assert_equal "tramadol hcl 50mg cap", @project.source_terms.last.source_name
+    assert_equal "Drug", @project.source_terms.last.source_domain_hint
+    assert_equal 1, @project.mappings.count
+  end
+
   test "import persists valid rows and reports invalid row failures" do
     post project_import_sessions_path(@project), params: {
       import_session: {

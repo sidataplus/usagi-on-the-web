@@ -8,7 +8,7 @@
 </div>
 
 <div class="box">
-  <%= form_with model: [@project, @import_batch], url: project_imports_path(@project), class: "stack" do |f| %>
+  <%= form_with model: [@project, @import_batch], url: preview_project_import_sessions_path(@project), class: "stack", data: { turbo: false } do |f| %>
     <% if @import_batch.errors.any? %>
       <div class="badge badge--bad"><%= @import_batch.errors.full_messages.to_sentence %></div>
     <% end %>
@@ -21,13 +21,17 @@
       <%= f.text_field :source_vocabulary, class: "input" %>
     </div>
     <div class="field">
+      <%= f.label :source_file, "Spreadsheet or delimited file", class: "field__label" %>
+      <%= f.file_field :source_file, class: "input", accept: ".csv,.tsv,.xlsx,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" %>
+    </div>
+    <div class="field">
       <%= f.label :rows_text, "CSV rows", class: "field__label" %>
       <%= f.text_area :rows_text, rows: 10, class: "textarea", value: "source_code,source_name,source_frequency
 NDC-0406-0512,tramadol hcl 50mg cap,12
 " %>
     </div>
     <div class="row">
-      <%= f.submit "Create import", class: "btn btn--primary" %>
+      <%= f.submit "Preview import", class: "btn btn--primary" %>
       <%= link_to "Cancel", project_path(@project), class: "btn" %>
     </div>
   <% end %>

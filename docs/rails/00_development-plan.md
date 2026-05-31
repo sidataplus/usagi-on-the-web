@@ -177,11 +177,16 @@ Upload file
   -> detect format and headers
   -> preview rows
   -> confirm column mapping
-  -> enqueue import job
+  -> import confirmed rows
   -> create source_terms
   -> create mappings
   -> write audit event
 ```
+
+Current Rails scaffold note: preview persists the uploaded/pasted import payload,
+detected columns, and suggested mapping. Confirming the preview imports rows
+synchronously; a background import job remains the expected hardening path for
+large files.
 
 ### Tasks
 

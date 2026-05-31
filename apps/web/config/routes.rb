@@ -14,6 +14,10 @@ Rails.application.routes.draw do
     end
 
     resources :import_sessions, only: %i[index new create show] do
+      collection do
+        post :preview
+      end
+
       member do
         post :confirm
       end

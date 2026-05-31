@@ -172,7 +172,9 @@ Routes:
 ```text
 GET  /projects/:project_id/import_sessions
 GET  /projects/:project_id/import_sessions/new
+POST /projects/:project_id/import_sessions/preview
 POST /projects/:project_id/import_sessions
+POST /projects/:project_id/import_sessions/:id/confirm
 GET  /projects/:project_id/import_sessions/:id
 ```
 
@@ -183,6 +185,8 @@ Actions:
 | `index` | import history |
 | `new` | upload form |
 | `create` | attach file, detect columns or enqueue import depending step |
+| `preview` | attach file, detect columns, render preview and column mapping |
+| `confirm` | import previewed rows using confirmed column mapping |
 | `show` | import status, errors, summary |
 
 Suggested flow:
@@ -192,7 +196,7 @@ new upload
   -> create import_session with file
   -> show preview form
   -> confirm column mapping
-  -> enqueue ImportSourceFileJob
+  -> import rows
   -> show import status
 ```
 
