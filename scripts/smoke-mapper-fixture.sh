@@ -63,3 +63,14 @@ curl -fsS \
   }' \
   "${BASE_URL}/mapper/drugs/batch" |
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["candidates"][0]["concept"]["concept_id"] == 40162522; assert data["provenance"]["model_artifact_id"] == "sidataplus/THIRAWAT-SapBERT"; assert data["provenance"]["index_artifact_id"].endswith("/manifest.json"); print(json.dumps({"batch_top_concept_id": data["items"][0]["candidates"][0]["concept"]["concept_id"], "batch_provenance": data["provenance"]}))'
+
+curl -fsS \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "source_name": "tramadol hydrochloride 50 mg capsule",
+    "source_code": "SRC_TRAMADOL_50_CAP",
+    "mode": "thirawat_tachiom",
+    "concept_id": 40162522
+  }' \
+  "${BASE_URL}/mapper/drugs/explain" |
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["concept"]["concept_id"] == 40162522; assert data["token_debug"]["enabled"] is False; assert "bimaxsim" in data["scores"]; print(json.dumps({"explain_concept_id": data["concept"]["concept_id"], "token_debug": data["token_debug"]}))'

@@ -5,7 +5,7 @@ use usagi_common::error::{ErrorCode, Result, UsagiError};
 use usagi_contracts::catalog::{ConceptSummary, Provenance};
 use usagi_contracts::mapper::{
     MapperCandidate, MapperDrugBatchItemResponse, MapperDrugBatchRequest, MapperDrugBatchResponse,
-    MapperDrugQueryResponse,
+    MapperDrugExplainResponse, MapperDrugQueryResponse,
 };
 
 use crate::artifact::{validate_tachiom_artifact, TachiomArtifactPaths};
@@ -83,6 +83,26 @@ pub fn map_drug_query_from_precomputed(
     )
 }
 
+pub fn map_drug_explain_from_precomputed(
+    source_name: &str,
+    source_code: Option<&str>,
+    concept_id: i64,
+    query_embeddings_path: impl AsRef<Path>,
+    tachiom_index_dir: impl AsRef<Path>,
+    options: MapperRuntimeOptions,
+) -> Result<MapperDrugExplainResponse> {
+    let embedding =
+        load_precomputed_query_embedding(query_embeddings_path.as_ref(), source_name, source_code)?;
+    map_drug_explain_with_vectors(
+        source_name,
+        source_code,
+        concept_id,
+        embedding.token_vectors,
+        tachiom_index_dir,
+        options,
+    )
+}
+
 pub fn map_drug_batch_from_precomputed(
     request: MapperDrugBatchRequest,
     query_embeddings_path: impl AsRef<Path>,
@@ -130,6 +150,40 @@ pub fn map_drug_batch_from_precomputed(
                     .to_string(),
             ),
         },
+    })
+}
+
+pub fn map_drug_explain_with_vectors(
+    source_name: &str,
+    source_code: Option<&str>,
+    concept_id: i64,
+    query_vectors: Vec<Vec<f32>>,
+    tachiom_index_dir: impl AsRef<Path>,
+    options: MapperRuntimeOptions,
+) -> Result<MapperDrugExplainResponse> {
+    let mut explain_options = options;
+    explain_options.limit = explain_options.limit.max(explain_options.candidate_top_k);
+    let response = map_drug_query_with_vectors(
+        source_name,
+        source_code,
+        query_vectors,
+        tachiom_index_dir,
+        explain_options,
+    )?;
+    let candidate = response
+        .candidates
+        .into_iter()
+        .find(|candidate| candidate.concept.concept_id == concept_id)
+        .ok_or_else(|| UsagiError::not_found("concept was not found in mapper candidates"))?;
+    Ok(MapperDrugExplainResponse {
+        query: response.query,
+        concept: candidate.concept,
+        scores: candidate.scores,
+        features: candidate.features,
+        token_debug: serde_json::json!({
+            "enabled": false,
+            "message": "Token-level debug is disabled by default"
+        }),
     })
 }
 

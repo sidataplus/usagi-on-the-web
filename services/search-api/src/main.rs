@@ -16,10 +16,11 @@ use usagi_common::http::{
     api_key_is_authorized, error_envelope_body, is_public_probe_path, API_KEY_HEADER,
 };
 use usagi_common::request::{generate_request_id, REQUEST_ID_HEADER};
+use usagi_contracts::catalog::Provenance;
 use usagi_contracts::jobs::{JobCreateResponse, JobKind};
 use usagi_contracts::search::{
     SearchBatchItemResponse, SearchBatchRequest, SearchBatchResponse, SearchConceptsRequest,
-    SearchConceptsResponse, SearchExplainRequest, SearchExplainResponse,
+    SearchConceptsResponse, SearchExplainRequest, SearchExplainResponse, SearchResult,
 };
 use usagi_embed::xlm_roberta::{encode_sapbert_cls, XlmRobertaEncodeOptions};
 use usagi_jobs::store::{CreateJob, JobStore};
@@ -333,85 +334,19 @@ async fn search_concepts(
     State(state): State<AppState>,
     Json(payload): Json<SearchConceptsRequest>,
 ) -> Result<Json<SearchConceptsResponse>, ApiError> {
-    if payload.mode == "sapbert_cls" {
-        validate_sapbert_artifact(SapbertArtifactPaths {
-            artifact_dir: state.sapbert_index_dir.clone(),
-        })?;
-        let results = sapbert_query_results(&state, &payload.q, payload.limit)?;
-        return Ok(Json(SearchConceptsResponse {
-            query: payload.q,
-            mode: payload.mode,
-            results,
-            provenance: provenance(
-                "local-catalog-standard-v1".to_string(),
-                "local-sapbert-cls-v1".to_string(),
-            ),
-        }));
-    }
-    if payload.mode == "hybrid_rrf" {
-        validate_sapbert_artifact(SapbertArtifactPaths {
-            artifact_dir: state.sapbert_index_dir.clone(),
-        })?;
-        let dense = sapbert_query_results(
-            &state,
-            &payload.q,
-            payload
-                .hybrid
-                .get("sapbert_top_k")
-                .and_then(|value| value.as_u64())
-                .map(|value| value as usize)
-                .unwrap_or(100),
-        )?;
-        let lexical = search_tantivy(TantivySearchOptions {
-            index_dir: state.tantivy_index_dir,
-            q: payload.q.clone(),
-            limit: payload
-                .hybrid
-                .get("lexical_top_k")
-                .and_then(|value| value.as_u64())
-                .map(|value| value as usize)
-                .unwrap_or(100),
-            filters: filters_from_json(&payload.filters),
-        })?;
-        let results = fuse_rrf(
-            lexical,
-            dense,
-            RrfOptions {
-                rrf_k: payload
-                    .hybrid
-                    .get("rrf_k")
-                    .and_then(|value| value.as_f64())
-                    .unwrap_or(60.0),
-                limit: payload.limit,
-            },
-        );
-        return Ok(Json(SearchConceptsResponse {
-            query: payload.q,
-            mode: payload.mode,
-            results,
-            provenance: provenance(
-                "local-catalog-standard-v1".to_string(),
-                "local-tantivy-v1".to_string(),
-            ),
-        }));
-    }
-    if payload.mode != "lexical_tantivy" {
-        return Err(ApiError(UsagiError::bad_request("unsupported search mode")));
-    }
-    let results = search_tantivy(TantivySearchOptions {
-        index_dir: state.tantivy_index_dir,
-        q: payload.q.clone(),
-        limit: payload.limit,
-        filters: filters_from_json(&payload.filters),
-    })?;
+    let (results, provenance) = search_results(
+        &state,
+        &payload.mode,
+        &payload.q,
+        payload.limit,
+        &payload.filters,
+        &payload.hybrid,
+    )?;
     Ok(Json(SearchConceptsResponse {
         query: payload.q,
         mode: payload.mode,
         results,
-        provenance: provenance(
-            "local-catalog-standard-v1".to_string(),
-            "local-tantivy-v1".to_string(),
-        ),
+        provenance,
     }))
 }
 
@@ -419,20 +354,18 @@ async fn search_batch(
     State(state): State<AppState>,
     Json(payload): Json<SearchBatchRequest>,
 ) -> Result<Json<SearchBatchResponse>, ApiError> {
-    if payload.mode != "lexical_tantivy" {
-        return Err(ApiError(UsagiError::new(
-            ErrorCode::IndexNotReady,
-            "only lexical_tantivy batch search is implemented in this milestone",
-        )));
-    }
     let mut items = Vec::with_capacity(payload.items.len());
+    let mut response_provenance = None;
     for item in payload.items {
-        let results = search_tantivy(TantivySearchOptions {
-            index_dir: state.tantivy_index_dir.clone(),
-            q: item.q,
-            limit: payload.limit_per_item,
-            filters: filters_from_json(&item.filters),
-        })?;
+        let (results, provenance) = search_results(
+            &state,
+            &payload.mode,
+            &item.q,
+            payload.limit_per_item,
+            &item.filters,
+            &serde_json::Value::Null,
+        )?;
+        response_provenance.get_or_insert(provenance);
         items.push(SearchBatchItemResponse {
             id: item.id,
             results,
@@ -441,44 +374,145 @@ async fn search_batch(
     Ok(Json(SearchBatchResponse {
         mode: payload.mode,
         items,
-        provenance: provenance(
-            "local-catalog-standard-v1".to_string(),
-            "local-tantivy-v1".to_string(),
-        ),
+        provenance: response_provenance.unwrap_or_else(|| {
+            provenance(
+                "local-catalog-standard-v1".to_string(),
+                "local-empty-batch-v1".to_string(),
+            )
+        }),
     }))
+}
+
+fn search_results(
+    state: &AppState,
+    mode: &str,
+    q: &str,
+    limit: usize,
+    filters: &serde_json::Value,
+    hybrid: &serde_json::Value,
+) -> Result<(Vec<SearchResult>, Provenance), ApiError> {
+    match mode {
+        "sapbert_cls" => {
+            validate_sapbert_artifact(SapbertArtifactPaths {
+                artifact_dir: state.sapbert_index_dir.clone(),
+            })?;
+            Ok((
+                sapbert_query_results(state, q, limit)?,
+                provenance(
+                    "local-catalog-standard-v1".to_string(),
+                    "local-sapbert-cls-v1".to_string(),
+                ),
+            ))
+        }
+        "hybrid_rrf" => {
+            validate_sapbert_artifact(SapbertArtifactPaths {
+                artifact_dir: state.sapbert_index_dir.clone(),
+            })?;
+            let dense = sapbert_query_results(
+                state,
+                q,
+                hybrid
+                    .get("sapbert_top_k")
+                    .and_then(|value| value.as_u64())
+                    .map(|value| value as usize)
+                    .unwrap_or(100),
+            )?;
+            let lexical = search_tantivy(TantivySearchOptions {
+                index_dir: state.tantivy_index_dir.clone(),
+                q: q.to_string(),
+                limit: hybrid
+                    .get("lexical_top_k")
+                    .and_then(|value| value.as_u64())
+                    .map(|value| value as usize)
+                    .unwrap_or(100),
+                filters: filters_from_json(filters),
+            })?;
+            Ok((
+                fuse_rrf(
+                    lexical,
+                    dense,
+                    RrfOptions {
+                        rrf_k: hybrid
+                            .get("rrf_k")
+                            .and_then(|value| value.as_f64())
+                            .unwrap_or(60.0),
+                        limit,
+                    },
+                ),
+                provenance(
+                    "local-catalog-standard-v1".to_string(),
+                    "local-hybrid-rrf-v1".to_string(),
+                ),
+            ))
+        }
+        "lexical_tantivy" => Ok((
+            search_tantivy(TantivySearchOptions {
+                index_dir: state.tantivy_index_dir.clone(),
+                q: q.to_string(),
+                limit,
+                filters: filters_from_json(filters),
+            })?,
+            provenance(
+                "local-catalog-standard-v1".to_string(),
+                "local-tantivy-v1".to_string(),
+            ),
+        )),
+        _ => Err(ApiError(UsagiError::bad_request("unsupported search mode"))),
+    }
 }
 
 async fn search_explain(
     State(state): State<AppState>,
     Json(payload): Json<SearchExplainRequest>,
 ) -> Result<Json<SearchExplainResponse>, ApiError> {
-    if payload.mode != "lexical_tantivy" {
-        return Err(ApiError(UsagiError::new(
-            ErrorCode::IndexNotReady,
-            "only lexical_tantivy explain is implemented in this milestone",
-        )));
-    }
-    let results = search_tantivy(TantivySearchOptions {
-        index_dir: state.tantivy_index_dir,
-        q: payload.q.clone(),
-        limit: 100,
-        filters: SearchFilters::default(),
-    })?;
+    let (results, _) = search_results(
+        &state,
+        &payload.mode,
+        &payload.q,
+        100,
+        &serde_json::Value::Null,
+        &serde_json::Value::Null,
+    )?;
     let result = results
         .into_iter()
         .find(|item| item.concept.concept_id == payload.concept_id)
-        .ok_or_else(|| UsagiError::not_found("concept was not found in lexical search results"))?;
+        .ok_or_else(|| UsagiError::not_found("concept was not found in search results"))?;
     Ok(Json(SearchExplainResponse {
         query: payload.q,
         concept_id: payload.concept_id,
-        explanation: json!({
+        explanation: explain_search_result(&payload.mode, &result),
+    }))
+}
+
+fn explain_search_result(mode: &str, result: &SearchResult) -> serde_json::Value {
+    match mode {
+        "sapbert_cls" => json!({
+            "sapbert": {
+                "rank": result.rank,
+                "score": result.scores.get("sapbert").cloned().unwrap_or(serde_json::Value::Null)
+            }
+        }),
+        "hybrid_rrf" => json!({
+            "tantivy": {
+                "rank": result.component_ranks.get("tantivy").cloned().unwrap_or(serde_json::Value::Null)
+            },
+            "sapbert": {
+                "rank": result.component_ranks.get("sapbert").cloned().unwrap_or(serde_json::Value::Null)
+            },
+            "hybrid_rrf": {
+                "rank": result.rank,
+                "score": result.scores.get("rrf").cloned().unwrap_or(serde_json::Value::Null),
+                "rrf_k": 60
+            }
+        }),
+        _ => json!({
             "tantivy": {
                 "rank": result.rank,
                 "score": result.scores.get("tantivy").cloned().unwrap_or(serde_json::Value::Null),
                 "matched_fields": ["concept_name", "search_blob"]
             }
         }),
-    }))
+    }
 }
 
 async fn job_status(

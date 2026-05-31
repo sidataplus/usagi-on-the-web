@@ -19,8 +19,8 @@ use usagi_contracts::catalog::Provenance;
 use usagi_contracts::jobs::{JobCreateResponse, JobKind};
 use usagi_contracts::mapper::{
     MapperDrugBatchItemResponse, MapperDrugBatchJobRequest, MapperDrugBatchRequest,
-    MapperDrugBatchResponse, MapperDrugExplainRequest, MapperDrugQueryRequest,
-    TachiomBuildJobRequest, ThirawatBuildEmbeddingsJobRequest,
+    MapperDrugBatchResponse, MapperDrugExplainRequest, MapperDrugExplainResponse,
+    MapperDrugQueryRequest, TachiomBuildJobRequest, ThirawatBuildEmbeddingsJobRequest,
 };
 use usagi_embed::xlm_roberta::{encode_projected_tokens, XlmRobertaTokenEncodeOptions};
 use usagi_jobs::store::{CreateJob, JobStore};
@@ -30,7 +30,8 @@ use usagi_thirawat::artifact::{
     ThirawatModelArtifactPaths,
 };
 use usagi_thirawat::mapper::{
-    map_drug_batch_from_precomputed, map_drug_query_from_precomputed, map_drug_query_with_vectors,
+    map_drug_batch_from_precomputed, map_drug_explain_from_precomputed,
+    map_drug_explain_with_vectors, map_drug_query_from_precomputed, map_drug_query_with_vectors,
     MapperRuntimeOptions,
 };
 
@@ -381,15 +382,31 @@ async fn drug_batch_job(
 async fn drug_explain(
     State(state): State<AppState>,
     Json(payload): Json<MapperDrugExplainRequest>,
-) -> Result<ApiError, ApiError> {
+) -> Result<Json<MapperDrugExplainResponse>, ApiError> {
+    if let Some(query_embeddings_path) = &state.query_embeddings_path {
+        validate_tachiom_artifact(TachiomArtifactPaths {
+            index_dir: state.tachiom_index_dir.clone(),
+        })?;
+        let response = map_drug_explain_from_precomputed(
+            &payload.source_name,
+            payload.source_code.as_deref(),
+            payload.concept_id,
+            query_embeddings_path,
+            &state.tachiom_index_dir,
+            MapperRuntimeOptions::default(),
+        )?;
+        return Ok(Json(response));
+    }
     validate_mapper_ready(&state)?;
-    Err(ApiError(UsagiError::new(
-        ErrorCode::ModelNotReady,
-        format!(
-            "THIRAWAT explanation is not implemented yet for concept {}",
-            payload.concept_id
-        ),
-    )))
+    let token_embedding = encode_thirawat_query(&state, &payload.source_name)?;
+    Ok(Json(map_drug_explain_with_vectors(
+        &payload.source_name,
+        payload.source_code.as_deref(),
+        payload.concept_id,
+        token_embedding.vectors,
+        &state.tachiom_index_dir,
+        MapperRuntimeOptions::default(),
+    )?))
 }
 
 async fn job_status(

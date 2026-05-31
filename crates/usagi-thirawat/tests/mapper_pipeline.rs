@@ -2,9 +2,10 @@ use serde_json::json;
 use usagi_contracts::catalog::ConceptSummary;
 use usagi_contracts::mapper::{MapperDrugBatchItemRequest, MapperDrugBatchRequest};
 use usagi_thirawat::mapper::{
-    map_drug_batch_from_precomputed, map_drug_query_from_precomputed, map_drug_query_with_vectors,
-    MapperRuntimeOptions, PrecomputedQueryEmbedding, PrecomputedQueryEmbeddings,
-    TachiomFixtureDocument, TachiomFixtureIndex,
+    map_drug_batch_from_precomputed, map_drug_explain_from_precomputed,
+    map_drug_query_from_precomputed, map_drug_query_with_vectors, MapperRuntimeOptions,
+    PrecomputedQueryEmbedding, PrecomputedQueryEmbeddings, TachiomFixtureDocument,
+    TachiomFixtureIndex,
 };
 
 #[test]
@@ -130,6 +131,57 @@ fn mapper_pipeline_uses_precomputed_query_embedding_artifact() {
     .unwrap();
 
     assert_eq!(response.candidates[0].concept.concept_id, 1);
+}
+
+#[test]
+fn mapper_explain_returns_scores_features_and_token_debug_for_requested_concept() {
+    let dir = tempfile::tempdir().unwrap();
+    let index_dir = dir.path().join("tachiom");
+    std::fs::create_dir_all(&index_dir).unwrap();
+    std::fs::write(
+        index_dir.join("index.bin"),
+        serde_json::to_vec_pretty(&TachiomFixtureIndex {
+            documents: vec![TachiomFixtureDocument {
+                concept: concept(1, "Aspirin 81 MG Oral Tablet", "Clinical Drug"),
+                token_vectors: vec![vec![1.0, 0.0]],
+            }],
+        })
+        .unwrap(),
+    )
+    .unwrap();
+    std::fs::write(index_dir.join("manifest.json"), "{}").unwrap();
+
+    let query_path = dir.path().join("query_embeddings.json");
+    std::fs::write(
+        &query_path,
+        serde_json::to_vec_pretty(&PrecomputedQueryEmbeddings {
+            items: vec![PrecomputedQueryEmbedding {
+                source_name: "aspirin 81 mg tablet".to_string(),
+                source_code: Some("A".to_string()),
+                token_vectors: vec![vec![1.0, 0.0]],
+            }],
+        })
+        .unwrap(),
+    )
+    .unwrap();
+
+    let explanation = map_drug_explain_from_precomputed(
+        "aspirin 81 mg tablet",
+        Some("A"),
+        1,
+        &query_path,
+        &index_dir,
+        MapperRuntimeOptions::default(),
+    )
+    .unwrap();
+
+    assert_eq!(explanation.query["query_text"], "aspirin 81 mg tablet (A)");
+    assert_eq!(explanation.concept.concept_id, 1);
+    assert_eq!(explanation.scores["tachiom_maxsim"], 1.0);
+    assert_eq!(explanation.scores["bimaxsim"], 1.0);
+    assert_eq!(explanation.features["strength_exact"], true);
+    assert_eq!(explanation.features["dose_form_match"], true);
+    assert_eq!(explanation.token_debug["enabled"], false);
 }
 
 #[test]

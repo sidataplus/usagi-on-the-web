@@ -85,3 +85,21 @@ curl -fsS \
   -d '{"mode":"lexical_tantivy","limit_per_item":1,"items":[{"id":"q1","q":"tramadol 50 mg capsule"}]}' \
   localhost:8789/search/batch |
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["provenance"]["catalog_artifact_id"] == "local-catalog-standard-v1"; assert data["provenance"]["index_artifact_id"] == "local-tantivy-v1"; print(json.dumps({"batch_provenance": data["provenance"]}))'
+
+curl -fsS \
+  -H 'Content-Type: application/json' \
+  -d '{"mode":"sapbert_cls","limit_per_item":1,"items":[{"id":"q1","q":"tramadol 50 mg capsule"}]}' \
+  localhost:8789/search/batch |
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["results"][0]["concept"]["concept_id"] == 100; assert data["provenance"]["index_artifact_id"] == "local-sapbert-cls-v1"; print(json.dumps({"sapbert_batch_top_concept_id": data["items"][0]["results"][0]["concept"]["concept_id"]}))'
+
+curl -fsS \
+  -H 'Content-Type: application/json' \
+  -d '{"mode":"hybrid_rrf","limit_per_item":1,"items":[{"id":"q1","q":"tramadol 50 mg capsule"}]}' \
+  localhost:8789/search/batch |
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["results"][0]["concept"]["concept_id"] == 100; assert data["provenance"]["index_artifact_id"] == "local-hybrid-rrf-v1"; print(json.dumps({"hybrid_batch_top_concept_id": data["items"][0]["results"][0]["concept"]["concept_id"]}))'
+
+curl -fsS \
+  -H 'Content-Type: application/json' \
+  -d '{"q":"tramadol 50 mg capsule","mode":"hybrid_rrf","concept_id":100}' \
+  localhost:8789/search/explain |
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["concept_id"] == 100; assert "hybrid_rrf" in data["explanation"]; assert "sapbert" in data["explanation"]; print(json.dumps({"hybrid_explain_concept_id": data["concept_id"]}))'
