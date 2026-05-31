@@ -210,6 +210,20 @@
 .meter__fill { block-size: 100%; background: var(--color-accent); border-radius: var(--radius-pill); }
 .meter__label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--color-text-subtle); margin-block-end: var(--space-xs); }
 
+/* ---- Workbench flow ----------------------------------------------------- */
+.workbench-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.8fr);
+  gap: var(--space);
+  margin-block-end: var(--space);
+}
+.action-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
 /* Horizontal bar chart (dashboard) */
 .bars { display: grid; gap: var(--space); }
 .bar__label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-block-end: var(--space-xs); }

@@ -2,12 +2,25 @@
 
 <div class="page-head">
   <div>
-    <h1 class="page-head__title">Exports</h1>
-    <p class="page-head__subtitle"><%= @project.name %></p>
+    <h1 class="page-head__title">Export reviewed mappings</h1>
+    <p class="page-head__subtitle"><%= @project.name %> · Review before exporting so downloads reflect human decisions.</p>
+  </div>
+  <div class="page-head__actions">
+    <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
+      <%= lucide_icon "table", class: "icon" %> Review mappings
+    <% end %>
   </div>
 </div>
 
 <div class="box stack">
+  <div class="row-between">
+    <div>
+      <h2 class="box__title" style="margin: 0">Review before exporting</h2>
+      <p class="subtle small">Exports are snapshots of the current mapping review state.</p>
+    </div>
+    <span class="badge badge--neutral"><%= number_with_delimiter(@project.approved_count) %> approved</span>
+  </div>
+
   <%= form_with url: project_exports_path(@project), class: "row" do |f| %>
     <%= select_tag :format_option, options_for_select(Export::FORMATS.map { |format| [format.humanize, format] }, "review_csv"), class: "input" %>
     <%= f.submit "Create export", class: "btn btn--primary" %>
@@ -21,5 +34,8 @@
       </div>
       <%= link_to "Open", project_export_path(@project, export), class: "btn btn--sm" %>
     </div>
+  <% end %>
+  <% if @exports.empty? %>
+    <p class="subtle small">No exports yet. Create one after the review queue has the decisions you need.</p>
   <% end %>
 </div>

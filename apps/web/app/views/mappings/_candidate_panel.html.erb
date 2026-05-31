@@ -1,10 +1,13 @@
-<%# locals: mapping, candidates %>
+<%# locals: mapping, candidates, next_id (optional) %>
 <div id="<%= dom_id(mapping, :candidate_panel) %>" class="box stack-sm">
   <div class="row-between">
     <h3 class="box__title row" style="gap: var(--space-xs); margin: 0"><%= lucide_icon "sparkles", class: "icon" %> Suggested candidates</h3>
-    <% if mapping.source_term&.mapping_candidates&.exists? %>
-      <span class="badge badge--accent">Persisted</span>
-    <% end %>
+    <div class="row" style="gap: var(--space-xs)">
+      <span class="small subtle"><%= pluralize(candidates.size, "saved candidate") %></span>
+      <% if mapping.source_term&.mapping_candidates&.exists? %>
+        <span class="badge badge--accent">Persisted</span>
+      <% end %>
+    </div>
   </div>
-  <%= render "mappings/candidates", mapping: mapping, candidates: candidates %>
+  <%= render "mappings/candidates", mapping: mapping, candidates: candidates, next_id: local_assigns[:next_id] %>
 </div>

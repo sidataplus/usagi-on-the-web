@@ -18,6 +18,8 @@ class ProjectsController < ApplicationController
     @recent_mappings = @project.mappings.ordered.limit(5)
     @recent_imports = @project.import_sessions.recent_first.limit(5)
     @recent_engine_jobs = @project.engine_jobs.recent_first.limit(5)
+    @latest_suggestion_job = @project.engine_jobs.where(kind: suggestion_job_kinds).recent_first.first
+    @latest_export = @project.exports.recent_first.first
   end
 
   def new
@@ -60,5 +62,9 @@ class ProjectsController < ApplicationController
         :name, :description, :source_vocabulary, :vocabulary_version, :status, :mapping_domain,
         target_domain_ids: [], target_vocabulary_ids: [], target_vocabularies: []
       )
+    end
+
+    def suggestion_job_kinds
+      @project.drug_domain? ? ["mapper_drugs_batch"] : ["hybrid_search_batch"]
     end
 end

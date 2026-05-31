@@ -5,6 +5,22 @@
     <h1 class="page-head__title"><%= @engine_job.job_type.humanize %></h1>
     <p class="page-head__subtitle"><%= @project.name %> · <%= @engine_job.id %></p>
   </div>
+  <div class="page-head__actions">
+    <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
+      <%= lucide_icon "table", class: "icon" %> Review mappings
+    <% end %>
+    <%= link_to project_engine_jobs_path(@project), class: "btn" do %>
+      <%= lucide_icon "activity", class: "icon" %> All jobs
+    <% end %>
+  </div>
+</div>
+
+<div class="review-brief">
+  <div>
+    <strong>Candidates appear on mapping rows.</strong>
+    <span class="subtle">When this job finishes, continue in Review to compare candidates and approve decisions.</span>
+  </div>
+  <%= link_to "Review mappings", project_mappings_path(@project), class: "btn btn--sm" %>
 </div>
 
 <div class="box">
@@ -12,7 +28,16 @@
     <div><dt>Status</dt><dd><%= @engine_job.status.humanize %></dd></div>
     <div><dt>Engine job ID</dt><dd><%= @engine_status["id"] || @engine_job.api_job_id || @engine_job.id %></dd></div>
     <div><dt>Stage</dt><dd><%= @engine_job.stage.presence || @engine_status["stage"].presence || "Not reported" %></dd></div>
-    <div><dt>Progress</dt><dd><%= @engine_job.processed.to_i %>/<%= @engine_job.total.to_i %></dd></div>
+    <div>
+      <dt>Progress</dt>
+      <dd>
+        <% if @engine_job.total.to_i.positive? %>
+          <%= @engine_job.processed.to_i %>/<%= @engine_job.total.to_i %>
+        <% else %>
+          Not reported
+        <% end %>
+      </dd>
+    </div>
     <div><dt>Failed rows</dt><dd><%= @engine_job.failed.to_i %></dd></div>
     <div><dt>Status URL</dt><dd class="mono"><%= @engine_job.status_url.presence || @engine_status["status_url"].presence || "Not reported" %></dd></div>
     <div><dt>Result URL</dt><dd class="mono"><%= @engine_job.result_url.presence || @engine_status["result_url"].presence || "Not reported" %></dd></div>

@@ -38,7 +38,7 @@ class MappingCandidatesController < ApplicationController
       )
     end
 
-    redirect_to mapping_path(mapping), notice: "Candidate applied. Review before approving."
+    redirect_to after_candidate_path(mapping), notice: "Candidate applied. Review before approving."
   end
 
   private
@@ -48,5 +48,18 @@ class MappingCandidatesController < ApplicationController
 
     def set_mapping
       @mapping = Mapping.find(params[:mapping_id])
+    end
+
+    def after_candidate_path(mapping)
+      next_id = next_mapping_id(mapping)
+      params[:next].present? && next_id.present? ? mapping_path(next_id) : mapping_path(mapping)
+    end
+
+    def next_mapping_id(mapping)
+      ordered = mapping.project.mappings.ordered.pluck(:id)
+      index = ordered.index(mapping.id)
+      return nil unless index && index < ordered.size - 1
+
+      ordered[index + 1]
     end
 end

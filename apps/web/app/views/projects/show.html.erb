@@ -18,10 +18,73 @@
     <%= link_to project_engine_jobs_path(@project), class: "btn" do %>
       <%= lucide_icon "activity", class: "icon" %> Jobs
     <% end %>
+    <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
+      <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
+    <% end %>
     <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
       <%= lucide_icon "table", class: "icon" %> Review mappings
     <% end %>
   </div>
+</div>
+
+<div class="workbench-strip">
+  <section class="box stack-sm">
+    <div class="row-between">
+      <div>
+        <h2 class="box__title" style="margin: 0">Review queue</h2>
+        <p class="subtle small">The engine suggests candidates. Reviewers make the mapping decisions.</p>
+      </div>
+      <%= status_badge(@recent_mappings.first) if @recent_mappings.any? %>
+    </div>
+    <div class="meter__label">
+      <span><%= number_with_delimiter(@project.approved_count) %> approved</span>
+      <span><%= number_with_delimiter(@project.unchecked_count) %> unchecked</span>
+    </div>
+    <% total = [@project.total_mappings, 1].max %>
+    <div class="meter" aria-label="Approved mapping progress">
+      <div class="meter__fill" style="inline-size: <%= (@project.approved_count.to_f / total * 100).round %>%"></div>
+    </div>
+    <div class="action-row">
+      <%= link_to project_mappings_path(@project, status: "unchecked"), class: "btn btn--primary" do %>
+        <%= lucide_icon "list-checks", class: "icon" %> Review unchecked mappings
+      <% end %>
+      <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
+        <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
+      <% end %>
+      <%= link_to project_exports_path(@project), class: "btn" do %>
+        <%= lucide_icon "download", class: "icon" %> Export reviewed mappings
+      <% end %>
+    </div>
+  </section>
+
+  <section class="box stack-sm">
+    <h2 class="box__title" style="margin: 0">Latest suggestions</h2>
+    <% if @latest_suggestion_job.present? %>
+      <div class="row-between">
+        <div>
+          <strong><%= @latest_suggestion_job.job_type.humanize %></strong>
+          <div class="small subtle">
+            <%= @latest_suggestion_job.status.humanize %>
+            <% if @latest_suggestion_job.stage.present? %> · <span class="mono"><%= @latest_suggestion_job.stage %></span><% end %>
+          </div>
+        </div>
+        <%= link_to "Open job", project_engine_job_path(@project, @latest_suggestion_job), class: "btn btn--sm" %>
+      </div>
+      <% if @latest_suggestion_job.total.positive? %>
+        <div class="meter__label">
+          <span><%= number_with_delimiter(@latest_suggestion_job.processed) %> of <%= number_with_delimiter(@latest_suggestion_job.total) %></span>
+          <% if @latest_suggestion_job.failed.positive? %><span><%= pluralize(@latest_suggestion_job.failed, "failed") %></span><% end %>
+        </div>
+      <% else %>
+        <p class="small subtle">No row counts reported yet.</p>
+      <% end %>
+    <% else %>
+      <p class="subtle">No suggestion run yet. Start one when the source terms are ready.</p>
+    <% end %>
+    <% if @latest_export.present? %>
+      <p class="small subtle">Latest export: <%= @latest_export.format.humanize %> · <%= @latest_export.state.humanize %></p>
+    <% end %>
+  </section>
 </div>
 
 <div class="grid grid--tiles">

@@ -5,6 +5,22 @@
     <h1 class="page-head__title">Engine jobs</h1>
     <p class="page-head__subtitle"><%= @project.name %></p>
   </div>
+  <div class="page-head__actions">
+    <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
+      <%= lucide_icon "table", class: "icon" %> Review mappings
+    <% end %>
+    <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
+      <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
+    <% end %>
+  </div>
+</div>
+
+<div class="review-brief">
+  <div>
+    <strong>Suggestion jobs feed the Review workspace.</strong>
+    <span class="subtle">Use this page for progress, failures, and retry decisions; candidates appear on mapping rows.</span>
+  </div>
+  <%= link_to "Open review", project_mappings_path(@project), class: "btn btn--sm" %>
 </div>
 
 <div class="box box--flush">
@@ -15,7 +31,13 @@
         <tr>
           <td><%= job.job_type.humanize.downcase %></td>
           <td><span class="badge badge--neutral"><%= job.status.humanize %></span></td>
-          <td><%= job.processed.to_i %>/<%= job.total.to_i %></td>
+          <td>
+            <% if job.total.to_i.positive? %>
+              <%= job.processed.to_i %>/<%= job.total.to_i %>
+            <% else %>
+              <span class="subtle">Not reported</span>
+            <% end %>
+          </td>
           <td><%= job.failed.to_i %></td>
           <td class="mono"><%= job.idempotency_key %></td>
           <td><%= job.created_at.to_fs(:short) %></td>

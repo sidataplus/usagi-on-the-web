@@ -18,6 +18,7 @@ class MappingsController < ApplicationController
     @page = [params[:page].to_i, 1].max
     @total_pages = [(@total.to_f / PER_PAGE).ceil, 1].max
     @mappings = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
+    @latest_engine_job = latest_suggestion_job(@project)
     render partial: "mappings/table", locals: table_locals if turbo_frame_request_id == "mappings_table"
   end
 
@@ -33,10 +34,13 @@ class MappingsController < ApplicationController
   def update
     authorize_project!(@mapping.project, :review)
     if @mapping.update(mapping_params)
+      if @mapping.mapping_status_previously_changed?
+        @mapping.update!(reviewed_by: current_user, reviewed_at: Time.current)
+      end
       audit_mapping("mapping_updated", to: @mapping.mapping_status)
       respond_to do |format|
         format.turbo_stream { render :update }
-        format.html { redirect_to mapping_path(@mapping), notice: "Mapping saved." }
+        format.html { redirect_to after_mapping_path(@mapping), notice: "Mapping saved." }
       end
     else
       show
@@ -184,6 +188,11 @@ class MappingsController < ApplicationController
       }
     end
 
+    def latest_suggestion_job(project)
+      kinds = project.drug_domain? ? ["mapper_drugs_batch"] : ["hybrid_search_batch"]
+      project.engine_jobs.where(kind: kinds).recent_first.first
+    end
+
     def navigation_for(mapping)
       ordered = mapping.project.mappings.ordered.pluck(:id)
       index = ordered.index(mapping.id)
@@ -191,6 +200,11 @@ class MappingsController < ApplicationController
 
       { position: index + 1, total: ordered.size, prev_id: index.positive? ? ordered[index - 1] : nil,
         next_id: index < ordered.size - 1 ? ordered[index + 1] : nil }
+    end
+
+    def after_mapping_path(mapping)
+      next_id = navigation_for(mapping)[:next_id]
+      params[:next].present? && next_id.present? ? mapping_path(next_id) : mapping_path(mapping)
     end
 
     def table_locals
