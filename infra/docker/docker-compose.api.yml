@@ -1,0 +1,76 @@
+services:
+  catalog-api:
+    build:
+      context: ../..
+      dockerfile: services/catalog-api/Dockerfile
+    ports:
+      - "${USAGI_PUBLISH_HOST:-127.0.0.1}:8788:8788"
+    volumes:
+      - ../../data:/data
+      - ../../fixtures:/fixtures:ro
+    environment:
+      CATALOG_DB_PATH: /data/catalog/catalog.sqlite
+      JOBS_DB_PATH: /data/jobs/jobs.sqlite
+      JOB_RESULTS_DIR: /data/jobs/results
+      TANTIVY_INDEX_DIR: /data/search/tantivy/index
+      SAPBERT_INDEX_DIR: /data/search/sapbert
+      SAPBERT_MODEL_DIR: /data/models/sapbert
+      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
+      USAGI_API_KEYS: ${USAGI_API_KEYS:?Set USAGI_API_KEYS to a comma-separated API key list for API services}
+
+  search-api:
+    build:
+      context: ../..
+      dockerfile: services/search-api/Dockerfile
+    ports:
+      - "${USAGI_PUBLISH_HOST:-127.0.0.1}:8789:8789"
+    volumes:
+      - ../../data:/data
+    environment:
+      CATALOG_DB_PATH: /data/catalog/catalog.sqlite
+      JOBS_DB_PATH: /data/jobs/jobs.sqlite
+      JOB_RESULTS_DIR: /data/jobs/results
+      TANTIVY_INDEX_DIR: /data/search/tantivy/index
+      SAPBERT_INDEX_DIR: /data/search/sapbert
+      SAPBERT_MODEL_DIR: /data/models/sapbert
+      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
+      USAGI_API_KEYS: ${USAGI_API_KEYS:?Set USAGI_API_KEYS to a comma-separated API key list for API services}
+
+  mapper-api:
+    build:
+      context: ../..
+      dockerfile: services/mapper-api/Dockerfile
+    ports:
+      - "${USAGI_PUBLISH_HOST:-127.0.0.1}:8790:8790"
+    volumes:
+      - ../../data:/data
+    environment:
+      JOBS_DB_PATH: /data/jobs/jobs.sqlite
+      JOB_RESULTS_DIR: /data/jobs/results
+      THIRAWAT_MODEL_DIR: /data/models/thirawat-sapbert
+      THIRAWAT_ARTIFACT_DIR: /data/mapper/thirawat-drug
+      TACHIOM_INDEX_DIR: /data/mapper/thirawat-drug/tachiom
+      THIRAWAT_QUERY_EMBEDDINGS_PATH: /data/mapper/thirawat-drug/query_embeddings.json
+      USAGI_API_KEYS: ${USAGI_API_KEYS:?Set USAGI_API_KEYS to a comma-separated API key list for API services}
+
+  api-worker:
+    build:
+      context: ../..
+      dockerfile: services/api-worker/Dockerfile
+    volumes:
+      - ../../data:/data
+      - ../../fixtures:/fixtures:ro
+    environment:
+      JOBS_DB_PATH: /data/jobs/jobs.sqlite
+      JOB_RESULTS_DIR: /data/jobs/results
+      CATALOG_DB_PATH: /data/catalog/catalog.sqlite
+      WORKER_QUEUES: catalog,index,embed,map
+      TANTIVY_INDEX_DIR: /data/search/tantivy/index
+      SAPBERT_INDEX_DIR: /data/search/sapbert
+      SAPBERT_MODEL_DIR: /data/models/sapbert
+      SAPBERT_PRECOMPUTED_EMBEDDINGS_PATH: /data/search/sapbert-doc-embeddings.json
+      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
+      THIRAWAT_MODEL_DIR: /data/models/thirawat-sapbert
+      THIRAWAT_ARTIFACT_DIR: /data/mapper/thirawat-drug
+      TACHIOM_INDEX_DIR: /data/mapper/thirawat-drug/tachiom
+      THIRAWAT_QUERY_EMBEDDINGS_PATH: /data/mapper/thirawat-drug/query_embeddings.json

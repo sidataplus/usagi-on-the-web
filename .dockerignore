@@ -1,0 +1,16 @@
+.git
+.codex
+target
+temp
+data
+*.duckdb
+*.sqlite
+*.sqlite3
+*.usearch
+*.safetensors
+*.gguf
+*.npy
+*.npz
+*.arrow
+*.parquet
+.DS_Store
