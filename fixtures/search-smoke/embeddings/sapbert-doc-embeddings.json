@@ -1,0 +1,12 @@
+{
+  "documents": [
+    {
+      "concept_id": 100,
+      "vector": [1.0, 0.0]
+    },
+    {
+      "concept_id": 200,
+      "vector": [0.0, 1.0]
+    }
+  ]
+}

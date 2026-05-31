@@ -1,0 +1,52 @@
+seed_order,seed_name,source_concept_id,source_concept_name,source_domain_id,source_vocabulary_id,source_concept_class_id,source_concept_code,target_concept_id,target_concept_name,target_vocabulary_id,target_concept_class_id,rn
+1,metformin,36633800,Metformin 500 Mg,Drug,NCCD,Drug Product,206843,1503328,metformin 500 MG,RxNorm,Clinical Drug Comp,1
+1,metformin,36640297,Metformin 500 Mg,Drug,NCCD,Drug Product,195488,1503328,metformin 500 MG,RxNorm,Clinical Drug Comp,2
+1,metformin,36654558,Metformin 500 Mg,Drug,NCCD,Drug Product,303256,1503328,metformin 500 MG,RxNorm,Clinical Drug Comp,3
+1,metformin,36626853,Metformin 0.5 G [Yiheng],Drug,NCCD,Drug Product,117728,1503328,metformin 500 MG,RxNorm,Clinical Drug Comp,4
+1,metformin,44854242,GLYBURIDE-METFORMIN 5-500 MG,Drug,NDC,11-digit NDC,67544112970,1503328,metformin 500 MG,RxNorm,Clinical Drug Comp,5
+3,amlodipine,36629826,Amlodipine 5 Mg,Drug,NCCD,Drug Product,186516,1332450,amlodipine 5 MG,RxNorm,Clinical Drug Comp,1
+3,amlodipine,36631185,Amlodipine 5 Mg,Drug,NCCD,Drug Product,231509,1332450,amlodipine 5 MG,RxNorm,Clinical Drug Comp,2
+3,amlodipine,36631611,Amlodipine 5 Mg,Drug,NCCD,Drug Product,117155,1332450,amlodipine 5 MG,RxNorm,Clinical Drug Comp,3
+3,amlodipine,36645395,Amlodipine 5 Mg,Drug,NCCD,Drug Product,268856,1332450,amlodipine 5 MG,RxNorm,Clinical Drug Comp,4
+3,amlodipine,36652413,Amlodipine 5 Mg,Drug,NCCD,Drug Product,267024,1332450,amlodipine 5 MG,RxNorm,Clinical Drug Comp,5
+4,lisinopril,36640324,Lisinopril 5 Mg,Drug,NCCD,Drug Product,115083,1308309,lisinopril 5 MG,RxNorm,Clinical Drug Comp,1
+8,metoprolol,36628019,Metoprolol 50 Mg,Drug,NCCD,Drug Product,303494,1307123,metoprolol 50 MG,RxNorm,Clinical Drug Comp,1
+9,carvedilol,36659151,Carvedilol 25 Mg,Drug,NCCD,Drug Product,107787,1346831,carvedilol 25 MG,RxNorm,Clinical Drug Comp,1
+11,clopidogrel,36619709,Clopidogrel 75 Mg,Drug,NCCD,Drug Product,163221,1322187,clopidogrel 75 MG,RxNorm,Clinical Drug Comp,1
+11,clopidogrel,35875324,75 Mg Of Clopidogrel Hydrogen,Drug,NCCD,Drug Product,302861,1322187,clopidogrel 75 MG,RxNorm,Clinical Drug Comp,2
+12,warfarin,36620382,Warfarin 1 Mg,Drug,NCCD,Drug Product,199635,40163509,warfarin sodium 1 MG,RxNorm,Clinical Drug Comp,1
+14,rivaroxaban,36649751,Rivaroxaban 10 Mg,Drug,NCCD,Drug Product,177207,40241332,rivaroxaban 10 MG,RxNorm,Clinical Drug Comp,1
+17,glipizide,36629393,Glipizide 5 Mg,Drug,NCCD,Drug Product,117639,19081295,glipizide 5 MG,RxNorm,Clinical Drug Comp,1
+21,omeprazole,36618213,Omeprazole 40 Mg,Drug,NCCD,Drug Product,213450,923686,omeprazole 40 MG,RxNorm,Clinical Drug Comp,1
+21,omeprazole,36648662,Omeprazole 40 Mg,Drug,NCCD,Drug Product,171493,923686,omeprazole 40 MG,RxNorm,Clinical Drug Comp,2
+21,omeprazole,36638627,Omeprazole Sodium Injection 40 Mg,Drug,NCCD,Drug Product,124476,923686,omeprazole 40 MG,RxNorm,Clinical Drug Comp,3
+22,pantoprazole,36651361,Pantoprazole 20 Mg,Drug,NCCD,Drug Product,279421,948104,pantoprazole 20 MG,RxNorm,Clinical Drug Comp,1
+22,pantoprazole,36624025,Pantoprazole Sodium 20 Mg Intestine,Drug,NCCD,Drug Product,251829,948104,pantoprazole 20 MG,RxNorm,Clinical Drug Comp,2
+22,pantoprazole,36653040,Pantoprazole Enteric Capsules 20 Mg,Drug,NCCD,Drug Product,118068,948104,pantoprazole 20 MG,RxNorm,Clinical Drug Comp,3
+22,pantoprazole,36618098,Intestinal Pantoprazole Sodium Tablets 20 Mg,Drug,NCCD,Drug Product,212752,948104,pantoprazole 20 MG,RxNorm,Clinical Drug Comp,4
+22,pantoprazole,36635265,Pantoprazole Sodium 20 Mg Tablets Intestine (Enteric),Drug,NCCD,Drug Product,240171,948104,pantoprazole 20 MG,RxNorm,Clinical Drug Comp,5
+23,famotidine,36641871,Famotidine 10 Mg,Drug,NCCD,Drug Product,264804,953118,famotidine 10 MG,RxNorm,Clinical Drug Comp,1
+24,albuterol,36636222,Salbutamol 4 Mg,Drug,NCCD,Drug Product,303581,1154458,albuterol 4 MG,RxNorm,Clinical Drug Comp,1
+27,prednisone,35881507,Prednisone 5 Mg,Drug,NCCD,Drug Product,113532,1551198,prednisone 5 MG,RxNorm,Clinical Drug Comp,1
+28,ibuprofen,35878775,Ibuprofen 50 Mg,Drug,NCCD,Drug Product,115145,19081498,ibuprofen 50 MG,RxNorm,Clinical Drug Comp,1
+28,ibuprofen,36647462,50 Mg Ibuprofen,Drug,NCCD,Drug Product,223000,19081498,ibuprofen 50 MG,RxNorm,Clinical Drug Comp,2
+31,gabapentin,36639838,Gabapentin 100 Mg,Drug,NCCD,Drug Product,217207,797421,gabapentin 100 MG,RxNorm,Clinical Drug Comp,1
+32,pregabalin,36636856,25 Mg Pregabalin,Drug,NCCD,Drug Product,199425,734359,pregabalin 25 MG,RxNorm,Clinical Drug Comp,1
+33,sertraline,36639759,Sertraline 50 Mg,Drug,NCCD,Drug Product,189880,739211,sertraline 50 MG,RxNorm,Clinical Drug Comp,1
+33,sertraline,36642449,Sertraline 50 Mg,Drug,NCCD,Drug Product,216338,739211,sertraline 50 MG,RxNorm,Clinical Drug Comp,2
+33,sertraline,36648440,Sertraline 50 Mg,Drug,NCCD,Drug Product,275154,739211,sertraline 50 MG,RxNorm,Clinical Drug Comp,3
+35,escitalopram,36635987,5 Mg Escitalopram,Drug,NCCD,Drug Product,245330,715967,escitalopram 5 MG,RxNorm,Clinical Drug Comp,1
+39,azithromycin,36635723,Etimicin 50 Mg,Drug,NCCD,Drug Product,303440,19108237,azithromycin 50 MG,RxNorm,Clinical Drug Comp,1
+40,ciprofloxacin,36643928,Ciprofloxacin 250 Mg,Drug,NCCD,Drug Product,146407,1797556,ciprofloxacin 250 MG,RxNorm,Clinical Drug Comp,1
+41,ceftriaxone,36639555,Ceftriaxone 0.25 G,Drug,NCCD,Drug Product,241445,46287315,ceftriaxone 250 MG,RxNorm,Clinical Drug Comp,1
+41,ceftriaxone,36649870,0.25 G Of Ceftriaxone Sodium Injection,Drug,NCCD,Drug Product,144769,46287315,ceftriaxone 250 MG,RxNorm,Clinical Drug Comp,2
+44,ondansetron,36631278,Ondansetron 8 Mg,Drug,NCCD,Drug Product,289946,1000612,ondansetron 8 MG,RxNorm,Clinical Drug Comp,1
+44,ondansetron,36640672,Ondansetron 8 Mg,Drug,NCCD,Drug Product,160262,1000612,ondansetron 8 MG,RxNorm,Clinical Drug Comp,2
+45,cetirizine,36637512,Cetirizine 10 Mg,Drug,NCCD,Drug Product,303487,1149224,cetirizine 10 MG,RxNorm,Clinical Drug Comp,1
+45,cetirizine,36641407,Cetirizine 10 Mg [Xining],Drug,NCCD,Drug Product,115283,1149224,cetirizine 10 MG,RxNorm,Clinical Drug Comp,2
+46,loratadine,36644801,Desloratadine 5 Mg,Drug,NCCD,Drug Product,201887,1107886,loratadine 5 MG,RxNorm,Clinical Drug Comp,1
+48,finasteride,36630979,Finasteride 1 Mg,Drug,NCCD,Drug Product,138978,996421,finasteride 1 MG,RxNorm,Clinical Drug Comp,1
+49,rosuvastatin,37370435,rosuvastatin calcium (as rosuvastatin 5mg),Drug,EDI,Drug,653103710,789833,rosuvastatin 5 MG,RxNorm,Clinical Drug Comp,1
+50,simvastatin,35882570,Simvastatin 5 Mg,Drug,NCCD,Drug Product,198808,1539468,simvastatin 5 MG,RxNorm,Clinical Drug Comp,1
+100001,filler:VR,36843145,VR,Drug,OMOP Invest Drug,Ingredient,LG34LSI9IU,36859189,VR,RxNorm Extension,Ingredient,1
+100002,filler:NOS,1251988,NOS,Drug,OMOP Invest Drug,Ingredient,R1W11H9AUK,1253605,NOS,RxNorm Extension,Ingredient,1

@@ -1,0 +1,102 @@
+source_code,source_name,source_frequency,expected_target_concept_id,expected_target_concept_name,source_kind
+STD_1503328,metformin 500 MG,1,1503328,metformin 500 MG,standard_seed
+STD_1545961,atorvastatin 80 MG,1,1545961,atorvastatin 80 MG,standard_seed
+STD_1332450,amlodipine 5 MG,1,1332450,amlodipine 5 MG,standard_seed
+STD_1308309,lisinopril 5 MG,1,1308309,lisinopril 5 MG,standard_seed
+STD_1367541,losartan 12.5 MG,1,1367541,losartan 12.5 MG,standard_seed
+STD_19109413,hydrochlorothiazide 5 MG,1,19109413,hydrochlorothiazide 5 MG,standard_seed
+STD_19108803,furosemide 5 MG,1,19108803,furosemide 5 MG,standard_seed
+STD_1307123,metoprolol 50 MG,1,1307123,metoprolol 50 MG,standard_seed
+STD_1346831,carvedilol 25 MG,1,1346831,carvedilol 25 MG,standard_seed
+STD_37002741,aspirin 6 MG,1,37002741,aspirin 6 MG,standard_seed
+STD_1322187,clopidogrel 75 MG,1,1322187,clopidogrel 75 MG,standard_seed
+STD_40163509,warfarin sodium 1 MG,1,40163509,warfarin sodium 1 MG,standard_seed
+STD_43013029,apixaban 5 MG,1,43013029,apixaban 5 MG,standard_seed
+STD_40241332,rivaroxaban 10 MG,1,40241332,rivaroxaban 10 MG,standard_seed
+STD_1502908,insulin glargine 100 UNT/ML,1,1502908,insulin glargine 100 UNT/ML,standard_seed
+STD_1550027,insulin lispro 25 UNT/ML,1,1550027,insulin lispro 25 UNT/ML,standard_seed
+STD_19081295,glipizide 5 MG,1,19081295,glipizide 5 MG,standard_seed
+STD_46287678,empagliflozin 5 MG,1,46287678,empagliflozin 5 MG,standard_seed
+STD_19125044,sitagliptin 25 MG,1,19125044,sitagliptin 25 MG,standard_seed
+STD_40169798,levothyroxine sodium 1 MG,1,40169798,levothyroxine sodium 1 MG,standard_seed
+STD_923686,omeprazole 40 MG,1,923686,omeprazole 40 MG,standard_seed
+STD_948104,pantoprazole 20 MG,1,948104,pantoprazole 20 MG,standard_seed
+STD_953118,famotidine 10 MG,1,953118,famotidine 10 MG,standard_seed
+STD_1154458,albuterol 4 MG,1,1154458,albuterol 4 MG,standard_seed
+STD_19102054,fluticasone 0.4 MG/ACTUAT,1,19102054,fluticasone 0.4 MG/ACTUAT,standard_seed
+STD_702521,budesonide 4 MG,1,702521,budesonide 4 MG,standard_seed
+STD_1551198,prednisone 5 MG,1,1551198,prednisone 5 MG,standard_seed
+STD_19081498,ibuprofen 50 MG,1,19081498,ibuprofen 50 MG,standard_seed
+STD_1127576,acetaminophen 81 MG,1,1127576,acetaminophen 81 MG,standard_seed
+STD_1115097,naproxen 50 MG,1,1115097,naproxen 50 MG,standard_seed
+STD_797421,gabapentin 100 MG,1,797421,gabapentin 100 MG,standard_seed
+STD_734359,pregabalin 25 MG,1,734359,pregabalin 25 MG,standard_seed
+STD_739211,sertraline 50 MG,1,739211,sertraline 50 MG,standard_seed
+STD_755770,fluoxetine 6 MG,1,755770,fluoxetine 6 MG,standard_seed
+STD_715967,escitalopram 5 MG,1,715967,escitalopram 5 MG,standard_seed
+STD_703615,trazodone 75 MG,1,703615,trazodone 75 MG,standard_seed
+STD_1713737,amoxicillin 50 MG,1,1713737,amoxicillin 50 MG,standard_seed
+STD_19108237,azithromycin 50 MG,1,19108237,azithromycin 50 MG,standard_seed
+STD_1797556,ciprofloxacin 250 MG,1,1797556,ciprofloxacin 250 MG,standard_seed
+STD_46287315,ceftriaxone 250 MG,1,46287315,ceftriaxone 250 MG,standard_seed
+STD_1738607,doxycycline 50 MG,1,1738607,doxycycline 50 MG,standard_seed
+STD_1000612,ondansetron 8 MG,1,1000612,ondansetron 8 MG,standard_seed
+STD_1149224,cetirizine 10 MG,1,1149224,cetirizine 10 MG,standard_seed
+STD_1107886,loratadine 5 MG,1,1107886,loratadine 5 MG,standard_seed
+STD_40166537,tamsulosin hydrochloride 0.4 MG,1,40166537,tamsulosin hydrochloride 0.4 MG,standard_seed
+STD_996421,finasteride 1 MG,1,996421,finasteride 1 MG,standard_seed
+STD_789833,rosuvastatin 5 MG,1,789833,rosuvastatin 5 MG,standard_seed
+STD_1539468,simvastatin 5 MG,1,1539468,simvastatin 5 MG,standard_seed
+STD_36859189,VR,1,36859189,VR,standard_seed
+STD_1253605,NOS,1,1253605,NOS,standard_seed
+NS_36633800,Metformin 500 Mg,1,1503328,metformin 500 MG,non_standard_maps_to_seed
+NS_36640297,Metformin 500 Mg,1,1503328,metformin 500 MG,non_standard_maps_to_seed
+NS_36654558,Metformin 500 Mg,1,1503328,metformin 500 MG,non_standard_maps_to_seed
+NS_36626853,Metformin 0.5 G [Yiheng],1,1503328,metformin 500 MG,non_standard_maps_to_seed
+NS_44854242,GLYBURIDE-METFORMIN 5-500 MG,1,1503328,metformin 500 MG,non_standard_maps_to_seed
+NS_36629826,Amlodipine 5 Mg,1,1332450,amlodipine 5 MG,non_standard_maps_to_seed
+NS_36631185,Amlodipine 5 Mg,1,1332450,amlodipine 5 MG,non_standard_maps_to_seed
+NS_36631611,Amlodipine 5 Mg,1,1332450,amlodipine 5 MG,non_standard_maps_to_seed
+NS_36645395,Amlodipine 5 Mg,1,1332450,amlodipine 5 MG,non_standard_maps_to_seed
+NS_36652413,Amlodipine 5 Mg,1,1332450,amlodipine 5 MG,non_standard_maps_to_seed
+NS_36640324,Lisinopril 5 Mg,1,1308309,lisinopril 5 MG,non_standard_maps_to_seed
+NS_36628019,Metoprolol 50 Mg,1,1307123,metoprolol 50 MG,non_standard_maps_to_seed
+NS_36659151,Carvedilol 25 Mg,1,1346831,carvedilol 25 MG,non_standard_maps_to_seed
+NS_36619709,Clopidogrel 75 Mg,1,1322187,clopidogrel 75 MG,non_standard_maps_to_seed
+NS_35875324,75 Mg Of Clopidogrel Hydrogen,1,1322187,clopidogrel 75 MG,non_standard_maps_to_seed
+NS_36620382,Warfarin 1 Mg,1,40163509,warfarin sodium 1 MG,non_standard_maps_to_seed
+NS_36649751,Rivaroxaban 10 Mg,1,40241332,rivaroxaban 10 MG,non_standard_maps_to_seed
+NS_36629393,Glipizide 5 Mg,1,19081295,glipizide 5 MG,non_standard_maps_to_seed
+NS_36618213,Omeprazole 40 Mg,1,923686,omeprazole 40 MG,non_standard_maps_to_seed
+NS_36648662,Omeprazole 40 Mg,1,923686,omeprazole 40 MG,non_standard_maps_to_seed
+NS_36638627,Omeprazole Sodium Injection 40 Mg,1,923686,omeprazole 40 MG,non_standard_maps_to_seed
+NS_36651361,Pantoprazole 20 Mg,1,948104,pantoprazole 20 MG,non_standard_maps_to_seed
+NS_36624025,Pantoprazole Sodium 20 Mg Intestine,1,948104,pantoprazole 20 MG,non_standard_maps_to_seed
+NS_36653040,Pantoprazole Enteric Capsules 20 Mg,1,948104,pantoprazole 20 MG,non_standard_maps_to_seed
+NS_36618098,Intestinal Pantoprazole Sodium Tablets 20 Mg,1,948104,pantoprazole 20 MG,non_standard_maps_to_seed
+NS_36635265,Pantoprazole Sodium 20 Mg Tablets Intestine (Enteric),1,948104,pantoprazole 20 MG,non_standard_maps_to_seed
+NS_36641871,Famotidine 10 Mg,1,953118,famotidine 10 MG,non_standard_maps_to_seed
+NS_36636222,Salbutamol 4 Mg,1,1154458,albuterol 4 MG,non_standard_maps_to_seed
+NS_35881507,Prednisone 5 Mg,1,1551198,prednisone 5 MG,non_standard_maps_to_seed
+NS_35878775,Ibuprofen 50 Mg,1,19081498,ibuprofen 50 MG,non_standard_maps_to_seed
+NS_36647462,50 Mg Ibuprofen,1,19081498,ibuprofen 50 MG,non_standard_maps_to_seed
+NS_36639838,Gabapentin 100 Mg,1,797421,gabapentin 100 MG,non_standard_maps_to_seed
+NS_36636856,25 Mg Pregabalin,1,734359,pregabalin 25 MG,non_standard_maps_to_seed
+NS_36639759,Sertraline 50 Mg,1,739211,sertraline 50 MG,non_standard_maps_to_seed
+NS_36642449,Sertraline 50 Mg,1,739211,sertraline 50 MG,non_standard_maps_to_seed
+NS_36648440,Sertraline 50 Mg,1,739211,sertraline 50 MG,non_standard_maps_to_seed
+NS_36635987,5 Mg Escitalopram,1,715967,escitalopram 5 MG,non_standard_maps_to_seed
+NS_36635723,Etimicin 50 Mg,1,19108237,azithromycin 50 MG,non_standard_maps_to_seed
+NS_36643928,Ciprofloxacin 250 Mg,1,1797556,ciprofloxacin 250 MG,non_standard_maps_to_seed
+NS_36639555,Ceftriaxone 0.25 G,1,46287315,ceftriaxone 250 MG,non_standard_maps_to_seed
+NS_36649870,0.25 G Of Ceftriaxone Sodium Injection,1,46287315,ceftriaxone 250 MG,non_standard_maps_to_seed
+NS_36631278,Ondansetron 8 Mg,1,1000612,ondansetron 8 MG,non_standard_maps_to_seed
+NS_36640672,Ondansetron 8 Mg,1,1000612,ondansetron 8 MG,non_standard_maps_to_seed
+NS_36637512,Cetirizine 10 Mg,1,1149224,cetirizine 10 MG,non_standard_maps_to_seed
+NS_36641407,Cetirizine 10 Mg [Xining],1,1149224,cetirizine 10 MG,non_standard_maps_to_seed
+NS_36644801,Desloratadine 5 Mg,1,1107886,loratadine 5 MG,non_standard_maps_to_seed
+NS_36630979,Finasteride 1 Mg,1,996421,finasteride 1 MG,non_standard_maps_to_seed
+NS_37370435,rosuvastatin calcium (as rosuvastatin 5mg),1,789833,rosuvastatin 5 MG,non_standard_maps_to_seed
+NS_35882570,Simvastatin 5 Mg,1,1539468,simvastatin 5 MG,non_standard_maps_to_seed
+NS_36843145,VR,1,36859189,VR,non_standard_maps_to_seed
+NS_1251988,NOS,1,1253605,NOS,non_standard_maps_to_seed

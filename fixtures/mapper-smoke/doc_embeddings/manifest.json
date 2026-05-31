@@ -1,0 +1,22 @@
+{
+  "artifact_id": "fixture-thirawat-docemb-v1",
+  "artifact_kind": "thirawat-drug-doc-embeddings",
+  "schema_version": "usagi-thirawat-docemb-v1",
+  "api_version": "0.1.0",
+  "created_at": "2026-05-31T00:00:00Z",
+  "scope": {
+    "domain_id": ["Drug"],
+    "standard_concept": "S",
+    "invalid_reason": null
+  },
+  "counts": {
+    "documents": 2,
+    "tokens": 4
+  },
+  "outputs": [
+    {
+      "path": "documents.json",
+      "content_type": "application/json"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "text": "tramadol",
+  "token_ids": [0, 10],
+  "vectors": [[1.0, 0.0], [0.0, 1.0]],
+  "attention_mask": [true, true]
+}

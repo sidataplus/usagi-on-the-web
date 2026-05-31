@@ -1,0 +1,51 @@
+seed_order,seed_name,concept_id,concept_name,domain_id,vocabulary_id,concept_class_id,standard_concept,concept_code
+1,metformin,1503328,metformin 500 MG,Drug,RxNorm,Clinical Drug Comp,S,316256
+2,atorvastatin,1545961,atorvastatin 80 MG,Drug,RxNorm,Clinical Drug Comp,S,329299
+3,amlodipine,1332450,amlodipine 5 MG,Drug,RxNorm,Clinical Drug Comp,S,329528
+4,lisinopril,1308309,lisinopril 5 MG,Drug,RxNorm,Clinical Drug Comp,S,316156
+5,losartan,1367541,losartan 12.5 MG,Drug,RxNorm,Clinical Drug Comp,S,335174
+6,hydrochlorothiazide,19109413,hydrochlorothiazide 5 MG,Drug,RxNorm,Clinical Drug Comp,S,438741
+7,furosemide,19108803,furosemide 5 MG,Drug,RxNorm,Clinical Drug Comp,S,437569
+8,metoprolol,1307123,metoprolol 50 MG,Drug,RxNorm,Clinical Drug Comp,S,328469
+9,carvedilol,1346831,carvedilol 25 MG,Drug,RxNorm,Clinical Drug Comp,S,315576
+10,aspirin,37002741,aspirin 6 MG,Drug,RxNorm,Clinical Drug Comp,S,2394057
+11,clopidogrel,1322187,clopidogrel 75 MG,Drug,RxNorm,Clinical Drug Comp,S,329449
+12,warfarin,40163509,warfarin sodium 1 MG,Drug,RxNorm,Clinical Drug Comp,S,855287
+13,apixaban,43013029,apixaban 5 MG,Drug,RxNorm,Clinical Drug Comp,S,1364444
+14,rivaroxaban,40241332,rivaroxaban 10 MG,Drug,RxNorm,Clinical Drug Comp,S,1114196
+15,insulin glargine,1502908,insulin glargine 100 UNT/ML,Drug,RxNorm,Clinical Drug Comp,S,343226
+16,insulin lispro,1550027,insulin lispro 25 UNT/ML,Drug,RxNorm,Clinical Drug Comp,S,343263
+17,glipizide,19081295,glipizide 5 MG,Drug,RxNorm,Clinical Drug Comp,S,315980
+18,empagliflozin,46287678,empagliflozin 5 MG,Drug,RxNorm,Clinical Drug Comp,S,1664310
+19,sitagliptin,19125044,sitagliptin 25 MG,Drug,RxNorm,Clinical Drug Comp,S,665037
+20,levothyroxine,40169798,levothyroxine sodium 1 MG,Drug,RxNorm,Clinical Drug Comp,S,892278
+21,omeprazole,923686,omeprazole 40 MG,Drug,RxNorm,Clinical Drug Comp,S,317451
+22,pantoprazole,948104,pantoprazole 20 MG,Drug,RxNorm,Clinical Drug Comp,S,336764
+23,famotidine,953118,famotidine 10 MG,Drug,RxNorm,Clinical Drug Comp,S,315919
+24,albuterol,1154458,albuterol 4 MG,Drug,RxNorm,Clinical Drug Comp,S,315288
+25,fluticasone,19102054,fluticasone 0.4 MG/ACTUAT,Drug,RxNorm,Clinical Drug Comp,S,393445
+26,budesonide,702521,budesonide 4 MG,Drug,RxNorm,Clinical Drug Comp,S,2587882
+27,prednisone,1551198,prednisone 5 MG,Drug,RxNorm,Clinical Drug Comp,S,316584
+28,ibuprofen,19081498,ibuprofen 50 MG,Drug,RxNorm,Clinical Drug Comp,S,316076
+29,acetaminophen,1127576,acetaminophen 81 MG,Drug,RxNorm,Clinical Drug Comp,S,317287
+30,naproxen,1115097,naproxen 50 MG,Drug,RxNorm,Clinical Drug Comp,S,335265
+31,gabapentin,797421,gabapentin 100 MG,Drug,RxNorm,Clinical Drug Comp,S,345817
+32,pregabalin,734359,pregabalin 25 MG,Drug,RxNorm,Clinical Drug Comp,S,483441
+33,sertraline,739211,sertraline 50 MG,Drug,RxNorm,Clinical Drug Comp,S,328671
+34,fluoxetine,755770,fluoxetine 6 MG,Drug,RxNorm,Clinical Drug Comp,S,336689
+35,escitalopram,715967,escitalopram 5 MG,Drug,RxNorm,Clinical Drug Comp,S,353382
+36,trazodone,703615,trazodone 75 MG,Drug,RxNorm,Clinical Drug Comp,S,336997
+37,amoxicillin,1713737,amoxicillin 50 MG,Drug,RxNorm,Clinical Drug Comp,S,791946
+39,azithromycin,19108237,azithromycin 50 MG,Drug,RxNorm,Clinical Drug Comp,S,434695
+40,ciprofloxacin,1797556,ciprofloxacin 250 MG,Drug,RxNorm,Clinical Drug Comp,S,328286
+41,ceftriaxone,46287315,ceftriaxone 250 MG,Drug,RxNorm,Clinical Drug Comp,S,1664991
+42,doxycycline,1738607,doxycycline 50 MG,Drug,RxNorm,Clinical Drug Comp,S,328259
+44,ondansetron,1000612,ondansetron 8 MG,Drug,RxNorm,Clinical Drug Comp,S,328451
+45,cetirizine,1149224,cetirizine 10 MG,Drug,RxNorm,Clinical Drug Comp,S,328986
+46,loratadine,1107886,loratadine 5 MG,Drug,RxNorm,Clinical Drug Comp,S,316168
+47,tamsulosin,40166537,tamsulosin hydrochloride 0.4 MG,Drug,RxNorm,Clinical Drug Comp,S,863668
+48,finasteride,996421,finasteride 1 MG,Drug,RxNorm,Clinical Drug Comp,S,315933
+49,rosuvastatin,789833,rosuvastatin 5 MG,Drug,RxNorm,Clinical Drug Comp,S,2167572
+50,simvastatin,1539468,simvastatin 5 MG,Drug,RxNorm,Clinical Drug Comp,S,317497
+100001,filler:VR,36859189,VR,Drug,RxNorm Extension,Ingredient,S,OMOP5176806
+100002,filler:NOS,1253605,NOS,Drug,RxNorm Extension,Ingredient,S,OMOP5556224

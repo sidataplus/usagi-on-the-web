@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "source_name": "tramadol hydrochloride 50 mg capsule",
+      "source_code": "SRC_TRAMADOL_50_CAP",
+      "token_vectors": [[1.0, 0.0], [0.0, 1.0]]
+    },
+    {
+      "source_name": "tramadol hydrochloride 100 mg tablet",
+      "source_code": "SRC_TRAMADOL_100_TAB",
+      "token_vectors": [[1.0, 0.0], [0.8, 0.2]]
+    }
+  ]
+}
