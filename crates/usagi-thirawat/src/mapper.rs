@@ -1,7 +1,11 @@
-use std::path::Path;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use usagi_common::error::{ErrorCode, Result, UsagiError};
+use usagi_common::manifest::ArtifactManifest;
 use usagi_contracts::catalog::{ConceptSummary, Provenance};
 use usagi_contracts::mapper::{
     MapperCandidate, MapperDrugBatchItemResponse, MapperDrugBatchRequest, MapperDrugBatchResponse,
@@ -198,8 +202,7 @@ pub fn map_drug_query_with_vectors(
     validate_tachiom_artifact(TachiomArtifactPaths {
         index_dir: tachiom_index_dir.to_path_buf(),
     })?;
-    let index = load_fixture_tachiom_index(tachiom_index_dir)?;
-    let mut retrieved = retrieve_and_rerank(&query_vectors, index, options)?;
+    let mut retrieved = retrieve_candidates(&query_vectors, tachiom_index_dir, options)?;
     let tie_candidates: Vec<TieBreakCandidate> = retrieved
         .iter()
         .map(|candidate| TieBreakCandidate {
@@ -307,14 +310,33 @@ fn load_fixture_tachiom_index(index_dir: &Path) -> Result<TachiomFixtureIndex> {
     })
 }
 
-fn retrieve_and_rerank(
+fn retrieve_candidates(
     query_vectors: &[Vec<f32>],
-    index: TachiomFixtureIndex,
+    index_dir: &Path,
     options: MapperRuntimeOptions,
 ) -> Result<Vec<RetrievedDocument>> {
     if options.candidate_top_k == 0 || options.rerank_top_n == 0 || options.limit == 0 {
         return Ok(Vec::new());
     }
+    match tachiom_engine(index_dir)?.as_str() {
+        "tachiom-cli" => retrieve_with_tachiom_cli(query_vectors, index_dir, options),
+        "fixture-exact-maxsim" | "tachiom-fixture" | "" => retrieve_from_fixture_index(
+            query_vectors,
+            load_fixture_tachiom_index(index_dir)?,
+            options,
+        ),
+        other => Err(UsagiError::new(
+            ErrorCode::IncompatibleArtifact,
+            format!("unsupported Tachiom retrieval engine {other:?}"),
+        )),
+    }
+}
+
+fn retrieve_from_fixture_index(
+    query_vectors: &[Vec<f32>],
+    index: TachiomFixtureIndex,
+    options: MapperRuntimeOptions,
+) -> Result<Vec<RetrievedDocument>> {
     let mut retrieved = Vec::with_capacity(index.documents.len());
     for document in index.documents {
         let score = exact_bimaxsim(query_vectors, &document.token_vectors)?;
@@ -332,7 +354,14 @@ fn retrieve_and_rerank(
             .then_with(|| left.concept.concept_id.cmp(&right.concept.concept_id))
     });
     retrieved.truncate(options.candidate_top_k);
+    rerank_retrieved(query_vectors, retrieved, options)
+}
 
+fn rerank_retrieved(
+    query_vectors: &[Vec<f32>],
+    mut retrieved: Vec<RetrievedDocument>,
+    options: MapperRuntimeOptions,
+) -> Result<Vec<RetrievedDocument>> {
     for candidate in retrieved.iter_mut().take(options.rerank_top_n) {
         candidate.bimaxsim = exact_bimaxsim(query_vectors, &candidate.token_vectors)?.score;
     }
@@ -345,6 +374,230 @@ fn retrieve_and_rerank(
     });
     retrieved.truncate(options.rerank_top_n);
     Ok(retrieved)
+}
+
+fn retrieve_with_tachiom_cli(
+    query_vectors: &[Vec<f32>],
+    index_dir: &Path,
+    options: MapperRuntimeOptions,
+) -> Result<Vec<RetrievedDocument>> {
+    let search_bin = std::env::var("TACHIOM_SEARCH_BIN")
+        .map(PathBuf::from)
+        .map_err(|_| {
+            UsagiError::new(
+                ErrorCode::TachiomFailed,
+                "TACHIOM_SEARCH_BIN is required for tachiom-cli indexes",
+            )
+        })?;
+    if !search_bin.exists() {
+        return Err(UsagiError::new(
+            ErrorCode::TachiomFailed,
+            format!("Tachiom search binary is missing {}", search_bin.display()),
+        ));
+    }
+    let docs = load_doc_embedding_sidecar(index_dir)?;
+    let work_dir = create_tachiom_query_work_dir()?;
+    let query_path = work_dir.join("query.npy");
+    let results_path = work_dir.join("results.tsv");
+    write_query_npy(&query_path, query_vectors)?;
+    let output = Command::new(&search_bin)
+        .arg("-i")
+        .arg(index_dir.join("index.bin"))
+        .arg("-q")
+        .arg(&query_path)
+        .arg("-o")
+        .arg(&results_path)
+        .arg("--k")
+        .arg(options.candidate_top_k.to_string())
+        .arg("--num-runs")
+        .arg("1")
+        .output()?;
+    if !output.status.success() {
+        let _ = std::fs::remove_dir_all(&work_dir);
+        return Err(UsagiError::new(
+            ErrorCode::TachiomFailed,
+            format!(
+                "Tachiom search failed with status {}: {}{}",
+                output.status,
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            ),
+        ));
+    }
+    let rows = parse_tachiom_results(&results_path)?;
+    let _ = std::fs::remove_dir_all(&work_dir);
+    let mut retrieved = Vec::new();
+    for row in rows.into_iter().take(options.candidate_top_k) {
+        if let Some(document) = document_for_tachiom_id(&docs.documents, &row.doc_id) {
+            retrieved.push(RetrievedDocument {
+                concept: document.concept.clone(),
+                token_vectors: document.token_vectors.clone(),
+                tachiom_maxsim: row.score,
+                bimaxsim: row.score,
+            });
+        }
+    }
+    rerank_retrieved(query_vectors, retrieved, options)
+}
+
+fn tachiom_engine(index_dir: &Path) -> Result<String> {
+    let manifest: ArtifactManifest =
+        serde_json::from_slice(&std::fs::read(index_dir.join("manifest.json"))?)?;
+    Ok(manifest
+        .extra
+        .and_then(|extra| {
+            extra
+                .get("retrieval")
+                .and_then(|retrieval| retrieval.get("engine"))
+                .and_then(|engine| engine.as_str())
+                .map(ToString::to_string)
+        })
+        .unwrap_or_default())
+}
+
+fn load_doc_embedding_sidecar(index_dir: &Path) -> Result<TachiomFixtureIndex> {
+    let doc_embedding_dir = index_dir
+        .parent()
+        .ok_or_else(|| UsagiError::bad_request("Tachiom index directory has no parent"))?
+        .join("doc_embeddings");
+    let path = doc_embedding_dir.join("documents.json");
+    serde_json::from_slice(&std::fs::read(&path)?).map_err(|err| {
+        UsagiError::new(
+            ErrorCode::IncompatibleArtifact,
+            format!(
+                "THIRAWAT document embedding sidecar {} is not valid JSON: {err}",
+                path.display()
+            ),
+        )
+    })
+}
+
+#[derive(Debug)]
+struct TachiomResultRow {
+    doc_id: String,
+    rank: usize,
+    score: f32,
+}
+
+fn parse_tachiom_results(path: &Path) -> Result<Vec<TachiomResultRow>> {
+    let text = std::fs::read_to_string(path)?;
+    let mut rows = Vec::new();
+    for (line_index, line) in text.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let fields = line.split('\t').collect::<Vec<_>>();
+        if fields.len() != 4 {
+            return Err(UsagiError::new(
+                ErrorCode::TachiomFailed,
+                format!(
+                    "Tachiom result line {} must have 4 tab-separated fields",
+                    line_index + 1
+                ),
+            ));
+        }
+        rows.push(TachiomResultRow {
+            doc_id: fields[1].to_string(),
+            rank: fields[2].parse::<usize>().map_err(|err| {
+                UsagiError::new(
+                    ErrorCode::TachiomFailed,
+                    format!(
+                        "Tachiom result rank is invalid on line {}: {err}",
+                        line_index + 1
+                    ),
+                )
+            })?,
+            score: fields[3].parse::<f32>().map_err(|err| {
+                UsagiError::new(
+                    ErrorCode::TachiomFailed,
+                    format!(
+                        "Tachiom result score is invalid on line {}: {err}",
+                        line_index + 1
+                    ),
+                )
+            })?,
+        });
+    }
+    rows.sort_by(|left, right| left.rank.cmp(&right.rank));
+    Ok(rows)
+}
+
+fn document_for_tachiom_id<'a>(
+    documents: &'a [TachiomFixtureDocument],
+    doc_id: &str,
+) -> Option<&'a TachiomFixtureDocument> {
+    doc_id
+        .parse::<usize>()
+        .ok()
+        .and_then(|index| documents.get(index))
+        .or_else(|| {
+            doc_id.parse::<i64>().ok().and_then(|concept_id| {
+                documents
+                    .iter()
+                    .find(|document| document.concept.concept_id == concept_id)
+            })
+        })
+}
+
+fn create_tachiom_query_work_dir() -> Result<PathBuf> {
+    let root =
+        PathBuf::from(std::env::var("USAGI_TEMP_DIR").unwrap_or_else(|_| "temp".to_string()));
+    std::fs::create_dir_all(&root)?;
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| UsagiError::internal(format!("system clock before Unix epoch: {err}")))?
+        .as_nanos();
+    let path = root.join(format!("tachiom-query-{}-{nanos}", std::process::id()));
+    std::fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
+fn write_query_npy(path: &Path, query_vectors: &[Vec<f32>]) -> Result<()> {
+    let token_count = query_vectors.len();
+    let dimension = query_vectors
+        .first()
+        .map(Vec::len)
+        .ok_or_else(|| UsagiError::new(ErrorCode::EmbeddingFailed, "query vectors are empty"))?;
+    if dimension == 0 || query_vectors.iter().any(|vector| vector.len() != dimension) {
+        return Err(UsagiError::new(
+            ErrorCode::EmbeddingFailed,
+            "query vectors must have a consistent non-zero dimension",
+        ));
+    }
+    let mut file = std::fs::File::create(path)?;
+    write_npy_header(&mut file, "<f4", &[1, token_count, dimension])?;
+    for vector in query_vectors {
+        for value in vector {
+            file.write_all(&value.to_le_bytes())?;
+        }
+    }
+    Ok(())
+}
+
+fn write_npy_header(mut writer: impl Write, dtype: &str, shape: &[usize]) -> Result<()> {
+    let shape = match shape {
+        [one] => format!("({},)", one),
+        [rows, cols] => format!("({}, {})", rows, cols),
+        [depth, rows, cols] => format!("({}, {}, {})", depth, rows, cols),
+        _ => {
+            return Err(UsagiError::bad_request(
+                "minimal NPY writer supports only 1D, 2D, and 3D arrays",
+            ))
+        }
+    };
+    let mut header = format!(
+        "{{'descr': '{}', 'fortran_order': False, 'shape': {}, }}",
+        dtype, shape
+    );
+    let preamble_len = 10;
+    let padding = (16 - ((preamble_len + header.len() + 1) % 16)) % 16;
+    header.extend(std::iter::repeat_n(' ', padding));
+    header.push('\n');
+    writer.write_all(b"\x93NUMPY")?;
+    writer.write_all(&[1, 0])?;
+    writer.write_all(&(header.len() as u16).to_le_bytes())?;
+    writer.write_all(header.as_bytes())?;
+    Ok(())
 }
 
 fn query_json(source_name: &str, source_code: Option<&str>) -> serde_json::Value {
