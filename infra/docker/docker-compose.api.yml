@@ -9,6 +9,9 @@ services:
       - ../../data:/data
       - ../../fixtures:/fixtures:ro
     environment:
+      USAGI_API_ENV: ${USAGI_API_ENV:-development}
+      USAGI_API_AUTH_MODE: ${USAGI_API_AUTH_MODE:-api_key}
+      USAGI_API_SHARED_SECRET: ${USAGI_API_SHARED_SECRET:-}
       CATALOG_DB_PATH: /data/catalog/catalog.sqlite
       JOBS_DB_PATH: /data/jobs/jobs.sqlite
       JOB_RESULTS_DIR: /data/jobs/results
@@ -27,6 +30,9 @@ services:
     volumes:
       - ../../data:/data
     environment:
+      USAGI_API_ENV: ${USAGI_API_ENV:-development}
+      USAGI_API_AUTH_MODE: ${USAGI_API_AUTH_MODE:-api_key}
+      USAGI_API_SHARED_SECRET: ${USAGI_API_SHARED_SECRET:-}
       CATALOG_DB_PATH: /data/catalog/catalog.sqlite
       JOBS_DB_PATH: /data/jobs/jobs.sqlite
       JOB_RESULTS_DIR: /data/jobs/results
@@ -45,6 +51,9 @@ services:
     volumes:
       - ../../data:/data
     environment:
+      USAGI_API_ENV: ${USAGI_API_ENV:-development}
+      USAGI_API_AUTH_MODE: ${USAGI_API_AUTH_MODE:-api_key}
+      USAGI_API_SHARED_SECRET: ${USAGI_API_SHARED_SECRET:-}
       JOBS_DB_PATH: /data/jobs/jobs.sqlite
       JOB_RESULTS_DIR: /data/jobs/results
       THIRAWAT_MODEL_DIR: /data/models/thirawat-sapbert
@@ -61,6 +70,9 @@ services:
       - ../../data:/data
       - ../../fixtures:/fixtures:ro
     environment:
+      USAGI_API_ENV: ${USAGI_API_ENV:-development}
+      USAGI_API_AUTH_MODE: ${USAGI_API_AUTH_MODE:-api_key}
+      USAGI_API_SHARED_SECRET: ${USAGI_API_SHARED_SECRET:-}
       JOBS_DB_PATH: /data/jobs/jobs.sqlite
       JOB_RESULTS_DIR: /data/jobs/results
       CATALOG_DB_PATH: /data/catalog/catalog.sqlite

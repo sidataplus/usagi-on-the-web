@@ -3,6 +3,14 @@ use crate::error::{ErrorCode, ErrorEnvelope, UsagiError};
 pub const API_KEY_HEADER: &str = "x-api-key";
 pub const DEFAULT_API_BODY_LIMIT_BYTES: usize = 262_144;
 
+pub struct ApiProductionBootConfig<'a> {
+    pub environment: Option<&'a str>,
+    pub auth_mode: Option<&'a str>,
+    pub shared_secret: Option<&'a str>,
+    pub jobs_db_path: Option<&'a str>,
+    pub artifact_paths: Vec<(&'a str, Option<&'a str>)>,
+}
+
 pub fn api_body_limit_bytes() -> usize {
     api_body_limit_bytes_from_env_value(std::env::var("USAGI_API_BODY_LIMIT_BYTES").ok().as_deref())
 }
@@ -12,6 +20,57 @@ pub fn api_body_limit_bytes_from_env_value(value: Option<&str>) -> usize {
         .and_then(|value| value.trim().parse::<usize>().ok())
         .filter(|limit| *limit > 0)
         .unwrap_or(DEFAULT_API_BODY_LIMIT_BYTES)
+}
+
+pub fn api_production_boot_errors(config: ApiProductionBootConfig<'_>) -> Vec<String> {
+    if !matches!(config.environment.map(str::trim), Some("production")) {
+        return Vec::new();
+    }
+
+    let mut errors = Vec::new();
+    if config.auth_mode.map(str::trim) != Some("signed") {
+        errors.push("USAGI_API_AUTH_MODE must be signed in production".to_string());
+    }
+    if is_blank(config.shared_secret) {
+        errors.push("USAGI_API_SHARED_SECRET is required in production".to_string());
+    }
+    if is_blank(config.jobs_db_path) {
+        errors.push("JOBS_DB_PATH is required in production".to_string());
+    }
+    for (key, value) in config.artifact_paths {
+        if is_blank(value) {
+            errors.push(format!("{key} is required in production"));
+        }
+    }
+
+    errors
+}
+
+pub fn api_production_boot_errors_from_env(artifact_path_keys: &[&str]) -> Vec<String> {
+    let environment = std::env::var("USAGI_API_ENV").ok();
+    let auth_mode = std::env::var("USAGI_API_AUTH_MODE").ok();
+    let shared_secret = std::env::var("USAGI_API_SHARED_SECRET").ok();
+    let jobs_db_path = std::env::var("JOBS_DB_PATH").ok();
+    let artifact_values: Vec<(&str, Option<String>)> = artifact_path_keys
+        .iter()
+        .map(|key| (*key, std::env::var(key).ok()))
+        .collect();
+    let artifact_paths = artifact_values
+        .iter()
+        .map(|(key, value)| (*key, value.as_deref()))
+        .collect();
+
+    api_production_boot_errors(ApiProductionBootConfig {
+        environment: environment.as_deref(),
+        auth_mode: auth_mode.as_deref(),
+        shared_secret: shared_secret.as_deref(),
+        jobs_db_path: jobs_db_path.as_deref(),
+        artifact_paths,
+    })
+}
+
+fn is_blank(value: Option<&str>) -> bool {
+    value.map(str::trim).unwrap_or_default().is_empty()
 }
 
 pub fn rewrite_error_envelope_request_id(body: &[u8], request_id: &str) -> Option<Vec<u8>> {
@@ -101,7 +160,8 @@ fn bearer_token(authorization: Option<&str>) -> Option<&str> {
 mod tests {
     use super::{
         accepts_jsonl, api_body_limit_bytes_from_env_value, api_key_is_authorized,
-        error_envelope_body, is_public_probe_path, rewrite_error_envelope_request_id,
+        api_production_boot_errors, error_envelope_body, is_public_probe_path,
+        rewrite_error_envelope_request_id, ApiProductionBootConfig,
     };
     use crate::error::ErrorCode;
 
@@ -190,5 +250,34 @@ mod tests {
     fn api_body_limit_accepts_positive_env_override() {
         assert_eq!(api_body_limit_bytes_from_env_value(Some("1024")), 1024);
         assert_eq!(api_body_limit_bytes_from_env_value(Some("0")), 262_144);
+    }
+
+    #[test]
+    fn api_production_boot_check_rejects_disabled_auth_and_missing_secret() {
+        let errors = api_production_boot_errors(ApiProductionBootConfig {
+            environment: Some("production"),
+            auth_mode: Some("disabled"),
+            shared_secret: None,
+            jobs_db_path: None,
+            artifact_paths: vec![("CATALOG_DB_PATH", None)],
+        });
+
+        assert!(errors.contains(&"USAGI_API_AUTH_MODE must be signed in production".to_string()));
+        assert!(errors.contains(&"USAGI_API_SHARED_SECRET is required in production".to_string()));
+        assert!(errors.contains(&"JOBS_DB_PATH is required in production".to_string()));
+        assert!(errors.contains(&"CATALOG_DB_PATH is required in production".to_string()));
+    }
+
+    #[test]
+    fn api_production_boot_check_allows_non_production_defaults() {
+        let errors = api_production_boot_errors(ApiProductionBootConfig {
+            environment: Some("development"),
+            auth_mode: Some("disabled"),
+            shared_secret: None,
+            jobs_db_path: None,
+            artifact_paths: vec![("CATALOG_DB_PATH", None)],
+        });
+
+        assert!(errors.is_empty());
     }
 }

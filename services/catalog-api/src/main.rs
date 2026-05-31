@@ -14,8 +14,8 @@ use usagi_artifacts::job_results::{job_results_download_response, job_results_re
 use usagi_catalog::store::CatalogStore;
 use usagi_common::error::{ErrorCode, ErrorEnvelope, UsagiError};
 use usagi_common::http::{
-    accepts_jsonl, api_body_limit_bytes, api_key_is_authorized, error_envelope_body,
-    is_public_probe_path, API_KEY_HEADER,
+    accepts_jsonl, api_body_limit_bytes, api_key_is_authorized,
+    api_production_boot_errors_from_env, error_envelope_body, is_public_probe_path, API_KEY_HEADER,
 };
 use usagi_common::request::{generate_request_id, REQUEST_ID_HEADER};
 use usagi_contracts::catalog::{
@@ -45,6 +45,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 fn app_from_env() -> anyhow::Result<Router> {
+    require_production_boot_config()?;
     let catalog_db_path = PathBuf::from(
         std::env::var("CATALOG_DB_PATH")
             .unwrap_or_else(|_| "data/catalog/catalog.sqlite".to_string()),
@@ -63,6 +64,15 @@ fn app_from_env() -> anyhow::Result<Router> {
         catalog_dir,
         jobs,
     }))
+}
+
+fn require_production_boot_config() -> anyhow::Result<()> {
+    let errors = api_production_boot_errors_from_env(&["CATALOG_DB_PATH", "JOB_RESULTS_DIR"]);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        anyhow::bail!("{}", errors.join("; "))
+    }
 }
 
 fn router(state: AppState) -> Router {

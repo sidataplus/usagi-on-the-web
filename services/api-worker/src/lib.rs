@@ -4,6 +4,7 @@ use usagi_artifacts::job_results::{write_mapper_batch_results, JobResultArtifact
 use usagi_catalog::builder::{build_catalog_from_athena, BuildCatalogOptions};
 use usagi_catalog::store::CatalogStore;
 use usagi_common::error::UsagiError;
+use usagi_common::http::api_production_boot_errors_from_env;
 use usagi_contracts::catalog::CatalogBuildJobRequest;
 use usagi_contracts::catalog::Provenance;
 use usagi_contracts::jobs::JobKind;
@@ -36,6 +37,7 @@ use usagi_thirawat::mapper::{map_drug_batch_from_precomputed, map_drug_query_wit
 
 pub async fn run_worker() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
+    require_production_boot_config()?;
     let config = WorkerConfig::from_env()?;
     let jobs_path = PathBuf::from(
         std::env::var("JOBS_DB_PATH").unwrap_or_else(|_| "data/jobs/jobs.sqlite".to_string()),
@@ -602,6 +604,24 @@ pub async fn run_worker() -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+fn require_production_boot_config() -> anyhow::Result<()> {
+    let errors = api_production_boot_errors_from_env(&[
+        "CATALOG_DB_PATH",
+        "TANTIVY_INDEX_DIR",
+        "SAPBERT_INDEX_DIR",
+        "SAPBERT_MODEL_DIR",
+        "THIRAWAT_MODEL_DIR",
+        "THIRAWAT_ARTIFACT_DIR",
+        "TACHIOM_INDEX_DIR",
+        "JOB_RESULTS_DIR",
+    ]);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        anyhow::bail!("{}", errors.join("; "))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

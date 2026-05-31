@@ -13,8 +13,8 @@ use serde_json::json;
 use usagi_artifacts::job_results::{job_results_download_response, job_results_response};
 use usagi_common::error::{ErrorCode, ErrorEnvelope, UsagiError};
 use usagi_common::http::{
-    accepts_jsonl, api_body_limit_bytes, api_key_is_authorized, error_envelope_body,
-    is_public_probe_path, API_KEY_HEADER,
+    accepts_jsonl, api_body_limit_bytes, api_key_is_authorized,
+    api_production_boot_errors_from_env, error_envelope_body, is_public_probe_path, API_KEY_HEADER,
 };
 use usagi_common::request::{generate_request_id, REQUEST_ID_HEADER};
 use usagi_contracts::catalog::Provenance;
@@ -161,6 +161,7 @@ fn fallback_error_code(status: StatusCode) -> ErrorCode {
 }
 
 fn state_from_env() -> anyhow::Result<AppState> {
+    require_production_boot_config()?;
     let catalog_db_path = PathBuf::from(
         std::env::var("CATALOG_DB_PATH")
             .unwrap_or_else(|_| "data/catalog/catalog.sqlite".to_string()),
@@ -195,6 +196,21 @@ fn state_from_env() -> anyhow::Result<AppState> {
             .map(PathBuf::from),
         jobs,
     })
+}
+
+fn require_production_boot_config() -> anyhow::Result<()> {
+    let errors = api_production_boot_errors_from_env(&[
+        "CATALOG_DB_PATH",
+        "TANTIVY_INDEX_DIR",
+        "SAPBERT_INDEX_DIR",
+        "SAPBERT_MODEL_DIR",
+        "JOB_RESULTS_DIR",
+    ]);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        anyhow::bail!("{}", errors.join("; "))
+    }
 }
 
 async fn health() -> Json<serde_json::Value> {

@@ -40,10 +40,19 @@ registry:
 env:
   secret:
     - RAILS_MASTER_KEY
+    - SECRET_KEY_BASE
+    - DATABASE_URL
+    - USAGI_API_SHARED_SECRET
+    - USAGI_API_KEY
   clear:
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
     SOLID_QUEUE_IN_PUMA: true
+    ENGINE_CLIENT_MODE: http
+    CATALOG_API_URL: http://catalog-api:8788
+    SEARCH_API_URL: http://search-api:8789
+    MAPPER_API_URL: http://mapper-api:8790
+    JOBS_API_URL: http://mapper-api:8790
 
     # Set number of processes dedicated to Solid Queue (default: 1)
     # JOB_CONCURRENCY: 3
@@ -51,9 +60,8 @@ env:
     # Set number of cores available to the application on each server (default: 1).
     # WEB_CONCURRENCY: 2
 
-    # Match this to any external database server to configure Active Record correctly
-    # Use usagi_rails-db for a db accessory server on same machine via local kamal docker network.
-    # DB_HOST: 192.168.0.2
+    # DATABASE_URL is required as a secret in production. Use an internal
+    # database host on the Kamal/Docker private network.
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
