@@ -3,21 +3,21 @@ class RunHybridSearchJob < ApplicationJob
 
   def perform(project_id)
     project = Project.find(project_id)
-    mappings = project.mappings.unchecked.includes(:source_term).order(:created_at, :id).to_a
+    mappings = project.mappings.unchecked.includes(:source_term)
+    batch_size = ENV.fetch("HYBRID_SEARCH_BATCH_SIZE", 100).to_i.clamp(1, 1_000)
     engine_job = project.engine_jobs.create!(
       kind: "hybrid_search_batch",
       state: "running",
       mode: "hybrid_rrf",
       candidate_set_id: "candset_#{SecureRandom.hex(8)}",
-      total: mappings.size
+      total: mappings.count
     )
 
     processed = 0
     failed_items = []
-    batch_size = ENV.fetch("HYBRID_SEARCH_BATCH_SIZE", 100).to_i.clamp(1, 1_000)
     search_client = EngineClients::SearchClient.new
 
-    mappings.each_slice(batch_size) do |mapping_slice|
+    Mappings::HybridSearchBatchEnumerator.new(relation: mappings, batch_size: batch_size).each_slice do |mapping_slice|
       response = search_client.batch(
         items: mapping_slice.map { |mapping| batch_item(mapping) },
         filters: { domain_id: [project.mapping_domain] },
