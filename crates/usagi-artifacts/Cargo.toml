@@ -1,0 +1,15 @@
+[package]
+name = "usagi-artifacts"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+usagi-common = { path = "../usagi-common" }
+uuid.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

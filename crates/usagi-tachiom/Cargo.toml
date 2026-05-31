@@ -1,0 +1,17 @@
+[package]
+name = "usagi-tachiom"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+usagi-common = { path = "../usagi-common" }
+usagi-thirawat = { path = "../usagi-thirawat" }
+
+[dev-dependencies]
+tempfile.workspace = true
+usagi-contracts = { path = "../usagi-contracts" }

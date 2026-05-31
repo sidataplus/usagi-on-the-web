@@ -1,0 +1,20 @@
+[package]
+name = "usagi-search"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+chrono.workspace = true
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tantivy.workspace = true
+usearch.workspace = true
+usagi-catalog = { path = "../usagi-catalog" }
+usagi-common = { path = "../usagi-common" }
+usagi-contracts = { path = "../usagi-contracts" }
+
+[dev-dependencies]
+tempfile.workspace = true
+usagi-catalog = { path = "../usagi-catalog" }

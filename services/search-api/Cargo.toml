@@ -1,0 +1,19 @@
+[package]
+name = "search-api"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing-subscriber.workspace = true
+usagi-artifacts = { path = "../../crates/usagi-artifacts" }
+usagi-common = { path = "../../crates/usagi-common" }
+usagi-contracts = { path = "../../crates/usagi-contracts" }
+usagi-embed = { path = "../../crates/usagi-embed" }
+usagi-jobs = { path = "../../crates/usagi-jobs" }
+usagi-search = { path = "../../crates/usagi-search" }
