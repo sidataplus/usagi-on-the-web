@@ -63,12 +63,11 @@ curl -fsS \
 JOB_ID="$(python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["state"] == "queued"; print(data["job_id"])' <"${WORK_DIR}/create-job.json")"
 
 JOBS_DB_PATH="${WORK_DIR}/jobs/jobs.sqlite" \
-WORKER_QUEUES="map" \
 JOB_RESULTS_DIR="${WORK_DIR}/results" \
 THIRAWAT_ARTIFACT_DIR="${WORK_DIR}/thirawat-drug" \
 TACHIOM_INDEX_DIR="${WORK_DIR}/thirawat-drug/tachiom" \
 THIRAWAT_QUERY_EMBEDDINGS_PATH="${WORK_DIR}/thirawat-drug/query_embeddings/query_embeddings.json" \
-cargo run -q -p api-worker >"${WORK_DIR}/api-worker.log"
+cargo run -q -p api-worker --bin usagi-worker -- --queues map >"${WORK_DIR}/api-worker.log"
 
 curl -fsS "${BASE_URL}/jobs/${JOB_ID}" >"${WORK_DIR}/job-status.json"
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["state"] == "succeeded_with_errors", data; assert data["processed"] == 2, data; assert data["failed"] == 1, data; assert data["stage"] == "validating_results", data' <"${WORK_DIR}/job-status.json"
