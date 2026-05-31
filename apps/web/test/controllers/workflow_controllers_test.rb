@@ -216,4 +216,40 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_engine_jobs_path(@project)
     assert_equal "engine_job_retry_requested", @project.audit_events.last.action
   end
+
+  test "partial engine job shows failed row details and retry action" do
+    engine_job = @project.engine_jobs.create!(
+      kind: "hybrid_search_batch",
+      state: "succeeded_with_errors",
+      processed: 3,
+      total: 3,
+      failed: 1,
+      stage: "persist_results",
+      error: {
+        items: [
+          {
+            source_code: "DX_FAIL",
+            error: {
+              code: "BAD_REQUEST",
+              message: "Cannot map source term",
+              request_id: "req_partial"
+            }
+          }
+        ]
+      },
+      input: { source_engine_job_id: "old-hybrid" }
+    )
+
+    get project_engine_job_path(@project, engine_job)
+
+    assert_response :success
+    assert_includes response.body, "Succeeded with errors"
+    assert_includes response.body, "persist_results"
+    assert_includes response.body, "Partial failures"
+    assert_includes response.body, "DX_FAIL"
+    assert_includes response.body, "BAD_REQUEST"
+    assert_includes response.body, "Cannot map source term"
+    assert_includes response.body, "req_partial"
+    assert_includes response.body, "Retry"
+  end
 end

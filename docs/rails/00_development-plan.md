@@ -443,6 +443,7 @@ polling updates processed/total/failed/stage
 succeeded results persist candidates
 succeeded_with_errors persists successes and failed count
 failed job renders retry path
+partial failures render source-code/error/request-id detail with retry path
 reviewed mappings are not overwritten
 ```
 

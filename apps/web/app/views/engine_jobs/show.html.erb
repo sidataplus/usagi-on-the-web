@@ -11,14 +11,47 @@
   <dl class="facts">
     <div><dt>Status</dt><dd><%= @engine_job.status.humanize %></dd></div>
     <div><dt>Engine job ID</dt><dd><%= @engine_status["id"] || @engine_job.api_job_id || @engine_job.id %></dd></div>
+    <div><dt>Stage</dt><dd><%= @engine_job.stage.presence || @engine_status["stage"].presence || "Not reported" %></dd></div>
     <div><dt>Progress</dt><dd><%= @engine_job.processed.to_i %>/<%= @engine_job.total.to_i %></dd></div>
     <div><dt>Failed rows</dt><dd><%= @engine_job.failed.to_i %></dd></div>
+    <div><dt>Status URL</dt><dd class="mono"><%= @engine_job.status_url.presence || @engine_status["status_url"].presence || "Not reported" %></dd></div>
+    <div><dt>Result URL</dt><dd class="mono"><%= @engine_job.result_url.presence || @engine_status["result_url"].presence || "Not reported" %></dd></div>
     <div><dt>Idempotency key</dt><dd><%= @engine_job.idempotency_key %></dd></div>
     <div><dt>Requested by</dt><dd><%= @engine_job.requested_by&.display_name || "System" %></dd></div>
   </dl>
 </div>
 
-<% if @engine_job.error.present? %>
+<% failed_items = Array(@engine_job.error["items"]) %>
+
+<% if failed_items.any? %>
+  <div class="box box--flush" style="margin-block-start: var(--space)">
+    <div class="pad">
+      <strong>Partial failures</strong>
+      <p class="small subtle">Successful rows were persisted. Retry after resolving the failed rows or engine issue.</p>
+    </div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Source code</th>
+          <th>Code</th>
+          <th>Message</th>
+          <th>Request ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% failed_items.first(50).each do |item| %>
+          <% item_error = item.fetch("error", {}) %>
+          <tr>
+            <td class="mono"><%= item["source_code"] || item["q"] || "Not reported" %></td>
+            <td><%= item_error["code"] || "ERROR" %></td>
+            <td><%= item_error["message"] || item_error.to_json %></td>
+            <td class="mono"><%= item_error["request_id"] || "Not reported" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% elsif @engine_job.error.present? %>
   <div class="notice notice--warning" style="margin-block-start: var(--space)">
     <strong><%= @engine_job.error["code"] || "Engine job issue" %></strong>
     <p><%= @engine_job.error["message"] || @engine_job.error.to_json %></p>
