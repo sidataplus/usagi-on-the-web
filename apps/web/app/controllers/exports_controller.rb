@@ -16,7 +16,7 @@ class ExportsController < ApplicationController
       format: params[:format_option].presence_in(Export::FORMATS) || "review_csv",
       state: "queued",
       filters: export_filters,
-      file_key: "#{@project.name.parameterize}-#{Time.current.to_i}.csv"
+      file_key: "#{@project.name.parameterize}-#{Time.current.to_i}.#{file_extension(params[:format_option])}"
     )
     @project.audit_events.create!(
       user: current_user,
@@ -38,6 +38,11 @@ class ExportsController < ApplicationController
         data = Exports::CsvBuilder.new(@project, format: export.format).to_csv
         send_data data, filename: export.file_key, type: "text/csv"
       end
+      format.jsonl do
+        export = @export || create_inline_export(format: "candidate_jsonl", extension: "jsonl")
+        data = Exports::CsvBuilder.new(@project, format: export.format).to_jsonl
+        send_data data, filename: export.file_key, type: "application/x-ndjson"
+      end
     end
   end
 
@@ -50,13 +55,14 @@ class ExportsController < ApplicationController
       @export = @project.exports.find_by(id: params[:id])
     end
 
-    def create_inline_export
+    def create_inline_export(format: "review_csv", extension: "csv")
+      builder = Exports::CsvBuilder.new(@project, format: format)
       @project.exports.create!(
         requested_by: current_user,
         state: "succeeded",
-        format: "review_csv",
-        row_count: @project.mappings.count,
-        file_key: "#{@project.name.parameterize}-mappings.csv",
+        format: format,
+        row_count: builder.row_count,
+        file_key: "#{@project.name.parameterize}-mappings.#{extension}",
         finished_at: Time.current
       ).tap do |export|
         @project.audit_events.create!(
@@ -71,5 +77,9 @@ class ExportsController < ApplicationController
 
     def export_filters
       params.fetch(:filters, {}).permit(:status, :domain_id, :vocabulary_id).to_h
+    end
+
+    def file_extension(format)
+      format.to_s.end_with?("_jsonl") ? "jsonl" : "csv"
     end
 end

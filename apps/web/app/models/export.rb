@@ -3,7 +3,7 @@ class Export < ApplicationRecord
 
   prefixed_id "exp"
 
-  FORMATS = %w[review_csv source_to_concept_map_csv candidate_csv candidate_jsonl audit_csv csv].freeze
+  FORMATS = %w[review_csv usagi_csv source_to_concept_map_csv candidate_csv candidate_jsonl audit_csv csv].freeze
   STATES = %w[queued running succeeded failed cancelled].freeze
 
   belongs_to :project

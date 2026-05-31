@@ -159,6 +159,35 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal "export_generated", @project.audit_events.last.action
   end
 
+  test "candidate JSONL export downloads newline-delimited candidate provenance" do
+    mapping = create_mapping!(project: @project)
+    mapping.mapping_candidates.create!(
+      project: @project,
+      source_term: mapping.source_term,
+      rank: 1,
+      concept_id: 40162522,
+      concept_name: "tramadol hydrochloride 50 MG Oral Capsule",
+      method: "hybrid_rrf",
+      final_score: 0.91,
+      provenance: { "search_artifact_id" => "search-v1" }
+    )
+    export = @project.exports.create!(
+      requested_by: @user,
+      format: "candidate_jsonl",
+      state: "succeeded",
+      row_count: 1,
+      file_key: "candidate-export.jsonl"
+    )
+
+    get project_export_path(@project, export, format: :jsonl)
+
+    assert_response :success
+    assert_equal "application/x-ndjson", response.media_type
+    line = JSON.parse(response.body.lines.first)
+    assert_equal "SRC", line.fetch("source_code")
+    assert_equal "search-v1", line.fetch("provenance").fetch("search_artifact_id")
+  end
+
   test "admin engine status renders with stubbed service statuses" do
     get admin_engine_status_path
 

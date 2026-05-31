@@ -12,7 +12,7 @@ class CreateExportJob < ApplicationJob
       filename: export.file_key.presence || "#{export.project.name.parameterize}-#{export.format}.#{jsonl ? "jsonl" : "csv"}",
       content_type: jsonl ? "application/x-ndjson" : "text/csv"
     )
-    export.update!(state: "succeeded", row_count: export.project.mappings.count, finished_at: Time.current)
+    export.update!(state: "succeeded", row_count: builder.row_count, finished_at: Time.current)
   rescue => e
     export&.update!(state: "failed", error: { message: e.message })
     raise

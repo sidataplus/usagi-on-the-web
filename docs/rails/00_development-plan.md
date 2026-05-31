@@ -483,8 +483,8 @@ audit CSV
 ```text
 export job creates Active Storage file
 USAGI CSV downloads
-STCM CSV includes approved rows by default
-candidate JSONL includes provenance
+STCM CSV includes approved rows by default with OMOP source-to-concept columns
+candidate JSONL downloads and includes provenance
 failed export shows error state
 ```
 

@@ -468,6 +468,8 @@ Routes:
 GET  /projects/:project_id/exports
 POST /projects/:project_id/exports
 GET  /projects/:project_id/exports/:id
+GET  /projects/:project_id/exports/:id.csv
+GET  /projects/:project_id/exports/:id.jsonl
 ```
 
 Responsibilities:

@@ -10,12 +10,11 @@
           Export all <%= number_with_delimiter(@project.total_mappings) %> mappings from
           <strong><%= @project.name %></strong>.
         </p>
-        <%= link_to project_export_path(@project, format: :csv), data: { turbo_frame: "_top" }, class: "btn btn--primary btn--block" do %>
-          <%= lucide_icon "download", class: "icon" %> Download CSV
+        <% download_format = @export&.format.to_s.end_with?("_jsonl") ? :jsonl : :csv %>
+        <% download_path = @export ? project_export_path(@project, @export, format: download_format) : project_export_path(@project, format: :csv) %>
+        <%= link_to download_path, data: { turbo_frame: "_top" }, class: "btn btn--primary btn--block" do %>
+          <%= lucide_icon "download", class: "icon" %> Download <%= download_format.to_s.upcase %>
         <% end %>
-        <button type="button" class="btn btn--block" disabled>
-          <%= lucide_icon "file-text", class: "icon" %> Usagi JSON (coming soon)
-        </button>
       </div>
     </div>
   </div>

@@ -9,6 +9,7 @@ module Exports
 
     def to_csv
       case format
+      when "usagi_csv" then usagi_csv
       when "source_to_concept_map_csv" then source_to_concept_map_csv
       when "candidate_csv" then candidate_csv
       when "audit_csv" then audit_csv
@@ -24,8 +25,35 @@ module Exports
       end
     end
 
+    def row_count
+      case format
+      when "source_to_concept_map_csv" then approved_mappings.count
+      when "candidate_csv", "candidate_jsonl" then project.mapping_candidates.count
+      when "audit_csv" then project.audit_events.count
+      else project.mappings.count
+      end
+    end
+
     private
       attr_reader :project, :format
+
+      def usagi_csv
+        CSV.generate(headers: true) do |csv|
+          csv << %w[
+            source_code source_name source_frequency target_concept_id target_concept_name
+            target_domain_id target_vocabulary_id target_concept_code target_concept_class_id
+            target_standard_concept mapping_status equivalence match_score
+          ]
+          project.mappings.includes(:source_term).ordered.each do |mapping|
+            csv << [
+              mapping.source_code, mapping.source_name, mapping.source_frequency,
+              mapping.target_concept_id, mapping.target_concept_name, mapping.target_domain_id,
+              mapping.target_vocabulary_id, mapping.target_concept_code, mapping.target_concept_class_id,
+              mapping.target_standard_concept, mapping.mapping_status, mapping.equivalence, mapping.match_score
+            ]
+          end
+        end
+      end
 
       def review_csv
         CSV.generate(headers: true) do |csv|
@@ -42,12 +70,15 @@ module Exports
 
       def source_to_concept_map_csv
         CSV.generate(headers: true) do |csv|
-          csv << %w[source_code source_name source_vocabulary_id target_concept_id target_concept_name target_vocabulary_id target_concept_code equivalence]
-          project.mappings.includes(:source_term).where(mapping_status: "APPROVED").ordered.each do |mapping|
+          csv << %w[
+            source_code source_concept_id source_vocabulary_id source_code_description
+            target_concept_id target_vocabulary_id valid_start_date valid_end_date invalid_reason
+          ]
+          approved_mappings.each do |mapping|
             csv << [
-              mapping.source_code, mapping.source_name, project.source_vocabulary, mapping.target_concept_id,
-              mapping.target_concept_name, mapping.target_vocabulary_id, mapping.target_concept_code,
-              mapping.equivalence
+              mapping.source_code, 0, source_vocabulary_for(mapping), mapping.source_name,
+              mapping.target_concept_id, mapping.target_vocabulary_id, Date.current.strftime("%Y%m%d"),
+              "20991231", nil
             ]
           end
         end
@@ -101,6 +132,17 @@ module Exports
             csv << [event.created_at.iso8601, event.action, event.subject_type, event.subject_id, event.user_id, event.request_id, event.metadata.to_json]
           end
         end
+      end
+
+      def approved_mappings
+        project.mappings.includes(:source_term)
+               .where(mapping_status: "APPROVED")
+               .where.not(target_concept_id: nil)
+               .ordered
+      end
+
+      def source_vocabulary_for(mapping)
+        mapping.source_term.source_vocabulary.presence || project.source_vocabulary
       end
   end
 end
