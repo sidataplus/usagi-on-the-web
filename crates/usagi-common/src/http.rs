@@ -57,7 +57,7 @@ pub fn api_key_is_authorized(
         .filter(|key| !key.is_empty())
         .collect();
     if configured.is_empty() {
-        return true;
+        return false;
     }
     let presented = x_api_key
         .map(str::trim)
@@ -129,9 +129,9 @@ mod tests {
     }
 
     #[test]
-    fn api_key_auth_is_disabled_when_no_keys_are_configured() {
-        assert!(api_key_is_authorized("", None, None));
-        assert!(api_key_is_authorized(" , ", None, None));
+    fn api_key_auth_fails_closed_when_no_keys_are_configured() {
+        assert!(!api_key_is_authorized("", None, None));
+        assert!(!api_key_is_authorized(" , ", None, None));
     }
 
     #[test]

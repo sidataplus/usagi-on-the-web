@@ -6,6 +6,7 @@ WORK_DIR="${ROOT_DIR}/temp/dev-drugs-50-smoke"
 PORT="${DEV_DRUGS_50_SMOKE_PORT:-8793}"
 BASE_URL="http://127.0.0.1:${PORT}"
 FIXTURE_DIR="${ROOT_DIR}/fixtures/dev-drugs-50"
+API_KEY="${DEV_DRUGS_50_SMOKE_API_KEY:-local-dev-drugs-50-smoke}"
 
 rm -rf "${WORK_DIR}"
 mkdir -p "${WORK_DIR}/thirawat-drug"
@@ -25,6 +26,7 @@ MAPPER_API_ADDR="127.0.0.1:${PORT}" \
 THIRAWAT_ARTIFACT_DIR="${WORK_DIR}/thirawat-drug" \
 TACHIOM_INDEX_DIR="${WORK_DIR}/thirawat-drug/tachiom" \
 THIRAWAT_QUERY_EMBEDDINGS_PATH="${WORK_DIR}/thirawat-drug/query_embeddings/query_embeddings.json" \
+USAGI_API_KEYS="${API_KEY}" \
 cargo run -q -p mapper-api >"${WORK_DIR}/mapper-api.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT
@@ -37,13 +39,13 @@ for _ in {1..100}; do
 done
 curl -fsS "${BASE_URL}/mapper/health" >/dev/null
 
-python3 - "${FIXTURE_DIR}/source_terms.csv" "${BASE_URL}/mapper/drugs/batch" <<'PY'
+python3 - "${FIXTURE_DIR}/source_terms.csv" "${BASE_URL}/mapper/drugs/batch" "${API_KEY}" <<'PY'
 import csv
 import json
 import sys
 import urllib.request
 
-source_terms_path, endpoint = sys.argv[1:3]
+source_terms_path, endpoint, api_key = sys.argv[1:4]
 with open(source_terms_path, newline="", encoding="utf-8") as handle:
     rows = list(csv.DictReader(handle))
 
@@ -65,7 +67,7 @@ payload = {
 request = urllib.request.Request(
     endpoint,
     data=json.dumps(payload).encode("utf-8"),
-    headers={"Content-Type": "application/json"},
+    headers={"Content-Type": "application/json", "X-API-Key": api_key},
     method="POST",
 )
 with urllib.request.urlopen(request, timeout=30) as response:

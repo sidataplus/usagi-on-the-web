@@ -5,8 +5,13 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="${ROOT_DIR}/temp/mapper-smoke"
 PORT="${MAPPER_SMOKE_PORT:-8792}"
 BASE_URL="http://127.0.0.1:${PORT}"
+API_KEY="${MAPPER_SMOKE_API_KEY:-local-mapper-smoke}"
 rm -rf "${WORK_DIR}"
 mkdir -p "${WORK_DIR}/thirawat-drug"
+
+auth_curl() {
+  curl -fsS -H "X-API-Key: ${API_KEY}" "$@"
+}
 
 cp -R "${ROOT_DIR}/fixtures/mapper-smoke/doc_embeddings" "${WORK_DIR}/thirawat-drug/doc_embeddings"
 cp -R "${ROOT_DIR}/fixtures/mapper-smoke/query_embeddings" "${WORK_DIR}/thirawat-drug/query_embeddings"
@@ -22,6 +27,7 @@ THIRAWAT_ARTIFACT_DIR="${WORK_DIR}/thirawat-drug" \
 TACHIOM_INDEX_DIR="${WORK_DIR}/thirawat-drug/tachiom" \
 THIRAWAT_QUERY_EMBEDDINGS_PATH="${WORK_DIR}/thirawat-drug/query_embeddings/query_embeddings.json" \
 MAPPER_API_ADDR="127.0.0.1:${PORT}" \
+USAGI_API_KEYS="${API_KEY}" \
 cargo run -q -p mapper-api >"${WORK_DIR}/mapper-api.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT
@@ -34,7 +40,7 @@ for _ in {1..100}; do
 done
 curl -fsS "${BASE_URL}/mapper/health" >/dev/null
 
-curl -fsS \
+auth_curl \
   -H 'Content-Type: application/json' \
   -d '{
     "source_name": "tramadol hydrochloride 50 mg capsule",
@@ -47,7 +53,7 @@ curl -fsS \
   "${BASE_URL}/mapper/drugs/query" |
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["candidates"][0]["concept"]["concept_id"] == 40162522; print(json.dumps({"top_concept_id": data["candidates"][0]["concept"]["concept_id"]}))'
 
-curl -fsS \
+auth_curl \
   -H 'Content-Type: application/json' \
   -d '{
     "mode": "thirawat_tachiom",
@@ -65,7 +71,7 @@ curl -fsS \
   "${BASE_URL}/mapper/drugs/batch" |
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["candidates"][0]["concept"]["concept_id"] == 40162522; assert data["provenance"]["model_artifact_id"] == "sidataplus/THIRAWAT-SapBERT"; assert data["provenance"]["index_artifact_id"].endswith("/manifest.json"); print(json.dumps({"batch_top_concept_id": data["items"][0]["candidates"][0]["concept"]["concept_id"], "batch_provenance": data["provenance"]}))'
 
-curl -fsS \
+auth_curl \
   -H 'Content-Type: application/json' \
   -d '{
     "source_name": "tramadol hydrochloride 50 mg capsule",

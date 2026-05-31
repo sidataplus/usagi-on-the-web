@@ -6,9 +6,14 @@ WORK_DIR="${ROOT_DIR}/temp/dev-drugs-50-batch-job-smoke"
 PORT="${DEV_DRUGS_50_BATCH_SMOKE_PORT:-8794}"
 BASE_URL="http://127.0.0.1:${PORT}"
 FIXTURE_DIR="${ROOT_DIR}/fixtures/dev-drugs-50"
+API_KEY="${DEV_DRUGS_50_BATCH_SMOKE_API_KEY:-local-dev-drugs-50-batch-smoke}"
 
 rm -rf "${WORK_DIR}"
 mkdir -p "${WORK_DIR}/thirawat-drug" "${WORK_DIR}/jobs" "${WORK_DIR}/results"
+
+auth_curl() {
+  curl -fsS -H "X-API-Key: ${API_KEY}" "$@"
+}
 
 cargo run -q -p usagi-thirawat --bin usagi-dev-drugs-50-fixture -- \
   --fixture-dir "${FIXTURE_DIR}" \
@@ -27,6 +32,7 @@ JOB_RESULTS_DIR="${WORK_DIR}/results" \
 THIRAWAT_ARTIFACT_DIR="${WORK_DIR}/thirawat-drug" \
 TACHIOM_INDEX_DIR="${WORK_DIR}/thirawat-drug/tachiom" \
 THIRAWAT_QUERY_EMBEDDINGS_PATH="${WORK_DIR}/thirawat-drug/query_embeddings/query_embeddings.json" \
+USAGI_API_KEYS="${API_KEY}" \
 cargo run -q -p mapper-api >"${WORK_DIR}/mapper-api.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT
@@ -39,13 +45,13 @@ for _ in {1..100}; do
 done
 curl -fsS "${BASE_URL}/mapper/health" >/dev/null
 
-python3 - "${FIXTURE_DIR}/source_terms.csv" "${BASE_URL}/mapper/drugs/batch-job" "${WORK_DIR}/expected.json" <<'PY' >"${WORK_DIR}/create-job.json"
+python3 - "${FIXTURE_DIR}/source_terms.csv" "${BASE_URL}/mapper/drugs/batch-job" "${WORK_DIR}/expected.json" "${API_KEY}" <<'PY' >"${WORK_DIR}/create-job.json"
 import csv
 import json
 import sys
 import urllib.request
 
-source_terms_path, endpoint, expected_path = sys.argv[1:4]
+source_terms_path, endpoint, expected_path, api_key = sys.argv[1:5]
 with open(source_terms_path, newline="", encoding="utf-8") as handle:
     source_rows = list(csv.DictReader(handle))
 
@@ -76,7 +82,7 @@ payload = {
 request = urllib.request.Request(
     endpoint,
     data=json.dumps(payload).encode("utf-8"),
-    headers={"Content-Type": "application/json"},
+    headers={"Content-Type": "application/json", "X-API-Key": api_key},
     method="POST",
 )
 with urllib.request.urlopen(request, timeout=30) as response:
@@ -93,10 +99,10 @@ THIRAWAT_QUERY_EMBEDDINGS_PATH="${WORK_DIR}/thirawat-drug/query_embeddings/query
 TACHIOM_BACKEND=fixture \
 cargo run -q -p api-worker --bin usagi-worker -- --queues map --once >"${WORK_DIR}/api-worker.log"
 
-curl -fsS "${BASE_URL}/jobs/${JOB_ID}" >"${WORK_DIR}/job-status.json"
+auth_curl "${BASE_URL}/jobs/${JOB_ID}" >"${WORK_DIR}/job-status.json"
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["state"] == "succeeded", data; assert data["processed"] == 500, data; assert data["failed"] == 0, data' <"${WORK_DIR}/job-status.json"
 
-curl -fsS "${BASE_URL}/jobs/${JOB_ID}/results" >"${WORK_DIR}/job-results.json"
+auth_curl "${BASE_URL}/jobs/${JOB_ID}/results" >"${WORK_DIR}/job-results.json"
 RESULTS_PATH="$(python3 -c 'import json,sys; data=json.load(sys.stdin); artifact=data["artifact"]; assert data["state"] == "succeeded", data; assert artifact["content_type"] == "application/jsonl", artifact; print(artifact["path"])' <"${WORK_DIR}/job-results.json")"
 
 python3 - "${RESULTS_PATH}" "${WORK_DIR}/expected.json" "${WORK_DIR}/jobs/jobs.sqlite" "${JOB_ID}" <<'PY'

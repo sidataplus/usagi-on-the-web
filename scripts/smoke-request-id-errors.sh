@@ -6,6 +6,7 @@ WORK_DIR="${ROOT_DIR}/temp/request-id-smoke"
 PORT="${REQUEST_ID_SMOKE_PORT:-8792}"
 BASE_URL="http://127.0.0.1:${PORT}"
 REQUEST_ID="req_smoke_request_id"
+API_KEY="${REQUEST_ID_SMOKE_API_KEY:-local-request-id-smoke}"
 
 rm -rf "${WORK_DIR}"
 mkdir -p "${WORK_DIR}"
@@ -15,6 +16,7 @@ CATALOG_DB_PATH="${WORK_DIR}/catalog.sqlite" \
 TANTIVY_INDEX_DIR="${WORK_DIR}/tantivy" \
 SAPBERT_INDEX_DIR="${WORK_DIR}/sapbert" \
 JOBS_DB_PATH="${WORK_DIR}/jobs.sqlite" \
+USAGI_API_KEYS="${API_KEY}" \
 cargo run -q -p search-api >"${WORK_DIR}/search-api.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT
@@ -37,6 +39,7 @@ curl -sS \
   -o "${BODY_FILE}" \
   -w '%{http_code}' \
   -H "X-Request-Id: ${REQUEST_ID}" \
+  -H "X-API-Key: ${API_KEY}" \
   -H 'Content-Type: application/json' \
   -d '{"q": "metformin", "mode": "lexical_tantivy", "limit": 1}' \
   "${BASE_URL}/search/concepts" >"${STATUS_FILE}"
@@ -75,6 +78,7 @@ curl -sS \
   -o "${MALFORMED_BODY_FILE}" \
   -w '%{http_code}' \
   -H "X-Request-Id: ${REQUEST_ID}" \
+  -H "X-API-Key: ${API_KEY}" \
   -H 'Content-Type: application/json' \
   -d '{"q":' \
   "${BASE_URL}/search/concepts" >"${MALFORMED_STATUS_FILE}"

@@ -67,14 +67,14 @@ X-Request-Id: req_...
 
 ### 2.2.1 API Keys
 
-Deployments require API keys by setting `USAGI_API_KEYS` to a comma-separated list of accepted keys. The API-only Docker Compose file fails closed if `USAGI_API_KEYS` is not set and binds published ports to `127.0.0.1` unless `USAGI_PUBLISH_HOST` is explicitly overridden. When configured, all non-probe endpoints require one of:
+Deployments require API keys by setting `USAGI_API_KEYS` to a comma-separated list of accepted keys. The API-only Docker Compose file fails closed if `USAGI_API_KEYS` is not set and binds published ports to `127.0.0.1` unless `USAGI_PUBLISH_HOST` is explicitly overridden. All non-probe endpoints require one of:
 
 ```http
 X-API-Key: ...
 Authorization: Bearer ...
 ```
 
-Health and status endpoints remain unauthenticated for local and orchestration probes. If `USAGI_API_KEYS` is unset or empty when running a service binary directly, API-key enforcement is disabled for local development and tests.
+Health and status endpoints remain unauthenticated for local and orchestration probes. All other endpoints fail closed when `USAGI_API_KEYS` is unset or empty, including when running a service binary directly.
 
 ### 2.3 Error envelope
 
