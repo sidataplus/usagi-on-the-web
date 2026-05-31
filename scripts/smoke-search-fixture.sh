@@ -39,7 +39,7 @@ curl -fsS \
 
 CATALOG_DB_PATH="${WORK_DIR}/catalog/catalog.sqlite" \
 JOBS_DB_PATH="${WORK_DIR}/jobs/jobs.sqlite" \
-cargo run -q -p api-worker --bin usagi-worker -- --queues catalog >/dev/null
+cargo run -q -p api-worker --bin usagi-worker -- --queues catalog --once >/dev/null
 
 CATALOG_DB_PATH="${WORK_DIR}/catalog/catalog.sqlite" \
 JOBS_DB_PATH="${WORK_DIR}/jobs/jobs.sqlite" \
@@ -71,13 +71,13 @@ curl -fsS \
 CATALOG_DB_PATH="${WORK_DIR}/catalog/catalog.sqlite" \
 JOBS_DB_PATH="${WORK_DIR}/jobs/jobs.sqlite" \
 TANTIVY_INDEX_DIR="${WORK_DIR}/search/tantivy/index" \
-cargo run -q -p api-worker --bin usagi-worker -- --queues index >/dev/null
+cargo run -q -p api-worker --bin usagi-worker -- --queues index --once >/dev/null
 
 CATALOG_DB_PATH="${WORK_DIR}/catalog/catalog.sqlite" \
 JOBS_DB_PATH="${WORK_DIR}/jobs/jobs.sqlite" \
 SAPBERT_INDEX_DIR="${WORK_DIR}/search/sapbert" \
 SAPBERT_PRECOMPUTED_EMBEDDINGS_PATH="${ROOT_DIR}/fixtures/search-smoke/embeddings/sapbert-doc-embeddings.json" \
-cargo run -q -p api-worker --bin usagi-worker -- --queues embed >/dev/null
+cargo run -q -p api-worker --bin usagi-worker -- --queues embed --once >/dev/null
 
 curl -fsS \
   -H 'Content-Type: application/json' \

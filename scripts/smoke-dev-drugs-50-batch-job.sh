@@ -89,7 +89,7 @@ JOB_RESULTS_DIR="${WORK_DIR}/results" \
 THIRAWAT_ARTIFACT_DIR="${WORK_DIR}/thirawat-drug" \
 TACHIOM_INDEX_DIR="${WORK_DIR}/thirawat-drug/tachiom" \
 THIRAWAT_QUERY_EMBEDDINGS_PATH="${WORK_DIR}/thirawat-drug/query_embeddings/query_embeddings.json" \
-cargo run -q -p api-worker --bin usagi-worker -- --queues map >"${WORK_DIR}/api-worker.log"
+cargo run -q -p api-worker --bin usagi-worker -- --queues map --once >"${WORK_DIR}/api-worker.log"
 
 curl -fsS "${BASE_URL}/jobs/${JOB_ID}" >"${WORK_DIR}/job-status.json"
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["state"] == "succeeded", data; assert data["processed"] == 500, data; assert data["failed"] == 0, data' <"${WORK_DIR}/job-status.json"
