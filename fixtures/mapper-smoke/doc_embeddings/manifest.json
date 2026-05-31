@@ -1,22 +1,49 @@
 {
   "artifact_id": "fixture-thirawat-docemb-v1",
-  "artifact_kind": "thirawat-drug-doc-embeddings",
-  "schema_version": "usagi-thirawat-docemb-v1",
+  "artifact_kind": "thirawat-doc-embeddings",
+  "schema_version": "usagi-thirawat-doc-embeddings-v1",
   "api_version": "0.1.0",
   "created_at": "2026-05-31T00:00:00Z",
-  "scope": {
-    "domain_id": ["Drug"],
-    "standard_concept": "S",
-    "invalid_reason": null
-  },
-  "counts": {
-    "documents": 2,
-    "tokens": 4
-  },
+  "inputs": [],
   "outputs": [
     {
-      "path": "documents.json",
-      "content_type": "application/json"
+      "path": "token_vectors.npy",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "content_type": "application/octet-stream"
+    },
+    {
+      "path": "token_ids.npy",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "content_type": "application/octet-stream"
+    },
+    {
+      "path": "doclens.npy",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "content_type": "application/octet-stream"
+    },
+    {
+      "path": "doc_ids.arrow",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "content_type": "application/octet-stream"
     }
-  ]
+  ],
+  "extra": {
+    "catalog": {
+      "artifact_id": "fixture-catalog-v1",
+      "scope": {
+        "domain_id": "Drug",
+        "standard_concept": "S"
+      }
+    },
+    "model": {
+      "model_artifact_id": "sidataplus/THIRAWAT-SapBERT",
+      "architecture": "pylate_colbert",
+      "embedding_kind": "projected_token_vectors"
+    },
+    "counts": {
+      "documents": 2,
+      "tokens": 4,
+      "dimension": 2
+    }
+  }
 }

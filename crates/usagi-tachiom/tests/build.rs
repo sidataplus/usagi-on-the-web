@@ -1,6 +1,7 @@
-use usagi_common::manifest::{sha256_file, ArtifactManifest};
+use usagi_common::manifest::{sha256_file, ArtifactManifest, ManifestFile};
 use usagi_contracts::catalog::ConceptSummary;
 use usagi_tachiom::build::{build_tachiom_index, DocEmbeddingFixture, TachiomBuildOptions};
+use usagi_thirawat::artifact::{validate_tachiom_artifact, TachiomArtifactPaths};
 use usagi_thirawat::mapper::{TachiomFixtureDocument, TachiomFixtureIndex};
 
 #[test]
@@ -29,15 +30,7 @@ fn builds_tachiom_index_from_fixture_doc_embeddings() {
         serde_json::to_vec_pretty(&fixture).unwrap(),
     )
     .unwrap();
-    for filename in [
-        "token_vectors.npy",
-        "token_ids.npy",
-        "doclens.npy",
-        "doc_ids.arrow",
-        "manifest.json",
-    ] {
-        std::fs::write(doc_dir.join(filename), b"fixture").unwrap();
-    }
+    write_doc_artifact_files(&doc_dir);
 
     let summary = build_tachiom_index(TachiomBuildOptions {
         doc_embedding_dir: doc_dir,
@@ -67,6 +60,41 @@ fn builds_tachiom_index_from_fixture_doc_embeddings() {
 }
 
 #[test]
+fn tachiom_validator_rejects_corrupted_manifest_output() {
+    let dir = tempfile::tempdir().unwrap();
+    let doc_dir = dir.path().join("doc_embeddings");
+    let index_dir = dir.path().join("tachiom");
+    std::fs::create_dir_all(&doc_dir).unwrap();
+    let fixture = DocEmbeddingFixture {
+        documents: vec![TachiomFixtureDocument {
+            concept: concept(1, "Aspirin 81 MG Oral Tablet", "Drug", "S"),
+            token_vectors: vec![vec![1.0, 0.0]],
+        }],
+    };
+    std::fs::write(
+        doc_dir.join("documents.json"),
+        serde_json::to_vec_pretty(&fixture).unwrap(),
+    )
+    .unwrap();
+    write_doc_artifact_files(&doc_dir);
+
+    build_tachiom_index(TachiomBuildOptions {
+        doc_embedding_dir: doc_dir,
+        index_dir: index_dir.clone(),
+        artifact_id: Some("fixture-tachiom-v1".to_string()),
+        overwrite: false,
+    })
+    .unwrap();
+
+    std::fs::write(index_dir.join("index.bin"), b"corrupted").unwrap();
+
+    let err = validate_tachiom_artifact(TachiomArtifactPaths { index_dir })
+        .expect_err("corrupted index should fail checksum validation");
+
+    assert!(err.message().contains("checksum mismatch"));
+}
+
+#[test]
 fn rejects_non_drug_or_non_standard_documents() {
     let dir = tempfile::tempdir().unwrap();
     let doc_dir = dir.path().join("doc_embeddings");
@@ -91,15 +119,7 @@ fn rejects_non_drug_or_non_standard_documents() {
         .unwrap(),
     )
     .unwrap();
-    for filename in [
-        "token_vectors.npy",
-        "token_ids.npy",
-        "doclens.npy",
-        "doc_ids.arrow",
-        "manifest.json",
-    ] {
-        std::fs::write(doc_dir.join(filename), b"fixture").unwrap();
-    }
+    write_doc_artifact_files(&doc_dir);
 
     let err = build_tachiom_index(TachiomBuildOptions {
         doc_embedding_dir: doc_dir,
@@ -110,4 +130,58 @@ fn rejects_non_drug_or_non_standard_documents() {
     .unwrap_err();
 
     assert_eq!(err.code().as_str(), "INCOMPATIBLE_ARTIFACT");
+}
+
+fn write_doc_artifact_files(doc_dir: &std::path::Path) {
+    for filename in [
+        "token_vectors.npy",
+        "token_ids.npy",
+        "doclens.npy",
+        "doc_ids.arrow",
+    ] {
+        std::fs::write(doc_dir.join(filename), b"fixture").unwrap();
+    }
+    let outputs = [
+        "token_vectors.npy",
+        "token_ids.npy",
+        "doclens.npy",
+        "doc_ids.arrow",
+    ]
+    .iter()
+    .map(|filename| ManifestFile {
+        path: (*filename).to_string(),
+        sha256: Some(sha256_file(doc_dir.join(filename)).unwrap()),
+        content_type: Some("application/octet-stream".to_string()),
+    })
+    .collect::<Vec<_>>();
+    std::fs::write(
+        doc_dir.join("manifest.json"),
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "artifact_id": "doc-embeddings-v1",
+            "artifact_kind": "thirawat-doc-embeddings",
+            "schema_version": "usagi-thirawat-doc-embeddings-v1",
+            "api_version": "0.1.0",
+            "created_at": "2026-05-31T00:00:00Z",
+            "outputs": outputs
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+}
+
+fn concept(
+    concept_id: i64,
+    concept_name: &str,
+    domain_id: &str,
+    standard_concept: &str,
+) -> ConceptSummary {
+    ConceptSummary {
+        concept_id,
+        concept_name: concept_name.to_string(),
+        domain_id: domain_id.to_string(),
+        vocabulary_id: "RxNorm".to_string(),
+        concept_class_id: "Clinical Drug".to_string(),
+        standard_concept: standard_concept.to_string(),
+        concept_code: concept_id.to_string(),
+    }
 }

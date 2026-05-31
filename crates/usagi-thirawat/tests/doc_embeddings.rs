@@ -66,6 +66,37 @@ fn writes_manifest_backed_doc_embedding_artifact_atomically() {
 }
 
 #[test]
+fn doc_embedding_validator_rejects_corrupted_manifest_output() {
+    let dir = tempfile::tempdir().unwrap();
+    let doc_dir = dir.path().join("doc_embeddings");
+
+    write_thirawat_doc_embedding_artifact(
+        ThirawatDocEmbeddingBuildOptions {
+            doc_embedding_dir: doc_dir.clone(),
+            catalog_artifact_id: "catalog-v1".to_string(),
+            model_artifact_id: "sidataplus/THIRAWAT-SapBERT".to_string(),
+            artifact_id: Some("doc-embeddings-v1".to_string()),
+            overwrite: false,
+        },
+        vec![ThirawatDocEmbeddingDocument {
+            concept: drug_concept(40162522, "Tramadol Hydrochloride 50 MG Oral Capsule"),
+            token_ids: vec![10, 11],
+            token_vectors: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
+        }],
+    )
+    .unwrap();
+
+    fs::write(doc_dir.join("token_vectors.npy"), b"corrupted").unwrap();
+
+    let err = validate_thirawat_doc_embedding_artifact(ThirawatDocEmbeddingArtifactPaths {
+        doc_embedding_dir: doc_dir,
+    })
+    .expect_err("corrupted output should fail checksum validation");
+
+    assert!(err.message().contains("checksum mismatch"));
+}
+
+#[test]
 fn rejects_non_drug_documents() {
     let dir = tempfile::tempdir().unwrap();
     let err = write_thirawat_doc_embedding_artifact(

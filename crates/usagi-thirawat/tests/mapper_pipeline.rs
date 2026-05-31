@@ -1,4 +1,5 @@
 use serde_json::json;
+use usagi_common::manifest::sha256_file;
 use usagi_contracts::catalog::ConceptSummary;
 use usagi_contracts::mapper::{MapperDrugBatchItemRequest, MapperDrugBatchRequest};
 use usagi_thirawat::mapper::{
@@ -42,12 +43,7 @@ fn mapper_pipeline_retrieves_reranks_and_tiebreaks_from_tachiom_artifact() {
             },
         ],
     };
-    std::fs::write(
-        index_dir.join("index.bin"),
-        serde_json::to_vec_pretty(&fixture).unwrap(),
-    )
-    .unwrap();
-    std::fs::write(index_dir.join("manifest.json"), "{}").unwrap();
+    write_tachiom_fixture(&index_dir, &fixture);
 
     let response = map_drug_query_with_vectors(
         "amoxicillin clavulanate 875 mg tablet",
@@ -90,9 +86,9 @@ fn mapper_pipeline_uses_precomputed_query_embedding_artifact() {
     let dir = tempfile::tempdir().unwrap();
     let index_dir = dir.path().join("tachiom");
     std::fs::create_dir_all(&index_dir).unwrap();
-    std::fs::write(
-        index_dir.join("index.bin"),
-        serde_json::to_vec_pretty(&TachiomFixtureIndex {
+    write_tachiom_fixture(
+        &index_dir,
+        &TachiomFixtureIndex {
             documents: vec![TachiomFixtureDocument {
                 concept: concept(
                     1,
@@ -101,11 +97,8 @@ fn mapper_pipeline_uses_precomputed_query_embedding_artifact() {
                 ),
                 token_vectors: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
             }],
-        })
-        .unwrap(),
-    )
-    .unwrap();
-    std::fs::write(index_dir.join("manifest.json"), "{}").unwrap();
+        },
+    );
 
     let query_path = dir.path().join("query_embeddings.json");
     std::fs::write(
@@ -138,18 +131,15 @@ fn mapper_explain_returns_scores_features_and_token_debug_for_requested_concept(
     let dir = tempfile::tempdir().unwrap();
     let index_dir = dir.path().join("tachiom");
     std::fs::create_dir_all(&index_dir).unwrap();
-    std::fs::write(
-        index_dir.join("index.bin"),
-        serde_json::to_vec_pretty(&TachiomFixtureIndex {
+    write_tachiom_fixture(
+        &index_dir,
+        &TachiomFixtureIndex {
             documents: vec![TachiomFixtureDocument {
                 concept: concept(1, "Aspirin 81 MG Oral Tablet", "Clinical Drug"),
                 token_vectors: vec![vec![1.0, 0.0]],
             }],
-        })
-        .unwrap(),
-    )
-    .unwrap();
-    std::fs::write(index_dir.join("manifest.json"), "{}").unwrap();
+        },
+    );
 
     let query_path = dir.path().join("query_embeddings.json");
     std::fs::write(
@@ -189,18 +179,15 @@ fn mapper_batch_from_precomputed_returns_item_results_and_errors() {
     let dir = tempfile::tempdir().unwrap();
     let index_dir = dir.path().join("tachiom");
     std::fs::create_dir_all(&index_dir).unwrap();
-    std::fs::write(
-        index_dir.join("index.bin"),
-        serde_json::to_vec_pretty(&TachiomFixtureIndex {
+    write_tachiom_fixture(
+        &index_dir,
+        &TachiomFixtureIndex {
             documents: vec![TachiomFixtureDocument {
                 concept: concept(1, "Aspirin 81 MG Oral Tablet", "Clinical Drug"),
                 token_vectors: vec![vec![1.0, 0.0]],
             }],
-        })
-        .unwrap(),
-    )
-    .unwrap();
-    std::fs::write(index_dir.join("manifest.json"), "{}").unwrap();
+        },
+    );
 
     let query_path = dir.path().join("query_embeddings.json");
     std::fs::write(
@@ -264,4 +251,26 @@ fn concept(concept_id: i64, concept_name: &str, concept_class_id: &str) -> Conce
         standard_concept: "S".to_string(),
         concept_code: concept_id.to_string(),
     }
+}
+
+fn write_tachiom_fixture(index_dir: &std::path::Path, fixture: &TachiomFixtureIndex) {
+    let index_path = index_dir.join("index.bin");
+    std::fs::write(&index_path, serde_json::to_vec_pretty(fixture).unwrap()).unwrap();
+    std::fs::write(
+        index_dir.join("manifest.json"),
+        serde_json::to_vec_pretty(&json!({
+            "artifact_id": "fixture-tachiom-v1",
+            "artifact_kind": "tachiom-index",
+            "schema_version": "usagi-tachiom-v1",
+            "api_version": "0.1.0",
+            "created_at": "2026-05-31T00:00:00Z",
+            "outputs": [{
+                "path": "index.bin",
+                "sha256": sha256_file(index_path).unwrap(),
+                "content_type": "application/octet-stream"
+            }]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
 }

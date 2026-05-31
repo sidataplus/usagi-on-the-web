@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 
+use std::path::{Component, Path};
+
 use serde::Deserialize;
 use usagi_common::error::{ErrorCode, Result, UsagiError};
-use usagi_common::manifest::verify_file_sha256;
+use usagi_common::manifest::{verify_file_sha256, ArtifactManifest};
 
 #[derive(Debug, Clone)]
 pub struct ThirawatModelArtifactPaths {
@@ -51,6 +53,12 @@ pub fn validate_thirawat_doc_embedding_artifact(
         ],
         ErrorCode::IndexNotReady,
         "THIRAWAT Drug document embedding artifact",
+    )?;
+    validate_manifest_outputs(
+        &paths.doc_embedding_dir,
+        "thirawat-doc-embeddings",
+        "usagi-thirawat-doc-embeddings-v1",
+        "THIRAWAT Drug document embedding artifact",
     )
 }
 
@@ -59,6 +67,12 @@ pub fn validate_tachiom_artifact(paths: TachiomArtifactPaths) -> Result<()> {
         &paths.index_dir,
         &["index.bin", "manifest.json"],
         ErrorCode::IndexNotReady,
+        "Tachiom index artifact",
+    )?;
+    validate_manifest_outputs(
+        &paths.index_dir,
+        "tachiom-index",
+        "usagi-tachiom-v1",
         "Tachiom index artifact",
     )
 }
@@ -77,6 +91,62 @@ fn require_files(
                 format!("{label} is missing {}", path.display()),
             ));
         }
+    }
+    Ok(())
+}
+
+fn validate_manifest_outputs(
+    dir: &Path,
+    expected_kind: &str,
+    expected_schema_version: &str,
+    label: &str,
+) -> Result<()> {
+    let manifest_path = dir.join("manifest.json");
+    let manifest: ArtifactManifest = serde_json::from_slice(&std::fs::read(&manifest_path)?)
+        .map_err(|err| {
+            UsagiError::incompatible_artifact(format!(
+                "{label} manifest {} is invalid: {err}",
+                manifest_path.display()
+            ))
+        })?;
+    if manifest.artifact_kind != expected_kind {
+        return Err(UsagiError::incompatible_artifact(format!(
+            "{label} manifest artifact_kind must be {expected_kind}"
+        )));
+    }
+    if manifest.schema_version != expected_schema_version {
+        return Err(UsagiError::incompatible_artifact(format!(
+            "{label} manifest schema_version must be {expected_schema_version}"
+        )));
+    }
+    if manifest.outputs.is_empty() {
+        return Err(UsagiError::incompatible_artifact(format!(
+            "{label} manifest must list output files"
+        )));
+    }
+    for output in manifest.outputs {
+        validate_relative_manifest_path(&output.path, label)?;
+        let sha256 = output.sha256.ok_or_else(|| {
+            UsagiError::incompatible_artifact(format!(
+                "{label} manifest output {} is missing sha256",
+                output.path
+            ))
+        })?;
+        verify_file_sha256(dir.join(&output.path), &sha256)?;
+    }
+    Ok(())
+}
+
+fn validate_relative_manifest_path(path: &str, label: &str) -> Result<()> {
+    let path = Path::new(path);
+    if path.is_absolute()
+        || path
+            .components()
+            .any(|component| matches!(component, Component::ParentDir))
+    {
+        return Err(UsagiError::incompatible_artifact(format!(
+            "{label} manifest output paths must be relative artifact paths"
+        )));
     }
     Ok(())
 }

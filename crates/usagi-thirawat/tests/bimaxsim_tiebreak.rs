@@ -1,5 +1,5 @@
 use usagi_common::error::ErrorCode;
-use usagi_common::manifest::sha256_file;
+use usagi_common::manifest::{sha256_file, ManifestFile};
 use usagi_thirawat::artifact::{
     validate_tachiom_artifact, validate_thirawat_doc_embedding_artifact,
     validate_thirawat_model_artifact, TachiomArtifactPaths, ThirawatDocEmbeddingArtifactPaths,
@@ -169,13 +169,41 @@ fn artifact_validators_require_documented_mapper_files() {
         "token_ids.npy",
         "doclens.npy",
         "doc_ids.arrow",
-        "manifest.json",
     ] {
         std::fs::write(doc_dir.join(filename), b"{}").expect("doc file");
     }
-    for filename in ["index.bin", "manifest.json"] {
-        std::fs::write(tachiom_dir.join(filename), b"{}").expect("tachiom file");
-    }
+    std::fs::write(
+        doc_dir.join("manifest.json"),
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "artifact_id": "doc-embeddings-v1",
+            "artifact_kind": "thirawat-doc-embeddings",
+            "schema_version": "usagi-thirawat-doc-embeddings-v1",
+            "api_version": "0.1.0",
+            "created_at": "2026-05-31T00:00:00Z",
+            "outputs": manifest_files(&doc_dir, &[
+                "token_vectors.npy",
+                "token_ids.npy",
+                "doclens.npy",
+                "doc_ids.arrow",
+            ])
+        }))
+        .expect("doc manifest json"),
+    )
+    .expect("doc manifest file");
+    std::fs::write(tachiom_dir.join("index.bin"), b"{}").expect("tachiom file");
+    std::fs::write(
+        tachiom_dir.join("manifest.json"),
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "artifact_id": "tachiom-v1",
+            "artifact_kind": "tachiom-index",
+            "schema_version": "usagi-tachiom-v1",
+            "api_version": "0.1.0",
+            "created_at": "2026-05-31T00:00:00Z",
+            "outputs": manifest_files(&tachiom_dir, &["index.bin"])
+        }))
+        .expect("tachiom manifest json"),
+    )
+    .expect("tachiom manifest file");
 
     validate_thirawat_model_artifact(ThirawatModelArtifactPaths { model_dir })
         .expect("complete model accepted");
@@ -187,4 +215,15 @@ fn artifact_validators_require_documented_mapper_files() {
         index_dir: tachiom_dir,
     })
     .expect("complete tachiom index accepted");
+}
+
+fn manifest_files(dir: &std::path::Path, filenames: &[&str]) -> Vec<ManifestFile> {
+    filenames
+        .iter()
+        .map(|filename| ManifestFile {
+            path: (*filename).to_string(),
+            sha256: Some(sha256_file(dir.join(filename)).unwrap()),
+            content_type: Some("application/octet-stream".to_string()),
+        })
+        .collect()
 }
