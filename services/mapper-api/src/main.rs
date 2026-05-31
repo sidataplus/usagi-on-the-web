@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::{Mutex, OnceLock};
 
 use axum::body::{to_bytes, Body};
 use axum::extract::{DefaultBodyLimit, Request, State};
@@ -13,7 +14,8 @@ use usagi_artifacts::job_results::{job_results_download_response, job_results_re
 use usagi_common::error::{ErrorCode, ErrorEnvelope, UsagiError};
 use usagi_common::http::{
     accepts_jsonl, api_body_limit_bytes, api_key_is_authorized,
-    api_production_boot_errors_from_env, error_envelope_body, is_public_probe_path, API_KEY_HEADER,
+    api_production_boot_errors_from_env, error_envelope_body, is_public_probe_path,
+    verify_signed_request, SignatureNonceCache, SignedAuthConfig, SignedRequest, API_KEY_HEADER,
 };
 use usagi_common::request::{generate_request_id, REQUEST_ID_HEADER};
 use usagi_contracts::catalog::Provenance;
@@ -44,6 +46,8 @@ struct AppState {
     tachiom_index_dir: PathBuf,
     query_embeddings_path: Option<PathBuf>,
 }
+
+static SIGNATURE_NONCE_CACHE: OnceLock<Mutex<SignatureNonceCache>> = OnceLock::new();
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -84,27 +88,105 @@ async fn request_id_middleware(request: Request, next: Next) -> Response {
         .and_then(|value| value.to_str().ok())
         .map(ToString::to_string)
         .unwrap_or_else(generate_request_id);
-    if !is_authorized_request(&request) {
-        let mut response = (
-            StatusCode::UNAUTHORIZED,
-            Json(ErrorEnvelope::from(
-                UsagiError::new(ErrorCode::Unauthorized, "missing or invalid API key")
-                    .with_request_id(&request_id),
-            )),
-        )
-            .into_response();
-        attach_request_id_header(&mut response, &request_id);
-        return response;
-    }
+    let request = match authorize_request(request, &request_id).await {
+        Ok(request) => request,
+        Err(err) => {
+            let mut response =
+                (StatusCode::UNAUTHORIZED, Json(ErrorEnvelope::from(err))).into_response();
+            attach_request_id_header(&mut response, &request_id);
+            return response;
+        }
+    };
     let mut response = rewrite_error_request_id(next.run(request).await, &request_id).await;
     attach_request_id_header(&mut response, &request_id);
     response
 }
 
-fn is_authorized_request(request: &Request) -> bool {
+async fn authorize_request(request: Request, request_id: &str) -> Result<Request, UsagiError> {
     if is_public_probe_path(request.uri().path()) {
-        return true;
+        return Ok(request);
     }
+    match std::env::var("USAGI_API_AUTH_MODE")
+        .unwrap_or_else(|_| "api_key".to_string())
+        .as_str()
+    {
+        "disabled" => Ok(request),
+        "signed" => authorize_signed_request(request, request_id).await,
+        _ => {
+            if api_key_authorized(&request) {
+                Ok(request)
+            } else {
+                Err(
+                    UsagiError::new(ErrorCode::Unauthorized, "missing or invalid API key")
+                        .with_request_id(request_id),
+                )
+            }
+        }
+    }
+}
+
+async fn authorize_signed_request(
+    request: Request,
+    request_id: &str,
+) -> Result<Request, UsagiError> {
+    let secret = std::env::var("USAGI_API_SHARED_SECRET").map_err(|_| {
+        UsagiError::new(
+            ErrorCode::SignatureRequired,
+            "USAGI_API_SHARED_SECRET is not configured",
+        )
+        .with_request_id(request_id)
+    })?;
+    let (parts, body) = request.into_parts();
+    let path_with_query = parts
+        .uri
+        .path_and_query()
+        .map(|value| value.as_str().to_string())
+        .unwrap_or_else(|| parts.uri.path().to_string());
+    let headers = parts
+        .headers
+        .iter()
+        .filter_map(|(key, value)| {
+            value
+                .to_str()
+                .ok()
+                .map(|value| (key.as_str().to_ascii_lowercase(), value.to_string()))
+        })
+        .collect();
+    let bytes = to_bytes(body, api_body_limit_bytes())
+        .await
+        .map_err(|err| {
+            UsagiError::internal(format!("failed to read request body: {err}"))
+                .with_request_id(request_id)
+        })?;
+    let signed_request = SignedRequest {
+        method: parts.method.as_str(),
+        path_with_query: &path_with_query,
+        headers,
+        body: &bytes,
+    };
+    let config = SignedAuthConfig {
+        secret: &secret,
+        now: chrono::Utc::now(),
+        allowed_clock_skew_seconds: std::env::var("USAGI_API_ALLOWED_CLOCK_SKEW_SECONDS")
+            .ok()
+            .and_then(|value| value.parse::<i64>().ok())
+            .unwrap_or(300),
+        nonce_ttl_seconds: std::env::var("USAGI_API_NONCE_TTL_SECONDS")
+            .ok()
+            .and_then(|value| value.parse::<i64>().ok())
+            .unwrap_or(300),
+    };
+    let nonce_cache =
+        SIGNATURE_NONCE_CACHE.get_or_init(|| Mutex::new(SignatureNonceCache::default()));
+    verify_signed_request(
+        config,
+        signed_request,
+        &mut nonce_cache.lock().expect("signature nonce cache poisoned"),
+    )?;
+    Ok(Request::from_parts(parts, Body::from(bytes)))
+}
+
+fn api_key_authorized(request: &Request) -> bool {
     let configured_keys = std::env::var("USAGI_API_KEYS").unwrap_or_default();
     let x_api_key = request
         .headers()

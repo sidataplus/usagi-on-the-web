@@ -343,6 +343,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "chrono",
  "serde",
  "serde_json",
  "tokio",
@@ -1480,6 +1481,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "chrono",
  "serde",
  "serde_json",
  "tokio",
@@ -2030,6 +2032,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "chrono",
  "serde",
  "serde_json",
  "tokio",
@@ -2739,6 +2742,7 @@ dependencies = [
 name = "usagi-common"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "serde",
  "serde_json",
