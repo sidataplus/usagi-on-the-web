@@ -3,7 +3,7 @@ class ImportSession < ApplicationRecord
 
   prefixed_id "imp"
 
-  STATES = %w[pending previewed queued running succeeded failed cancelled].freeze
+  STATES = %w[pending previewed queued running succeeded succeeded_with_errors failed cancelled].freeze
 
   belongs_to :project
   belongs_to :created_by, class_name: "User"
@@ -16,7 +16,7 @@ class ImportSession < ApplicationRecord
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
 
   def imported?
-    state == "succeeded"
+    state.in?(%w[succeeded succeeded_with_errors])
   end
 
   def filename

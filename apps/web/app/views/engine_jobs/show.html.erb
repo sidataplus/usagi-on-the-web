@@ -11,7 +11,24 @@
   <dl class="facts">
     <div><dt>Status</dt><dd><%= @engine_job.status.humanize %></dd></div>
     <div><dt>Engine job ID</dt><dd><%= @engine_status["id"] || @engine_job.api_job_id || @engine_job.id %></dd></div>
+    <div><dt>Progress</dt><dd><%= @engine_job.processed.to_i %>/<%= @engine_job.total.to_i %></dd></div>
+    <div><dt>Failed rows</dt><dd><%= @engine_job.failed.to_i %></dd></div>
     <div><dt>Idempotency key</dt><dd><%= @engine_job.idempotency_key %></dd></div>
     <div><dt>Requested by</dt><dd><%= @engine_job.requested_by&.display_name || "System" %></dd></div>
   </dl>
 </div>
+
+<% if @engine_job.error.present? %>
+  <div class="notice notice--warning" style="margin-block-start: var(--space)">
+    <strong><%= @engine_job.error["code"] || "Engine job issue" %></strong>
+    <p><%= @engine_job.error["message"] || @engine_job.error.to_json %></p>
+  </div>
+<% end %>
+
+<% if %w[failed cancelled succeeded_with_errors].include?(@engine_job.state) %>
+  <div class="page-actions" style="margin-block-start: var(--space)">
+    <%= button_to retry_project_engine_job_path(@project, @engine_job), method: :post, class: "btn btn--primary" do %>
+      Retry
+    <% end %>
+  </div>
+<% end %>

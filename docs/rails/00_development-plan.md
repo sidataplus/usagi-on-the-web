@@ -22,6 +22,7 @@ The plan deliberately avoids “build the whole app” milestones, because that 
 5. Build server-rendered pages first; add Turbo/Stimulus only where it improves the flow.
 6. Do not implement translation, project bundles, or non-drug specialized mappers in MVP.
 7. Make each milestone pass tests before moving on.
+8. Optimize for desktop reviewers only; responsive/mobile UI is not a product requirement.
 
 ---
 
@@ -499,7 +500,7 @@ better error states
 job status cards
 admin diagnostics
 review count summaries
-basic responsive layout
+desktop-first review layout
 audit polishing
 ```
 

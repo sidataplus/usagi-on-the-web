@@ -48,6 +48,16 @@ module ActiveSupport
       )
       project.mappings.create!(source_term: term, mapping_status: "UNCHECKED")
     end
+
+    def with_env(values)
+      old_values = values.keys.index_with { |key| ENV[key] }
+      values.each { |key, value| ENV[key] = value }
+      yield
+    ensure
+      old_values.each do |key, value|
+        value.nil? ? ENV.delete(key) : ENV[key] = value
+      end
+    end
   end
 end
 

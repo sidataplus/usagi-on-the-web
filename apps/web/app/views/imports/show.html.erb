@@ -22,6 +22,18 @@
   <div class="stat"><div class="stat__label">Status</div><div class="stat__value" style="font-size: 1.25rem"><%= @import_batch.status.humanize %></div></div>
 </div>
 
+<% row_errors = Array(@import_batch.error["row_errors"]) %>
+<% if row_errors.any? %>
+  <div class="notice notice--warning" style="margin-block-start: var(--space)">
+    <strong><%= pluralize(row_errors.size, "row") %> could not be imported.</strong>
+    <ul>
+      <% row_errors.first(20).each do |row_error| %>
+        <li>Row <%= row_error["row_number"] || row_error[:row_number] %>: <%= row_error["message"] || row_error[:message] %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
 <div class="box box--flush" style="margin-block-start: var(--space)">
   <table class="table">
     <thead><tr><th class="num">Row</th><th>Source code</th><th>Source name</th><th class="num">Freq</th></tr></thead>

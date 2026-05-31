@@ -37,6 +37,51 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
     end
   end
 
+  class BatchSearchTransport
+    attr_reader :requests
+
+    def initialize
+      @requests = []
+    end
+
+    def post_json(path, payload)
+      @requests << [path, payload]
+      {
+        "items" => payload.fetch(:items).map do |item|
+          if item.fetch(:source_code) == "DX_FAIL"
+            {
+              "source_code" => item.fetch(:source_code),
+              "state" => "failed",
+              "error" => { "code" => "BAD_REQUEST", "message" => "Cannot map source term" }
+            }
+          else
+            {
+              "source_code" => item.fetch(:source_code),
+              "state" => "succeeded",
+              "results" => [
+                {
+                  "rank" => 1,
+                  "method" => "hybrid_rrf",
+                  "concept" => {
+                    "concept_id" => 201826,
+                    "concept_name" => "Type 2 diabetes mellitus",
+                    "domain_id" => "Condition",
+                    "vocabulary_id" => "SNOMED",
+                    "concept_class_id" => "Clinical Finding",
+                    "standard_concept" => "S",
+                    "concept_code" => "44054006"
+                  },
+                  "scores" => { "final" => 0.88, "rrf" => 0.88 },
+                  "provenance" => { "search_artifact_id" => "search-test" }
+                }
+              ]
+            }
+          end
+        end
+      }
+    end
+  end
+
   setup do
     @user = create_user!(email: "jobs@usagi.test")
     @project = create_project!(user: @user)
@@ -171,5 +216,33 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
     assert_equal "failed", engine_job.state
     assert_equal "INDEX_NOT_READY", engine_job.error.fetch("code")
     assert_equal "req_fail", engine_job.error.fetch("request_id")
+  end
+
+  test "hybrid search job uses search batch chunks and records partial failures" do
+    condition_project = create_project!(user: @user, mapping_domain: "Condition")
+    success_one = create_mapping!(project: condition_project, source_code: "DX_OK1", source_name: "diabetes mellitus")
+    failed = create_mapping!(project: condition_project, source_code: "DX_FAIL", source_name: "bad source")
+    success_two = create_mapping!(project: condition_project, source_code: "DX_OK2", source_name: "type 2 diabetes")
+    reviewed = create_mapping!(project: condition_project, source_code: "DX_REVIEWED", source_name: "reviewed")
+    reviewed.update!(status: "approved", target_concept_id: 201826, target_concept_name: "Type 2 diabetes mellitus")
+    transport = BatchSearchTransport.new
+    EngineClients::SearchClient.default_transport = transport
+
+    with_env("HYBRID_SEARCH_BATCH_SIZE" => "2") do
+      RunHybridSearchJob.perform_now(condition_project.id)
+    end
+
+    engine_job = condition_project.engine_jobs.hybrid_search_batch.last
+    assert_equal "succeeded_with_errors", engine_job.state
+    assert_equal 3, engine_job.processed
+    assert_equal 3, engine_job.total
+    assert_equal 1, engine_job.failed
+    assert_equal 2, transport.requests.size
+    assert_equal ["DX_OK1", "DX_FAIL"], transport.requests.first.last.fetch(:items).map { |item| item.fetch(:source_code) }
+    assert_equal 1, success_one.reload.mapping_candidates.count
+    assert_equal 0, failed.reload.mapping_candidates.count
+    assert_equal 1, success_two.reload.mapping_candidates.count
+    assert_equal 0, reviewed.reload.mapping_candidates.count
+    assert_equal "BAD_REQUEST", engine_job.error.fetch("items").first.fetch("error").fetch("code")
   end
 end

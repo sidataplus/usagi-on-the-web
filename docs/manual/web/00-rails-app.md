@@ -17,6 +17,10 @@ Rails owns users, projects, imports, source terms, mappings, candidates, audit
 events, comments, exports, and engine job mirrors. It does not own engine
 artifacts or model/index internals.
 
+The product UI is desktop-first. It is intended for reviewer workstations, not
+mobile usage, so implementation should prioritize dense tables, keyboard
+workflow, and clear job status over responsive mobile breakpoints.
+
 ## Local Setup
 
 ```bash
@@ -58,4 +62,3 @@ engine result files
 
 Rails may persist API response DTOs, candidate scores, provenance, request IDs,
 and user-facing job state.
-

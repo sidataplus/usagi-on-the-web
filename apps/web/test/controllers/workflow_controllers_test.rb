@@ -21,6 +21,22 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal "UNCHECKED", @project.mappings.first.mapping_status
   end
 
+  test "import persists valid rows and reports invalid row failures" do
+    post project_import_sessions_path(@project), params: {
+      import_session: {
+        filename: "mixed.csv",
+        rows_text: "source_code,source_name,source_frequency\nSRC_DUP,metformin hcl 500 mg tab,12\nSRC_DUP,duplicate metformin,3\nSRC_BLANK,,1\nSRC_OK,tramadol hcl 50mg cap,7\n"
+      }
+    }
+
+    import = ImportSession.last
+    assert_redirected_to project_import_session_path(@project, import)
+    assert_equal "succeeded_with_errors", import.state
+    assert_equal({ "rows_seen" => 4, "rows_imported" => 2, "rows_failed" => 2 }, import.summary.slice("rows_seen", "rows_imported", "rows_failed"))
+    assert_equal 2, import.error.fetch("row_errors").size
+    assert_equal ["SRC_DUP", "SRC_OK"], @project.source_terms.order(:source_code).pluck(:source_code)
+  end
+
   test "manual search persists candidates for a mapping" do
     mapping = create_mapping!(project: @project)
 
@@ -101,5 +117,26 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Engine status"
     assert_includes response.body, "Catalog"
+  end
+
+  test "failed engine job can be retried from job detail" do
+    engine_job = @project.engine_jobs.create!(
+      kind: "mapper_drugs_batch",
+      state: "failed",
+      error: { code: "JOB_FAILED", message: "Mapper failed" },
+      input: { source_engine_job_id: "old" }
+    )
+
+    get project_engine_job_path(@project, engine_job)
+
+    assert_response :success
+    assert_includes response.body, "Retry"
+    assert_includes response.body, "Mapper failed"
+
+    assert_enqueued_with(job: StartAutoMapJob, args: [@project.id]) do
+      post retry_project_engine_job_path(@project, engine_job)
+    end
+    assert_redirected_to project_engine_jobs_path(@project)
+    assert_equal "engine_job_retry_requested", @project.audit_events.last.action
   end
 end

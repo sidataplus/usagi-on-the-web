@@ -19,7 +19,11 @@ Rails.application.routes.draw do
       end
     end
     resources :imports, only: %i[index new create show], controller: "import_sessions"
-    resources :engine_jobs, only: %i[index show]
+    resources :engine_jobs, only: %i[index show] do
+      member do
+        post :retry
+      end
+    end
     resources :mappings, only: %i[index]
     resources :exports, only: %i[index create show]
     resource :export, only: %i[show], controller: "exports"

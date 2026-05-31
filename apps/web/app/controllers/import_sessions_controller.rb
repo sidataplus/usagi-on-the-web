@@ -28,33 +28,38 @@ class ImportSessionsController < ApplicationController
     @import_session.created_by = current_user
     attach_source_file
     rows = parsed_rows(@import_session)
+    import_result = nil
 
     ActiveRecord::Base.transaction do
-      @import_session.state = "succeeded"
-      @import_session.summary = { rows_seen: rows.size, rows_imported: rows.size, rows_failed: 0 }
-      @import_session.finished_at = Time.current
+      @import_session.detected_columns = Imports::ColumnDetector.detect(rows.first&.fetch(:raw_row, {})&.keys || {}).values
+      @import_session.state = "running"
       @import_session.save!
 
-      rows.each do |row|
-        source_term = @import_session.source_terms.create!(
-          project: @project,
-          source_code: row.fetch(:source_code),
-          source_name: row.fetch(:source_name),
-          source_frequency: row.fetch(:source_frequency),
-          source_domain_hint: row[:source_domain_hint],
-          source_vocabulary: @project.source_vocabulary,
-          source_row_number: row.fetch(:source_row_number),
-          raw_row: row.fetch(:raw_row)
-        )
-        source_term.create_mapping!(project: @project, mapping_status: "UNCHECKED")
-      end
+      import_result = Imports::SourceTermImporter.new(
+        project: @project,
+        import_session: @import_session
+      ).import(rows)
+
+      @import_session.state = import_result.rows_failed.positive? ? "succeeded_with_errors" : "succeeded"
+      @import_session.summary = {
+        rows_seen: import_result.rows_seen,
+        rows_imported: import_result.rows_imported,
+        rows_failed: import_result.rows_failed
+      }
+      @import_session.error = import_result.errors.any? ? { row_errors: import_result.errors } : {}
+      @import_session.finished_at = Time.current
+      @import_session.save!
 
       @project.audit_events.create!(
         user: current_user,
         subject: @import_session,
         action: "import_created",
         request_id: Current.request_id,
-        metadata: { row_count: rows.size, file_name: @import_session.file_name }
+        metadata: {
+          row_count: import_result.rows_imported,
+          rows_failed: import_result.rows_failed,
+          file_name: @import_session.file_name
+        }
       )
     end
 
@@ -63,7 +68,7 @@ class ImportSessionsController < ApplicationController
     @import_session ||= @project.import_sessions.new(file_name: "source_terms.csv")
     @import_batch = @import_session
     @import_session.errors.add(:base, e.message)
-    render :new, status: :unprocessable_entity
+    render "imports/new", status: :unprocessable_entity
   end
 
   def confirm
@@ -147,10 +152,9 @@ class ImportSessionsController < ApplicationController
 
     def row_to_source(row, row_number)
       source_name = row["source_name"].to_s.strip.presence || row["description"].to_s.strip
-      return if source_name.blank?
 
       {
-        source_code: row["source_code"].to_s.strip.presence || row["code"].to_s.strip.presence || "ROW_#{row_number}",
+        source_code: row["source_code"].to_s.strip.presence || row["code"].to_s.strip.presence,
         source_name: source_name,
         source_frequency: row["source_frequency"].to_i,
         source_domain_hint: row["domain_hint"].to_s.strip.presence,
