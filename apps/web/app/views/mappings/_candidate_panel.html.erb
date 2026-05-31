@@ -1,0 +1,10 @@
+<%# locals: mapping, candidates %>
+<div id="<%= dom_id(mapping, :candidate_panel) %>" class="box stack-sm">
+  <div class="row-between">
+    <h3 class="box__title row" style="gap: var(--space-xs); margin: 0"><%= lucide_icon "sparkles", class: "icon" %> Suggested candidates</h3>
+    <% if mapping.source_term&.mapping_candidates&.exists? %>
+      <span class="badge badge--accent">Persisted</span>
+    <% end %>
+  </div>
+  <%= render "mappings/candidates", mapping: mapping, candidates: candidates %>
+</div>

@@ -1,0 +1,6 @@
+<%# locals: mapping, comment %>
+<%= form_with model: [ mapping, (comment || mapping.mapping_comments.build) ],
+      url: mapping_comments_path(mapping), id: dom_id(mapping, :comment_form), class: "comment-form" do |f| %>
+  <%= f.text_area :content, rows: 2, class: "textarea", placeholder: "Add a comment…" %>
+  <%= f.submit "Post", class: "btn btn--primary" %>
+<% end %>

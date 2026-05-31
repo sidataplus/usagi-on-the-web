@@ -1,0 +1,7 @@
+<%# Append the new comment and reset the form. %>
+<%= turbo_stream.append dom_id(@mapping, :comments) do %>
+  <%= render "mappings/comment", comment: @comment %>
+<% end %>
+<%= turbo_stream.replace dom_id(@mapping, :comment_form) do %>
+  <%= render "mappings/comment_form", mapping: @mapping, comment: nil %>
+<% end %>

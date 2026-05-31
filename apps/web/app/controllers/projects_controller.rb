@@ -1,0 +1,64 @@
+class ProjectsController < ApplicationController
+  include ProjectAuthorization
+
+  before_action :set_project, only: %i[show manage update]
+
+  PER_PAGE = 9
+
+  def index
+    @page = [params[:page].to_i, 1].max
+    scope = current_user.admin? ? Project.all : current_user.projects
+    scope = scope.order(updated_at: :desc)
+    @total_pages = [(scope.count.to_f / PER_PAGE).ceil, 1].max
+    @projects = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
+  end
+
+  def show
+    authorize_project!(@project, :view)
+    @recent_mappings = @project.mappings.ordered.limit(5)
+    @recent_imports = @project.import_sessions.recent_first.limit(5)
+    @recent_engine_jobs = @project.engine_jobs.recent_first.limit(5)
+  end
+
+  def new
+    @project = Project.new(mapping_domain: "Drug")
+  end
+
+  def create
+    @project = Project.new(project_params)
+    @project.created_by = current_user
+
+    if @project.save
+      redirect_to project_path(@project), notice: "Project created. Next, import your source terms."
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  def manage
+    authorize_project!(@project, :manage)
+    @memberships = @project.project_members.includes(:user)
+  end
+
+  def update
+    authorize_project!(@project, :manage)
+    if @project.update(project_params)
+      redirect_to manage_project_path(@project), notice: "Project settings saved."
+    else
+      @memberships = @project.project_members.includes(:user)
+      render :manage, status: :unprocessable_entity
+    end
+  end
+
+  private
+    def set_project
+      @project = Project.find(params[:id])
+    end
+
+    def project_params
+      params.require(:project).permit(
+        :name, :description, :source_vocabulary, :vocabulary_version, :status, :mapping_domain,
+        target_domain_ids: [], target_vocabulary_ids: [], target_vocabularies: []
+      )
+    end
+end

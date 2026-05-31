@@ -1,0 +1,46 @@
+<% content_for :title, "Review — #{@project.name}" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Mapping review</h1>
+    <p class="page-head__subtitle">
+      <%= link_to @project.name, project_path(@project) %> ·
+      <%= number_with_delimiter(@project.total_mappings) %> source codes
+    </p>
+  </div>
+  <div class="page-head__actions">
+    <%= link_to manage_project_path(@project), class: "btn" do %>
+      <%= lucide_icon "settings", class: "icon" %> Settings
+    <% end %>
+    <div class="menu" data-controller="dropdown">
+      <button type="button" class="btn" data-action="dropdown#toggle">
+        <%= lucide_icon "sparkles", class: "icon" %> Run auto-search
+      </button>
+      <div class="menu__panel" data-dropdown-target="menu" hidden style="inline-size: 16rem; padding: var(--space)">
+        <p class="small subtle">Auto-mapping runs candidates through the usagi-api drug mapper. Wiring up the job is coming soon.</p>
+      </div>
+    </div>
+    <%= link_to project_export_path(@project, "inline"), data: { turbo_frame: "modal" }, class: "btn btn--primary" do %>
+      <%= lucide_icon "download", class: "icon" %> Export
+    <% end %>
+  </div>
+</div>
+
+<div data-controller="bulk_select">
+  <%= render "mappings/bulk_operations", project: @project %>
+
+  <%= turbo_frame_tag "mappings_table" do %>
+    <%= render "mappings/table", project: @project, mappings: @mappings, counts: @counts,
+          status: @status, query: @query, sort: @sort, direction: @direction,
+          page: @page, total: @total, total_pages: @total_pages %>
+  <% end %>
+</div>
+
+<div class="box" style="margin-block-start: var(--space)">
+  <div class="shortcuts">
+    <span class="row" style="gap: var(--space-xs); color: var(--color-text)"><%= lucide_icon "info", class: "icon" %> <strong>Shortcuts</strong> (in detail view)</span>
+    <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Invalid" ], [ "N", "Next" ], [ "E", "Edit" ], [ "← →", "Prev / next" ] ].each do |key, label| %>
+      <span class="shortcuts__item"><kbd><%= key %></kbd> <%= label %></span>
+    <% end %>
+  </div>
+</div>

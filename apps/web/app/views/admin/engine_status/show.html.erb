@@ -1,0 +1,24 @@
+<% content_for :title, "Engine status" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Engine status</h1>
+    <p class="page-head__subtitle">Readiness from the internal usagi-api services.</p>
+  </div>
+</div>
+
+<div class="grid grid--cards">
+  <% [["Catalog", @catalog_status], ["Search", @search_status], ["Mapper", @mapper_status]].each do |label, payload| %>
+    <div class="box stack-sm">
+      <div class="row-between">
+        <strong><%= label %></strong>
+        <span class="badge"><%= payload["status"].to_s.humanize %></span>
+      </div>
+      <% if payload["error"].present? %>
+        <p class="small subtle"><%= payload["error"]["code"] %>: <%= payload["error"]["message"] %></p>
+      <% else %>
+        <pre class="code small"><%= JSON.pretty_generate(payload.except("status")).truncate(800) %></pre>
+      <% end %>
+    </div>
+  <% end %>
+</div>

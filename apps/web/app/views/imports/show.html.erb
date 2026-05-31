@@ -1,0 +1,39 @@
+<% content_for :title, @import_batch.filename %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title"><%= @import_batch.filename %></h1>
+    <p class="page-head__subtitle"><%= @project.name %> · <%= @import_batch.source_vocabulary %></p>
+  </div>
+  <div class="page-head__actions">
+    <%= button_to project_import_auto_map_path(@project, @import_batch), method: :post, class: "btn" do %>
+      <%= lucide_icon "wand-sparkles", class: "icon" %> Auto-map
+    <% end %>
+    <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
+      <%= lucide_icon "table", class: "icon" %> Review mappings
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid--tiles">
+  <div class="stat"><div class="stat__label">Rows</div><div class="stat__value"><%= @import_batch.row_count %></div></div>
+  <div class="stat"><div class="stat__label">Accepted</div><div class="stat__value"><%= @import_batch.accepted_count %></div></div>
+  <div class="stat"><div class="stat__label">Rejected</div><div class="stat__value"><%= @import_batch.rejected_count %></div></div>
+  <div class="stat"><div class="stat__label">Status</div><div class="stat__value" style="font-size: 1.25rem"><%= @import_batch.status.humanize %></div></div>
+</div>
+
+<div class="box box--flush" style="margin-block-start: var(--space)">
+  <table class="table">
+    <thead><tr><th class="num">Row</th><th>Source code</th><th>Source name</th><th class="num">Freq</th></tr></thead>
+    <tbody>
+      <% @source_terms.each do |term| %>
+        <tr>
+          <td class="num"><%= term.row_number %></td>
+          <td class="mono"><%= term.source_code %></td>
+          <td><%= term.source_name %></td>
+          <td class="num"><%= term.source_frequency %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

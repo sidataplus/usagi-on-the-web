@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+# Vanilla CSS needs no build step, so development is just the Rails server.
+exec "./bin/rails", "server", *ARGV

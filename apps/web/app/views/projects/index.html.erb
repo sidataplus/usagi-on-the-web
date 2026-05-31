@@ -1,0 +1,50 @@
+<% content_for :title, "Projects" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Projects</h1>
+    <p class="page-head__subtitle">Your concept mapping projects.</p>
+  </div>
+  <div class="page-head__actions">
+    <%= link_to new_project_path, class: "btn btn--primary" do %>
+      <%= lucide_icon "plus", class: "icon" %> New project
+    <% end %>
+  </div>
+</div>
+
+<% if @projects.any? %>
+  <div class="grid grid--cards">
+    <% @projects.each do |project| %>
+      <%= link_to project_path(project), class: "box box--link stack-sm" do %>
+        <div class="row-between">
+          <strong><%= project.name %></strong>
+          <%= project_status_badge(project) %>
+        </div>
+        <p class="subtle small truncate"><%= project.description %></p>
+
+        <div>
+          <div class="meter__label">
+            <span><%= project.approved_count %> of <%= project.total_mappings %> approved</span>
+            <span><%= project.completion_percentage %>%</span>
+          </div>
+          <div class="meter"><div class="meter__fill" style="inline-size: <%= project.completion_percentage %>%"></div></div>
+        </div>
+
+        <div class="row small subtle" style="gap: var(--space)">
+          <span class="row" style="gap: var(--space-xs)"><%= lucide_icon "flag", class: "icon" %> <%= project.flagged_count %></span>
+          <span class="row" style="gap: var(--space-xs)"><%= lucide_icon "building-2", class: "icon" %> <%= project.source_vocabulary %></span>
+          <span class="spacer"><%= time_ago_in_words(project.updated_at) %> ago</span>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%= render "shared/pagination", page: @page, total_pages: @total_pages, path_proc: ->(p) { projects_path(page: p) } %>
+<% else %>
+  <div class="box empty">
+    <div class="empty__art">🐰</div>
+    <p class="empty__title">No projects yet</p>
+    <p class="empty__body">Create your first project to start mapping source codes.</p>
+    <%= link_to "New project", new_project_path, class: "btn btn--primary" %>
+  </div>
+<% end %>

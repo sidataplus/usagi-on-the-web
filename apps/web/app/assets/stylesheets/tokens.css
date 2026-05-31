@@ -1,0 +1,76 @@
+/*
+ * Design tokens. One warm accent (OHDSI orange) over a calm neutral base.
+ * Dark mode follows the operating system via prefers-color-scheme — no toggle,
+ * no class flipping. Colours are OKLCH; tints are derived with color-mix so we
+ * keep the palette small.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Neutrals */
+  --color-bg: oklch(99% 0.003 90);          /* page background (faint warm white) */
+  --color-surface: oklch(100% 0 0);         /* cards, raised surfaces */
+  --color-sunken: oklch(96.5% 0.004 90);    /* subtle fills, table headers */
+  --color-text: oklch(24% 0.01 70);         /* primary text (soft near-black) */
+  --color-text-subtle: oklch(50% 0.012 70); /* secondary text */
+  --color-border: oklch(90% 0.005 80);      /* hairlines */
+  --color-border-strong: oklch(82% 0.006 80);
+
+  /* Accent — OHDSI orange */
+  --color-accent: oklch(68% 0.15 52);       /* fills (buttons, active bars) */
+  --color-accent-ink: oklch(52% 0.14 48);   /* accent text / links on light bg */
+  --color-on-accent: oklch(99% 0.01 90);    /* text on an accent fill */
+
+  /* Status hues (carry meaning, so they stay) */
+  --color-ok: oklch(58% 0.13 150);
+  --color-warn: oklch(64% 0.14 70);
+  --color-bad: oklch(56% 0.18 28);
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+
+  /* Radii */
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-lg: 0.875rem;
+  --radius-pill: 999px;
+
+  /* Reading widths */
+  --measure: 70rem;       /* app content max width */
+  --measure-prose: 42rem; /* long-form text */
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+          sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --shadow: 0 1px 2px oklch(0% 0 0 / 0.04), 0 4px 16px -8px oklch(0% 0 0 / 0.12);
+  --shadow-lg: 0 8px 40px -12px oklch(0% 0 0 / 0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: oklch(18% 0.006 80);
+    --color-surface: oklch(21.5% 0.006 80);
+    --color-sunken: oklch(25% 0.006 80);
+    --color-text: oklch(94% 0.006 80);
+    --color-text-subtle: oklch(70% 0.012 80);
+    --color-border: oklch(30% 0.006 80);
+    --color-border-strong: oklch(40% 0.008 80);
+
+    --color-accent: oklch(72% 0.14 58);
+    --color-accent-ink: oklch(80% 0.13 60);
+    --color-on-accent: oklch(20% 0.02 70);
+
+    --color-ok: oklch(72% 0.16 150);
+    --color-warn: oklch(76% 0.15 75);
+    --color-bad: oklch(70% 0.18 28);
+
+    --shadow: 0 1px 2px oklch(0% 0 0 / 0.4), 0 6px 24px -10px oklch(0% 0 0 / 0.6);
+    --shadow-lg: 0 12px 48px -12px oklch(0% 0 0 / 0.7);
+  }
+}

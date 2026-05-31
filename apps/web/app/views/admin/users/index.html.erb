@@ -1,0 +1,33 @@
+<% content_for :title, "Users — Admin" %>
+
+<div class="page-head">
+  <h1 class="page-head__title">Users</h1>
+  <div class="page-head__actions"><%= link_to "Back to admin", admin_root_path, class: "btn btn--plain" %></div>
+</div>
+
+<div class="box box--flush">
+  <table class="table">
+    <thead><tr><th>User</th><th class="num">Role</th></tr></thead>
+    <tbody>
+      <% @users.each do |user| %>
+        <tr>
+          <td>
+            <div class="row">
+              <span class="avatar avatar--sm"><%= user.initials %></span>
+              <div>
+                <div><%= user.display_name %></div>
+                <div class="small subtle"><%= user.email %></div>
+              </div>
+            </div>
+          </td>
+          <td class="num">
+            <%= form_with model: [ :admin, user ], method: :patch, local: true do |f| %>
+              <%= f.select :admin, [["User", false], ["Admin", true]], {},
+                    class: "select", style: "inline-size: auto", onchange: "this.form.requestSubmit()" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

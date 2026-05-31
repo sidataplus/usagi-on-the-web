@@ -1,0 +1,25 @@
+<% content_for :title, "Engine jobs" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Engine jobs</h1>
+    <p class="page-head__subtitle"><%= @project.name %></p>
+  </div>
+</div>
+
+<div class="box box--flush">
+  <table class="table">
+    <thead><tr><th>Type</th><th>Status</th><th>Idempotency key</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      <% @engine_jobs.each do |job| %>
+        <tr>
+          <td><%= job.job_type.humanize.downcase %></td>
+          <td><span class="badge badge--neutral"><%= job.status.humanize %></span></td>
+          <td class="mono"><%= job.idempotency_key %></td>
+          <td><%= job.created_at.to_fs(:short) %></td>
+          <td><%= link_to "Open", project_engine_job_path(@project, job), class: "btn btn--sm" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

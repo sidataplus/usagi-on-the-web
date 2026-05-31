@@ -1,0 +1,25 @@
+<% content_for :title, "Audit log — Admin" %>
+
+<div class="page-head">
+  <h1 class="page-head__title">Audit log</h1>
+  <div class="page-head__actions"><%= link_to "Back to admin", admin_root_path, class: "btn btn--plain" %></div>
+</div>
+
+<div class="box box--flush">
+  <table class="table">
+    <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Project</th></tr></thead>
+    <tbody>
+      <% @events.each do |event| %>
+        <tr>
+          <td class="subtle small"><%= event.created_at.strftime("%b %-d, %H:%M") %></td>
+          <td><%= event.author_name %></td>
+          <td>
+            <strong><%= event.action.to_s.humanize %></strong>
+            <% if event.metadata["to"].present? %><span class="subtle">→ <%= event.metadata["to"].to_s.truncate(40) %></span><% end %>
+          </td>
+          <td class="subtle"><%= event.project&.name || "—" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

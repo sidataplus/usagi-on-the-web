@@ -1,0 +1,4 @@
+<%# Replace the row (with a gentle highlight cue) after an inline status change. %>
+<%= turbo_stream.replace dom_id(@mapping, :row) do %>
+  <%= render "mappings/row", mapping: @mapping, highlight: true %>
+<% end %>

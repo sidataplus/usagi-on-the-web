@@ -1,0 +1,11 @@
+<%# locals: comment %>
+<div class="comment">
+  <span class="avatar avatar--sm"><%= comment.user&.initials || "?" %></span>
+  <div class="comment__body">
+    <div class="comment__head">
+      <span class="comment__author"><%= comment.author_name %></span>
+      <span class="comment__time"><%= time_ago_in_words(comment.created_at) %> ago</span>
+    </div>
+    <p class="comment__text"><%= comment.content %></p>
+  </div>
+</div>

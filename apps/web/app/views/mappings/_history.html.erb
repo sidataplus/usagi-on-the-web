@@ -1,0 +1,18 @@
+<%# locals: events %>
+<% if events.any? %>
+  <div class="timeline">
+    <% events.each do |event| %>
+      <div class="timeline__item">
+        <div class="timeline__what"><%= event.action_label %></div>
+        <% if event.from_value.present? || event.to_value.present? %>
+          <div class="timeline__change small">
+            <% if event.from_value.present? %><del><%= event.from_value %></del> → <% end %><%= event.to_value %>
+          </div>
+        <% end %>
+        <div class="timeline__meta"><%= event.author_name %> · <%= time_ago_in_words(event.created_at) %> ago</div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <p class="subtle small">No history yet.</p>
+<% end %>

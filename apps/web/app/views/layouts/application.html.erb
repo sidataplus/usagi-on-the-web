@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || "Usagi on the Web" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1a1814" media="(prefers-color-scheme: dark)">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Usagi on the Web">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Order matters: tokens → base → layout → components → page specifics. %>
+    <%= stylesheet_link_tag "tokens", "base", "layout", "components", "mappings", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body data-controller="keyboard sidebar">
+    <div class="app">
+      <%= render "shared/brand" %>
+      <%= render "shared/topbar" %>
+      <%= render "shared/nav" %>
+
+      <div class="app__main main">
+        <div class="main__body">
+          <%= render "shared/flash" %>
+          <%= yield %>
+        </div>
+        <%= render "shared/footer" %>
+      </div>
+    </div>
+
+    <%# Top-level frame the mapping detail / export dialogs render into. %>
+    <%= turbo_frame_tag "modal" %>
+  </body>
+</html>

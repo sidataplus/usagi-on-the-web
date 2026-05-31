@@ -1,0 +1,22 @@
+<%= turbo_frame_tag "modal" do %>
+  <div class="modal" data-controller="modal" data-action="click->modal#backdrop">
+    <div class="modal__dialog" style="max-inline-size: 28rem" role="dialog" aria-modal="true">
+      <div class="modal__head">
+        <h2 class="row" style="gap: var(--space-xs); font-size: 1.15rem"><%= lucide_icon "download", class: "icon" %> Export mappings</h2>
+        <button type="button" class="btn btn--icon" data-action="modal#close" aria-label="Close"><%= lucide_icon "x", class: "icon" %></button>
+      </div>
+      <div class="modal__body stack">
+        <p class="subtle">
+          Export all <%= number_with_delimiter(@project.total_mappings) %> mappings from
+          <strong><%= @project.name %></strong>.
+        </p>
+        <%= link_to project_export_path(@project, format: :csv), data: { turbo_frame: "_top" }, class: "btn btn--primary btn--block" do %>
+          <%= lucide_icon "download", class: "icon" %> Download CSV
+        <% end %>
+        <button type="button" class="btn btn--block" disabled>
+          <%= lucide_icon "file-text", class: "icon" %> Usagi JSON (coming soon)
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>

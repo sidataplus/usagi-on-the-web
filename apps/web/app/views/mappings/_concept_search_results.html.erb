@@ -1,0 +1,22 @@
+<%# locals: mapping, results (Array<UsagiApi::ConceptResult>), query %>
+<div class="result-list">
+  <% if query.present? && results.empty? %>
+    <p class="subtle small">No concepts found for “<%= query %>”.</p>
+  <% end %>
+  <% results.each do |result| %>
+    <%= button_to mapping_path(mapping), method: :patch,
+          params: { mapping: {
+            equivalence: "Equivalent",
+            concept_id: result.concept_id, concept_name: result.concept_name,
+            domain_id: result.domain_id, vocabulary_id: result.vocabulary_id,
+            concept_class_id: result.concept_class_id, standard_concept: result.standard_concept,
+            concept_code: result.concept_code } },
+          form: { data: { turbo_frame: "_top" } }, class: "result" do %>
+      <span class="truncate">
+        <span><strong><%= result.concept_name %></strong></span><br>
+        <span class="small subtle"><%= result.vocabulary_id %> · <%= result.domain_id %> · #<%= result.concept_id %></span>
+      </span>
+      <%= score_badge(result.score) %>
+    <% end %>
+  <% end %>
+</div>

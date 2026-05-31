@@ -1,0 +1,17 @@
+<% content_for :title, "Engine job" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title"><%= @engine_job.job_type.humanize %></h1>
+    <p class="page-head__subtitle"><%= @project.name %> · <%= @engine_job.id %></p>
+  </div>
+</div>
+
+<div class="box">
+  <dl class="facts">
+    <div><dt>Status</dt><dd><%= @engine_job.status.humanize %></dd></div>
+    <div><dt>Engine job ID</dt><dd><%= @engine_status["id"] || @engine_job.api_job_id || @engine_job.id %></dd></div>
+    <div><dt>Idempotency key</dt><dd><%= @engine_job.idempotency_key %></dd></div>
+    <div><dt>Requested by</dt><dd><%= @engine_job.requested_by&.display_name || "System" %></dd></div>
+  </dl>
+</div>

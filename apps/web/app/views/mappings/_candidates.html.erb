@@ -1,0 +1,30 @@
+<%# locals: mapping, candidates (Array<UsagiApi::ConceptResult>) %>
+<div class="result-list">
+  <% candidates.each do |candidate| %>
+    <div class="result">
+      <div class="truncate">
+        <div><strong><%= candidate.concept_name %></strong></div>
+        <div class="small subtle"><%= candidate.vocabulary_id %> · <%= candidate.domain_id %> · #<%= candidate.concept_id %></div>
+      </div>
+      <div class="row" style="gap: var(--space-sm)">
+        <%= score_badge(candidate.score) %>
+        <% if candidate.respond_to?(:persisted?) && candidate.persisted? %>
+          <%= button_to "Use", mapping_candidate_path(candidate), method: :patch,
+                form: { data: { turbo_frame: "_top" } }, class: "btn btn--sm" %>
+        <% else %>
+          <%= button_to "Use", mapping_path(mapping), method: :patch,
+                params: { mapping: {
+                  equivalence: "Equivalent",
+                  concept_id: candidate.concept_id, concept_name: candidate.concept_name,
+                  domain_id: candidate.domain_id, vocabulary_id: candidate.vocabulary_id,
+                  concept_class_id: candidate.concept_class_id, standard_concept: candidate.standard_concept,
+                  concept_code: candidate.concept_code } },
+                form: { data: { turbo_frame: "_top" } }, class: "btn btn--sm" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  <% if candidates.empty? %>
+    <p class="subtle small">No candidates returned.</p>
+  <% end %>
+</div>

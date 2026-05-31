@@ -1,0 +1,36 @@
+<%
+  current = request.path
+  workspace = [
+    [ "Home", root_path, "home", current == root_path ],
+    [ "Projects", projects_path, "folder-open", current.start_with?("/projects") ]
+  ]
+%>
+<nav class="app__nav nav" data-sidebar-target="panel" aria-label="Primary">
+  <p class="nav__heading">Workspace</p>
+  <% workspace.each do |label, path, icon, active| %>
+    <%= link_to path, class: nav_link_class(active) do %>
+      <%= lucide_icon icon, class: "icon" %> <span><%= label %></span>
+    <% end %>
+  <% end %>
+
+  <% if current_user&.can_access_admin? %>
+    <p class="nav__heading">Admin</p>
+    <%= link_to dashboard_path, class: nav_link_class(current == dashboard_path) do %>
+      <%= lucide_icon "layout-dashboard", class: "icon" %> <span>Dashboard</span>
+    <% end %>
+    <%= link_to admin_root_path, class: nav_link_class(current.start_with?("/admin")) do %>
+      <%= lucide_icon "shield", class: "icon" %> <span>Admin</span>
+    <% end %>
+  <% end %>
+
+  <div class="nav__spacer"></div>
+
+  <details class="notice" style="border-radius: var(--radius); display: block;">
+    <summary class="row" style="cursor: pointer; list-style: none;">
+      <%= lucide_icon "info", class: "icon" %> <span>This is an early demo</span>
+    </summary>
+    <p class="small" style="margin-block-start: var(--space-xs)">
+      Data may be reset at any time. Please don't add anything sensitive — it's here for trying things out.
+    </p>
+  </details>
+</nav>

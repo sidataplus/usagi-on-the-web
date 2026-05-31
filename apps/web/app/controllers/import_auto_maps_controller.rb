@@ -1,0 +1,2 @@
+class ImportAutoMapsController < AutoMapsController
+end

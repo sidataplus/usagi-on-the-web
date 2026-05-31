@@ -1,0 +1,10 @@
+<% flash.each do |type, message| %>
+  <% bad = type.to_s.in?(%w[alert error]) %>
+  <div class="flash <%= bad ? "flash--bad" : "flash--ok" %>" data-controller="dismiss" role="alert">
+    <%= lucide_icon(bad ? "circle-x" : "circle-check", class: "icon") %>
+    <span><%= message %></span>
+    <button type="button" class="flash__close" data-action="dismiss#close" aria-label="Dismiss">
+      <%= lucide_icon "x", class: "icon icon--sm" %>
+    </button>
+  </div>
+<% end %>

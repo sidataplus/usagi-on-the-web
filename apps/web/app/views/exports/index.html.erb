@@ -1,0 +1,25 @@
+<% content_for :title, "Exports" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Exports</h1>
+    <p class="page-head__subtitle"><%= @project.name %></p>
+  </div>
+</div>
+
+<div class="box stack">
+  <%= form_with url: project_exports_path(@project), class: "row" do |f| %>
+    <%= select_tag :format_option, options_for_select(Export::FORMATS.map { |format| [format.humanize, format] }, "review_csv"), class: "input" %>
+    <%= f.submit "Create export", class: "btn btn--primary" %>
+  <% end %>
+
+  <% @exports.each do |export| %>
+    <div class="row-between">
+      <div>
+        <strong><%= export.format.humanize %></strong>
+        <div class="small subtle"><%= export.state.humanize %> · <%= export.row_count %> rows</div>
+      </div>
+      <%= link_to "Open", project_export_path(@project, export), class: "btn btn--sm" %>
+    </div>
+  <% end %>
+</div>

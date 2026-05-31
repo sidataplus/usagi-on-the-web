@@ -1,0 +1,5 @@
+<%# After a modal save: refresh the row and close the modal. %>
+<%= turbo_stream.replace dom_id(@mapping, :row) do %>
+  <%= render "mappings/row", mapping: @mapping, highlight: true %>
+<% end %>
+<%= turbo_stream.update "modal", "" %>

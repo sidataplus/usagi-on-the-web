@@ -1,0 +1,16 @@
+<%# locals: page, total_pages, path_proc %>
+<% if total_pages > 1 %>
+  <div class="pager">
+    <% if page > 1 %>
+      <%= link_to path_proc.call(page - 1), class: "btn btn--sm" do %>
+        <%= lucide_icon "chevron-left", class: "icon" %> Previous
+      <% end %>
+    <% end %>
+    <span>Page <%= page %> of <%= total_pages %></span>
+    <% if page < total_pages %>
+      <%= link_to path_proc.call(page + 1), class: "btn btn--sm" do %>
+        Next <%= lucide_icon "chevron-right", class: "icon" %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

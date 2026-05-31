@@ -1,0 +1,54 @@
+<%# locals: mapping, highlight (optional). DOM id lets status updates replace it. %>
+<%
+  target_class = "review__target review__target--#{mapping.status}"
+  has_comments = mapping.mapping_comments.any?
+%>
+<tr id="<%= dom_id(mapping, :row) %>" class="<%= "is-justchanged" if local_assigns[:highlight] %>">
+  <td>
+    <input type="checkbox" value="<%= mapping.id %>" data-bulk_select-target="checkbox" data-action="bulk_select#refresh" aria-label="Select row">
+  </td>
+  <td class="mono"><%= mapping.source_code %></td>
+  <td>
+    <%= link_to mapping_path(mapping), data: { turbo_frame: "modal" }, class: "review__source" do %>
+      <%= mapping.source_name %>
+    <% end %>
+    <div class="<%= target_class %>">
+      <% if mapping.mapped? %>
+        <%= lucide_icon "target", class: "icon icon--sm" %>
+        <span><%= mapping.concept_name %></span>
+        <span class="subtle">· <%= mapping.vocabulary_id %></span>
+      <% else %>
+        Unmapped — click to map
+      <% end %>
+      <% if has_comments %><%= lucide_icon "message-square", class: "icon icon--sm" %><% end %>
+    </div>
+  </td>
+  <td class="num subtle"><%= number_with_delimiter(mapping.source_frequency) %></td>
+  <td><%= score_badge(mapping.match_score) %></td>
+  <td><%= status_badge(mapping) %></td>
+  <td class="num">
+    <div class="menu" data-controller="dropdown">
+      <button type="button" class="btn btn--icon" data-action="dropdown#toggle" aria-label="Row actions">
+        <%= lucide_icon "ellipsis", class: "icon" %>
+      </button>
+      <div class="menu__panel" data-dropdown-target="menu" hidden>
+        <%= button_to status_mapping_path(mapping, status: "approved"), method: :patch,
+              form: { data: { turbo_frame: "_top" } }, class: "menu__item" do %>
+          <%= lucide_icon "circle-check", class: "icon" %> Approve
+        <% end %>
+        <%= button_to status_mapping_path(mapping, status: "flagged"), method: :patch,
+              form: { data: { turbo_frame: "_top" } }, class: "menu__item" do %>
+          <%= lucide_icon "flag", class: "icon" %> Flag
+        <% end %>
+        <%= button_to status_mapping_path(mapping, status: "invalid_status"), method: :patch,
+              form: { data: { turbo_frame: "_top" } }, class: "menu__item" do %>
+          <%= lucide_icon "circle-x", class: "icon" %> Mark invalid
+        <% end %>
+        <div class="menu__sep"></div>
+        <%= link_to mapping_path(mapping), data: { turbo_frame: "modal" }, class: "menu__item" do %>
+          <%= lucide_icon "square-pen", class: "icon" %> View details
+        <% end %>
+      </div>
+    </div>
+  </td>
+</tr>

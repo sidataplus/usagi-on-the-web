@@ -1,0 +1,77 @@
+<% content_for :title, "Manage — #{@project.name}" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Manage project</h1>
+    <p class="page-head__subtitle"><%= @project.name %></p>
+  </div>
+  <div class="page-head__actions">
+    <%= link_to "Back to project", project_path(@project), class: "btn btn--plain" %>
+  </div>
+</div>
+
+<div class="prose stack">
+  <%= form_with model: @project, local: true do |f| %>
+    <div class="box stack">
+      <h2 class="box__title">Settings</h2>
+      <div class="field">
+        <%= f.label :name, class: "field__label" %>
+        <%= f.text_field :name, class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :description, class: "field__label" %>
+        <%= f.text_area :description, rows: 2, class: "textarea" %>
+      </div>
+      <div class="grid grid--halves" style="gap: var(--space)">
+        <div class="field">
+          <%= f.label :source_vocabulary, "Source vocabulary", class: "field__label" %>
+          <%= f.text_field :source_vocabulary, class: "input" %>
+        </div>
+        <div class="field">
+          <%= f.label :status, class: "field__label" %>
+          <%= f.select :status, Project.statuses.keys.map { |s| [ s.humanize, s ] }, {}, class: "select" %>
+        </div>
+      </div>
+      <div class="row" style="justify-content: flex-end">
+        <%= f.submit "Save settings", class: "btn btn--primary" %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="box stack">
+    <div class="row-between">
+      <h2 class="box__title" style="margin: 0">Members</h2>
+      <span class="subtle small"><%= pluralize(@memberships.size, "member") %></span>
+    </div>
+    <div class="box box--flush">
+      <table class="table">
+        <thead><tr><th>Member</th><th>Role</th><th></th></tr></thead>
+        <tbody>
+          <% @memberships.each do |membership| %>
+            <tr>
+              <td>
+                <div class="row">
+                  <span class="avatar avatar--sm"><%= membership.user.initials %></span>
+                  <div>
+                    <div><%= membership.user.display_name %></div>
+                    <div class="small subtle"><%= membership.user.email %></div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge badge--neutral"><%= membership.role_label %></span></td>
+              <td class="num">
+                <button type="button" class="btn btn--icon btn--danger" title="Remove (coming soon)" disabled>
+                  <%= lucide_icon "trash-2", class: "icon" %>
+                </button>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <div class="row" style="gap: var(--space-sm)">
+      <input type="email" class="input" placeholder="Add member by email…" disabled>
+      <button type="button" class="btn" disabled>Invite</button>
+    </div>
+  </div>
+</div>

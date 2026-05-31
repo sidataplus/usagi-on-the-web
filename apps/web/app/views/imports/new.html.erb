@@ -1,0 +1,34 @@
+<% content_for :title, "New import" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">New import</h1>
+    <p class="page-head__subtitle"><%= @project.name %></p>
+  </div>
+</div>
+
+<div class="box">
+  <%= form_with model: [@project, @import_batch], url: project_imports_path(@project), class: "stack" do |f| %>
+    <% if @import_batch.errors.any? %>
+      <div class="badge badge--bad"><%= @import_batch.errors.full_messages.to_sentence %></div>
+    <% end %>
+    <div class="field">
+      <%= f.label :filename, class: "field__label" %>
+      <%= f.text_field :filename, class: "input", placeholder: "source_terms.csv" %>
+    </div>
+    <div class="field">
+      <%= f.label :source_vocabulary, class: "field__label" %>
+      <%= f.text_field :source_vocabulary, class: "input" %>
+    </div>
+    <div class="field">
+      <%= f.label :rows_text, "CSV rows", class: "field__label" %>
+      <%= f.text_area :rows_text, rows: 10, class: "textarea", value: "source_code,source_name,source_frequency
+NDC-0406-0512,tramadol hcl 50mg cap,12
+" %>
+    </div>
+    <div class="row">
+      <%= f.submit "Create import", class: "btn btn--primary" %>
+      <%= link_to "Cancel", project_path(@project), class: "btn" %>
+    </div>
+  <% end %>
+</div>

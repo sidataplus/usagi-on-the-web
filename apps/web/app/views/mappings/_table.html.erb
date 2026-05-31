@@ -1,0 +1,80 @@
+<%#
+  locals: project, mappings, counts, status, query, sort, direction, page, total, total_pages
+  Rendered inside the #mappings_table turbo-frame; filters/sort/pagination
+  re-render only this frame.
+%>
+<div class="stack">
+  <%= form_with url: project_mappings_path(project), method: :get,
+        data: { turbo_frame: "mappings_table", controller: "autosubmit", action: "input->autosubmit#submit" },
+        class: "filters" do %>
+    <label class="search">
+      <%= lucide_icon "search", class: "icon" %>
+      <input type="search" name="q" value="<%= query %>" class="input" placeholder="Search source code or name…">
+    </label>
+    <input type="hidden" name="sort" value="<%= sort %>">
+    <input type="hidden" name="direction" value="<%= direction %>">
+
+    <div class="chips">
+      <% [ [ nil, "All", counts["all"] ], [ "unchecked", "Unchecked", counts["unchecked"] ],
+           [ "approved", "Approved", counts["approved"] ], [ "flagged", "Flagged", counts["flagged"] ],
+           [ "invalid_status", "Invalid", counts["invalid_status"] ] ].each do |value, label, count| %>
+        <%= link_to project_mappings_path(project, status: value, q: query, sort: sort, direction: direction),
+              data: { turbo_frame: "mappings_table" },
+              class: "chip #{"is-active" if status == value}" do %>
+          <%= label %> <span class="chip__count"><%= count %></span>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="box box--flush">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="inline-size: 2.5rem">
+            <input type="checkbox" data-bulk_select-target="selectAll" data-action="bulk_select#toggleAll" aria-label="Select all">
+          </th>
+          <% [ [ "source_code", "Source code", "" ], [ "source_name", "Source / target", "" ],
+               [ "source_frequency", "Freq", "num" ], [ "match_score", "Score", "" ], [ "status", "Status", "" ] ].each do |col, label, cls| %>
+            <% next_dir = (sort == col && direction.to_s == "asc") ? "desc" : "asc" %>
+            <th class="<%= cls %>">
+              <%= link_to project_mappings_path(project, status: status, q: query, sort: col, direction: next_dir),
+                    data: { turbo_frame: "mappings_table" }, class: "row", style: "gap: var(--space-xs); color: inherit" do %>
+                <%= label %>
+                <% if sort == col %><%= lucide_icon(direction.to_s == "asc" ? "chevron-up" : "chevron-down", class: "icon icon--sm") %><% end %>
+              <% end %>
+            </th>
+          <% end %>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if mappings.any? %>
+          <% mappings.each do |mapping| %>
+            <%= render "mappings/row", mapping: mapping %>
+          <% end %>
+        <% else %>
+          <tr><td colspan="7" class="subtle" style="text-align: center; padding: var(--space-lg)">No mappings match these filters.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <div class="row-between small subtle" style="padding: var(--space-sm) var(--space); border-block-start: 1px solid var(--color-border)">
+      <span>Page <%= page %> of <%= total_pages %> · <%= number_with_delimiter(total) %> total</span>
+      <div class="row" style="gap: var(--space-sm)">
+        <% if page > 1 %>
+          <%= link_to project_mappings_path(project, status: status, q: query, sort: sort, direction: direction, page: page - 1),
+                data: { turbo_frame: "mappings_table" }, class: "btn btn--sm" do %>
+            <%= lucide_icon "chevron-left", class: "icon" %> Prev
+          <% end %>
+        <% end %>
+        <% if page < total_pages %>
+          <%= link_to project_mappings_path(project, status: status, q: query, sort: sort, direction: direction, page: page + 1),
+                data: { turbo_frame: "mappings_table" }, class: "btn btn--sm" do %>
+            Next <%= lucide_icon "chevron-right", class: "icon" %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

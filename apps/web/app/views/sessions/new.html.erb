@@ -1,0 +1,20 @@
+<% content_for :title, "Sign in" %>
+
+<div class="auth-shell">
+  <div class="box auth-card">
+    <h1 class="page-head__title">Sign in</h1>
+    <p class="subtle">Use your Rails account to review mapping projects.</p>
+
+    <%= form_with url: session_path, class: "stack" do |f| %>
+      <div class="field">
+        <%= f.label :email, class: "field__label" %>
+        <%= f.email_field :email, class: "input", autocomplete: "email", autofocus: true %>
+      </div>
+      <div class="field">
+        <%= f.label :password, class: "field__label" %>
+        <%= f.password_field :password, class: "input", autocomplete: "current-password" %>
+      </div>
+      <%= f.submit "Sign in", class: "btn btn--primary" %>
+    <% end %>
+  </div>
+</div>

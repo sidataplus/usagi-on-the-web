@@ -1,0 +1,22 @@
+<% content_for :title, "Terms" %>
+
+<div class="prose stack">
+  <div>
+    <h1 style="font-size: 1.6rem">Terms</h1>
+    <p class="subtle small">Last updated <%= Date.current.strftime("%B %Y") %></p>
+  </div>
+
+  <p>By using this demo you accept that it's provided “as is”, for evaluation only, without warranty.</p>
+
+  <div>
+    <h2 style="font-size: 1.1rem">Acceptable use</h2>
+    <p class="subtle">Use it to evaluate OMOP concept mapping workflows. Please don't try to disrupt the service or upload sensitive data.</p>
+  </div>
+
+  <div>
+    <h2 style="font-size: 1.1rem">No warranty</h2>
+    <p class="subtle">Mapping suggestions come from automated retrieval and must be reviewed by a qualified person before any downstream use.</p>
+  </div>
+
+  <p>Email <%= link_to "usagi@sidata.plus", "mailto:usagi@sidata.plus" %>.</p>
+</div>

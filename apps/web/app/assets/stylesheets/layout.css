@@ -1,0 +1,74 @@
+/* App shell: fixed-width sidebar + fluid content, with a slim top bar. */
+.app {
+  display: grid;
+  grid-template-columns: 16rem 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "brand  topbar"
+    "nav    main";
+  min-block-size: 100dvh;
+}
+
+.app__brand   { grid-area: brand; }
+.app__topbar  { grid-area: topbar; }
+.app__nav     { grid-area: nav; }
+.app__main    { grid-area: main; min-inline-size: 0; }
+
+/* Collapse to a single column on small screens; nav becomes a drawer. */
+@media (max-width: 60rem) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "main";
+  }
+  .app__brand { display: none; }
+}
+
+/* Content column */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100%;
+}
+.main__body {
+  flex: 1;
+  inline-size: 100%;
+  max-inline-size: var(--measure);
+  margin-inline: auto;
+  padding: var(--space-lg) var(--space-md);
+}
+@media (max-width: 40rem) {
+  .main__body { padding: var(--space-md) var(--space); }
+}
+
+.prose { max-inline-size: var(--measure-prose); }
+
+/* A page header row: title + actions */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space);
+  margin-block-end: var(--space-lg);
+}
+.page-head__title { font-size: 1.6rem; }
+.page-head__subtitle { color: var(--color-text-subtle); margin-block-start: var(--space-xs); }
+.page-head__actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+
+/* Generic stacks & rows */
+.stack > * + * { margin-block-start: var(--space); }
+.stack-sm > * + * { margin-block-start: var(--space-sm); }
+.stack-lg > * + * { margin-block-start: var(--space-lg); }
+
+.row { display: flex; align-items: center; gap: var(--space-sm); }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space); }
+.wrap { flex-wrap: wrap; }
+.spacer { margin-inline-start: auto; }
+
+/* Simple responsive grid for cards/tiles */
+.grid { display: grid; gap: var(--space); }
+.grid--cards { grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); }
+.grid--tiles { grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
+.grid--halves { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }

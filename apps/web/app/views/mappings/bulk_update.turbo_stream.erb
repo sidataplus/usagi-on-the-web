@@ -1,0 +1,6 @@
+<%# Replace each affected on-screen row. %>
+<% @mappings.each do |mapping| %>
+  <%= turbo_stream.replace dom_id(mapping, :row) do %>
+    <%= render "mappings/row", mapping: mapping, highlight: true %>
+  <% end %>
+<% end %>

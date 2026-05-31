@@ -1,0 +1,30 @@
+<% content_for :title, "Imports" %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Imports</h1>
+    <p class="page-head__subtitle"><%= @project.name %></p>
+  </div>
+  <div class="page-head__actions">
+    <%= link_to new_project_import_path(@project), class: "btn btn--primary" do %>
+      <%= lucide_icon "upload", class: "icon" %> New import
+    <% end %>
+  </div>
+</div>
+
+<div class="box box--flush">
+  <table class="table">
+    <thead><tr><th>File</th><th>Status</th><th class="num">Rows</th><th>Imported</th><th></th></tr></thead>
+    <tbody>
+      <% @imports.each do |import| %>
+        <tr>
+          <td><strong><%= import.filename %></strong><div class="small subtle"><%= import.source_vocabulary %></div></td>
+          <td><span class="badge badge--neutral"><%= import.status.humanize %></span></td>
+          <td class="num"><%= number_with_delimiter(import.row_count) %></td>
+          <td><%= import.imported_at&.to_fs(:short) || "-" %></td>
+          <td><%= link_to "Open", project_import_path(@project, import), class: "btn btn--sm" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

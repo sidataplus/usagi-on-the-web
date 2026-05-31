@@ -1,0 +1,112 @@
+<%= turbo_frame_tag "modal" do %>
+  <div class="modal" data-controller="modal" data-action="click->modal#backdrop">
+    <div class="modal__dialog" data-keyboard-scope role="dialog" aria-modal="true">
+
+      <div class="modal__head">
+        <div class="truncate">
+          <h2 class="truncate" style="font-size: 1.15rem"><%= @mapping.source_name %></h2>
+          <p class="mono small"><%= @mapping.source_code %> · freq <%= number_with_delimiter(@mapping.source_frequency) %></p>
+        </div>
+        <div class="modal__nav">
+          <% if @siblings[:position] %><span class="small subtle"><%= @siblings[:position] %> / <%= @siblings[:total] %></span><% end %>
+          <% if @siblings[:prev_id] %>
+            <%= link_to mapping_path(@siblings[:prev_id]), data: { turbo_frame: "modal", shortcut: "prev" }, class: "btn btn--icon", aria: { label: "Previous" } do %>
+              <%= lucide_icon "chevron-left", class: "icon" %>
+            <% end %>
+          <% end %>
+          <% if @siblings[:next_id] %>
+            <%= link_to mapping_path(@siblings[:next_id]), data: { turbo_frame: "modal", shortcut: "next-record" }, class: "btn btn--icon", aria: { label: "Next" } do %>
+              <%= lucide_icon "chevron-right", class: "icon" %>
+            <% end %>
+          <% end %>
+          <button type="button" class="btn btn--icon" data-action="modal#close" aria-label="Close"><%= lucide_icon "x", class: "icon" %></button>
+        </div>
+      </div>
+
+      <div class="modal__body stack">
+        <div class="box">
+          <h3 class="box__title row" style="gap: var(--space-xs)"><%= lucide_icon "target", class: "icon" %> Target concept</h3>
+          <% if @mapping.mapped? %>
+            <div class="row-between">
+              <div class="truncate">
+                <strong><%= @mapping.concept_name %></strong>
+                <div class="small subtle"><%= @mapping.vocabulary_id %> · <%= @mapping.domain_id %> · #<%= @mapping.concept_id %></div>
+              </div>
+              <%= status_badge(@mapping) %>
+            </div>
+          <% else %>
+            <p class="subtle">Not yet mapped — search or pick a candidate below.</p>
+          <% end %>
+        </div>
+
+        <div class="box stack-sm">
+          <h3 class="box__title row" style="gap: var(--space-xs); margin: 0"><%= lucide_icon "search", class: "icon" %> Search concepts</h3>
+          <%= form_with url: mapping_manual_search_path(@mapping), method: :post,
+                data: { turbo_frame: dom_id(@mapping, :candidate_panel) } do %>
+            <div class="row" style="gap: var(--space-sm)">
+              <label class="search">
+                <%= lucide_icon "search", class: "icon" %>
+                <input type="search" name="q" value="<%= @mapping.source_name %>" class="input" placeholder="Search OMOP concepts…">
+              </label>
+              <button type="submit" class="btn btn--primary"><%= lucide_icon "search", class: "icon" %> Search</button>
+            </div>
+          <% end %>
+        </div>
+
+        <%= turbo_frame_tag dom_id(@mapping, :candidate_panel) do %>
+          <%= render "mappings/candidate_panel", mapping: @mapping, candidates: @candidates %>
+        <% end %>
+
+        <div class="box stack">
+          <h3 class="box__title" style="margin: 0">Review</h3>
+          <div class="row wrap" style="gap: var(--space-sm)">
+            <%= button_to mapping_path(@mapping), method: :patch, params: { mapping: { status: "approved" } },
+                  form: { data: { turbo_frame: "_top" } }, data: { shortcut: "approve" },
+                  class: "btn btn--sm #{"is-active" if @mapping.approved?}" do %>
+              <%= lucide_icon "circle-check", class: "icon" %> Approve
+            <% end %>
+            <%= button_to mapping_path(@mapping), method: :patch, params: { mapping: { status: "flagged" } },
+                  form: { data: { turbo_frame: "_top" } }, data: { shortcut: "flag" },
+                  class: "btn btn--sm #{"is-active" if @mapping.flagged?}" do %>
+              <%= lucide_icon "flag", class: "icon" %> Flag
+            <% end %>
+            <%= button_to mapping_path(@mapping), method: :patch, params: { mapping: { status: "invalid_status" } },
+                  form: { data: { turbo_frame: "_top" } }, data: { shortcut: "invalid" },
+                  class: "btn btn--sm #{"is-active" if @mapping.invalid_status?}" do %>
+              <%= lucide_icon "circle-x", class: "icon" %> Invalid
+            <% end %>
+          </div>
+
+          <%= form_with model: @mapping, url: mapping_path(@mapping), method: :patch, data: { turbo_frame: "_top" }, class: "row" do |f| %>
+            <div class="field" style="flex: 1; margin: 0">
+              <%= f.label :equivalence, "Equivalence", class: "field__label" %>
+              <%= f.select :equivalence, Mapping::EQUIVALENCE_LABELS.map { |k, v| [ v, k ] }, { include_blank: "—" }, class: "select" %>
+            </div>
+            <%= f.submit "Save", class: "btn btn--primary", style: "align-self: end" %>
+          <% end %>
+        </div>
+
+        <div class="grid grid--halves">
+          <div class="box">
+            <h3 class="box__title row" style="gap: var(--space-xs)"><%= lucide_icon "history", class: "icon" %> History</h3>
+            <%= render "mappings/history", events: @events %>
+          </div>
+          <div class="box">
+            <h3 class="box__title row" style="gap: var(--space-xs)"><%= lucide_icon "message-square", class: "icon" %> Comments</h3>
+            <%= render "mappings/comments", mapping: @mapping, comments: @comments %>
+            <%= render "mappings/comment_form", mapping: @mapping, comment: nil %>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__foot">
+        <button type="button" class="btn btn--plain" data-action="modal#close">Close</button>
+        <% if @siblings[:next_id] %>
+          <%= link_to mapping_path(@siblings[:next_id]), data: { turbo_frame: "modal", shortcut: "next" }, class: "btn btn--primary" do %>
+            Next mapping <%= lucide_icon "chevron-right", class: "icon" %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>

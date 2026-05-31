@@ -1,0 +1,39 @@
+<header class="app__topbar topbar">
+  <button type="button" class="btn btn--icon topbar__menu" data-action="sidebar#toggle" aria-label="Menu">
+    <%= lucide_icon "menu", class: "icon" %>
+  </button>
+
+  <%= link_to root_path, class: "topbar__brand" do %>
+    <%= image_tag "usagi-on-the-web-logo.png", alt: "", class: "brand__logo" %>
+    <span><b>Usagi</b></span>
+  <% end %>
+
+  <div class="spacer"></div>
+
+  <div class="menu" data-controller="dropdown">
+    <button type="button" class="btn btn--plain row" data-action="dropdown#toggle" aria-haspopup="true">
+      <span class="avatar avatar--sm"><%= current_user&.initials %></span>
+      <span class="small"><%= current_user&.display_name %></span>
+      <%= lucide_icon "chevron-down", class: "icon icon--sm subtle" %>
+    </button>
+    <div class="menu__panel" data-dropdown-target="menu" hidden>
+      <div class="pad-sm" style="padding: var(--space-sm)">
+        <div class="small"><strong><%= current_user&.display_name %></strong></div>
+        <div class="small subtle truncate"><%= current_user&.email %></div>
+      </div>
+      <div class="menu__sep"></div>
+      <%= link_to settings_path, class: "menu__item" do %>
+        <%= lucide_icon "settings", class: "icon" %> Settings
+      <% end %>
+      <% if signed_in? %>
+        <%= button_to session_path, method: :delete, class: "menu__item" do %>
+          <%= lucide_icon "log-out", class: "icon" %> Log out
+        <% end %>
+      <% else %>
+        <%= link_to new_session_path, class: "menu__item" do %>
+          <%= lucide_icon "log-in", class: "icon" %> Sign in
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</header>

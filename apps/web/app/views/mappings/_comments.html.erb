@@ -1,0 +1,9 @@
+<%# locals: mapping, comments %>
+<div id="<%= dom_id(mapping, :comments) %>" class="stack-sm">
+  <% comments.each do |comment| %>
+    <%= render "mappings/comment", comment: comment %>
+  <% end %>
+  <% if comments.empty? %>
+    <p class="subtle small">No comments yet. Start the discussion below.</p>
+  <% end %>
+</div>

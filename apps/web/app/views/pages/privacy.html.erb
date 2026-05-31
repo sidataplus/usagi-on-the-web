@@ -1,0 +1,22 @@
+<% content_for :title, "Privacy" %>
+
+<div class="prose stack">
+  <div>
+    <h1 style="font-size: 1.6rem">Privacy</h1>
+    <p class="subtle small">Last updated <%= Date.current.strftime("%B %Y") %></p>
+  </div>
+
+  <p>This is a demo build. Please don't upload sensitive or patient-identifiable data — anything you enter may be reset or deleted at any time.</p>
+
+  <div>
+    <h2 style="font-size: 1.1rem">What we store</h2>
+    <p class="subtle">Projects, source codes, and the mapping decisions you make. No analytics or third-party trackers run in this wireframe.</p>
+  </div>
+
+  <div>
+    <h2 style="font-size: 1.1rem">Vocabulary data</h2>
+    <p class="subtle">OMOP concepts are served by the usagi-api layer and governed by the respective vocabulary licenses (RxNorm, SNOMED, LOINC, and others).</p>
+  </div>
+
+  <p>Questions? Email <%= link_to "usagi@sidata.plus", "mailto:usagi@sidata.plus" %>.</p>
+</div>

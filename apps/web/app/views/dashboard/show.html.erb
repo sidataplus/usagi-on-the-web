@@ -1,0 +1,65 @@
+<% content_for :title, "Dashboard" %>
+
+<div class="page-head">
+  <h1 class="page-head__title">Dashboard</h1>
+</div>
+
+<div class="grid grid--tiles">
+  <% [
+    [ "Projects", @project_count, "folder-open" ],
+    [ "Mappings", @mapping_count, "table" ],
+    [ "Approved", @approved, "circle-check" ],
+    [ "Approval rate", "#{@approval_rate}%", "target" ]
+  ].each do |label, value, icon| %>
+    <div class="stat">
+      <div class="stat__label"><%= label %> <%= lucide_icon icon, class: "icon subtle" %></div>
+      <div class="stat__value"><%= value.is_a?(Integer) ? number_with_delimiter(value) : value %></div>
+    </div>
+  <% end %>
+</div>
+
+<div class="grid grid--halves" style="margin-block-start: var(--space)">
+  <div class="box">
+    <h2 class="box__title">Domain breakdown</h2>
+    <% max = @domain_breakdown.map(&:last).max.to_f %>
+    <div class="bars">
+      <% @domain_breakdown.each do |domain, count| %>
+        <div>
+          <div class="bar__label"><span><%= domain %></span><span class="subtle"><%= count %></span></div>
+          <div class="bar__track"><div class="bar__fill" style="inline-size: <%= max.zero? ? 0 : (count / max * 100).round %>%"></div></div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2 class="box__title">Top projects</h2>
+    <% pmax = @top_projects.map(&:total_mappings).max.to_f %>
+    <div class="bars">
+      <% @top_projects.each do |project| %>
+        <div>
+          <div class="bar__label"><span class="truncate"><%= project.name %></span><span class="subtle"><%= project.total_mappings %></span></div>
+          <div class="bar__track"><div class="bar__fill" style="inline-size: <%= pmax.zero? ? 0 : (project.total_mappings / pmax * 100).round %>%; background: var(--color-text-subtle)"></div></div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<div class="box" style="margin-block-start: var(--space)">
+  <h2 class="box__title">Reviewer activity</h2>
+  <div class="box box--flush">
+    <table class="table">
+      <thead><tr><th>Reviewer</th><th>Role</th><th class="num">Reviewed</th></tr></thead>
+      <tbody>
+        <% @reviewers.each do |user, count| %>
+          <tr>
+            <td><div class="row"><span class="avatar avatar--sm"><%= user.initials %></span> <%= user.display_name %></div></td>
+            <td class="subtle"><%= user.role_label %></td>
+            <td class="num"><%= count %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

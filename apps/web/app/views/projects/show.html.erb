@@ -1,0 +1,101 @@
+<% content_for :title, @project.name %>
+
+<div class="page-head">
+  <div>
+    <div class="row">
+      <h1 class="page-head__title"><%= @project.name %></h1>
+      <%= project_status_badge(@project) %>
+    </div>
+    <p class="page-head__subtitle"><%= @project.description %></p>
+  </div>
+  <div class="page-head__actions">
+    <%= link_to manage_project_path(@project), class: "btn" do %>
+      <%= lucide_icon "settings", class: "icon" %> Manage
+    <% end %>
+    <%= link_to new_project_import_path(@project), class: "btn" do %>
+      <%= lucide_icon "upload", class: "icon" %> Import
+    <% end %>
+    <%= link_to project_engine_jobs_path(@project), class: "btn" do %>
+      <%= lucide_icon "activity", class: "icon" %> Jobs
+    <% end %>
+    <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
+      <%= lucide_icon "table", class: "icon" %> Review mappings
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid--tiles">
+  <% [
+    [ "Total", @project.total_mappings, "table" ],
+    [ "Approved", @project.approved_count, "circle-check" ],
+    [ "Flagged", @project.flagged_count, "flag" ],
+    [ "Unchecked", @project.unchecked_count, "clock" ]
+  ].each do |label, value, icon| %>
+    <div class="stat">
+      <div class="stat__label"><%= label %> <%= lucide_icon icon, class: "icon subtle" %></div>
+      <div class="stat__value"><%= number_with_delimiter(value) %></div>
+    </div>
+  <% end %>
+</div>
+
+<div class="grid grid--halves" style="margin-block-start: var(--space)">
+  <div class="box">
+    <h2 class="box__title">Recent mappings</h2>
+    <div class="stack-sm">
+      <% @recent_mappings.each do |mapping| %>
+        <div class="row-between">
+          <div class="truncate">
+            <div class="mono"><%= mapping.source_code %></div>
+            <div class="small truncate"><%= mapping.source_name %></div>
+          </div>
+          <%= status_badge(mapping) %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2 class="box__title">Recent imports</h2>
+    <div class="stack-sm">
+      <% @recent_imports.each do |import| %>
+        <div class="row-between">
+          <div class="truncate">
+            <div><strong><%= import.filename %></strong></div>
+            <div class="small subtle"><%= import.row_count %> rows · <%= import.status.humanize %></div>
+          </div>
+          <%= link_to "Open", project_import_path(@project, import), class: "btn btn--sm" %>
+        </div>
+      <% end %>
+      <% if @recent_imports.empty? %><p class="subtle small">No imports yet.</p><% end %>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid--halves" style="margin-block-start: var(--space)">
+  <div class="box">
+    <h2 class="box__title">Engine jobs</h2>
+    <div class="stack-sm">
+      <% @recent_engine_jobs.each do |job| %>
+        <div class="row-between">
+          <div>
+            <div><strong><%= job.job_type.humanize %></strong></div>
+            <div class="small subtle"><%= job.status.humanize %> · <%= job.created_at.to_fs(:short) %></div>
+          </div>
+          <%= link_to "Open", project_engine_job_path(@project, job), class: "btn btn--sm" %>
+        </div>
+      <% end %>
+      <% if @recent_engine_jobs.empty? %><p class="subtle small">No engine jobs yet.</p><% end %>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2 class="box__title">Details</h2>
+    <dl class="facts">
+      <div><dt>Source vocabulary</dt><dd><%= @project.source_vocabulary %></dd></div>
+      <div><dt>Targets</dt><dd><%= @project.target_vocabularies.join(", ").presence || "—" %></dd></div>
+      <div><dt>Version</dt><dd><%= @project.vocabulary_version %></dd></div>
+      <div><dt>Owner</dt><dd><%= @project.owner&.display_name || "—" %></dd></div>
+      <div><dt>Completion</dt><dd><%= @project.completion_percentage %>%</dd></div>
+    </dl>
+  </div>
+</div>
