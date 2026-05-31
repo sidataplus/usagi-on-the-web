@@ -88,4 +88,22 @@ python3 -c 'import json,sqlite3,sys; conn=sqlite3.connect(sys.argv[1]); rows=con
 auth_curl "${BASE_URL}/jobs/${JOB_ID}/results" >"${WORK_DIR}/job-results.json"
 RESULTS_PATH="$(python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["state"] == "succeeded_with_errors", data; artifact=data["artifact"]; assert artifact["content_type"] == "application/jsonl", artifact; assert artifact["provenance"]["model_artifact_id"] == "sidataplus/THIRAWAT-SapBERT", artifact; assert artifact["provenance"]["index_artifact_id"].endswith("/manifest.json"), artifact; print(artifact["path"])' <"${WORK_DIR}/job-results.json")"
 
+auth_curl \
+  -D "${WORK_DIR}/job-results-jsonl.headers" \
+  -H 'Accept: application/jsonl' \
+  "${BASE_URL}/jobs/${JOB_ID}/results" >"${WORK_DIR}/job-results.jsonl"
+
+python3 - "${RESULTS_PATH}" "${WORK_DIR}/job-results.jsonl" "${WORK_DIR}/job-results-jsonl.headers" <<'PY'
+import sys
+
+expected_path, downloaded_path, headers_path = sys.argv[1:]
+assert open(expected_path, "rb").read() == open(downloaded_path, "rb").read()
+headers = {}
+for line in open(headers_path, encoding="utf-8"):
+    if ":" in line:
+        key, value = line.split(":", 1)
+        headers[key.lower()] = value.strip().lower()
+assert headers.get("content-type", "").startswith("application/jsonl"), headers
+PY
+
 python3 -c 'import json,sys; rows=[json.loads(line) for line in open(sys.argv[1], encoding="utf-8") if line.strip()]; assert len(rows) == 2, rows; by_id={row["id"]: row for row in rows}; ok=by_id["ok-tramadol-50"]; assert ok["candidates"][0]["concept"]["concept_id"] == 40162522, ok; missing=by_id["missing-query-embedding"]; assert missing["error"]["code"] == "EMBEDDING_FAILED", missing; manifest=json.load(open(sys.argv[3], encoding="utf-8")); assert manifest["extra"]["provenance"]["model_artifact_id"] == "sidataplus/THIRAWAT-SapBERT", manifest; print(json.dumps({"job_id": sys.argv[2], "state": "succeeded_with_errors", "top_concept_id": ok["candidates"][0]["concept"]["concept_id"], "failed_item_code": missing["error"]["code"], "artifact_provenance": manifest["extra"]["provenance"]}))' "${RESULTS_PATH}" "${JOB_ID}" "${WORK_DIR}/results/${JOB_ID}/manifest.json"

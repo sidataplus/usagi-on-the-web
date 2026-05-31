@@ -444,6 +444,7 @@ end
 ```text
 Rails calls GET /jobs/:id/results
   -> receives artifact reference or inline result
+  -> if artifact content is needed, calls GET /jobs/:id/results with Accept: application/jsonl
   -> streams/parses result JSONL
   -> writes mapping_candidates rows
   -> optionally writes provisional mapping target

@@ -1,7 +1,7 @@
 use serde_json::json;
 use usagi_artifacts::job_results::{
-    job_results_response, read_job_result_artifact, write_mapper_batch_results,
-    JobResultArtifactOptions,
+    job_results_download_response, job_results_response, read_job_result_artifact,
+    write_mapper_batch_results, JobResultArtifactOptions,
 };
 use usagi_common::manifest::{sha256_file, ArtifactManifest};
 
@@ -72,6 +72,10 @@ fn writes_mapper_batch_results_jsonl_and_manifest_atomically() {
         "tachiom-v1"
     );
     assert!(response.get("result").is_none());
+
+    let download = job_results_download_response(&artifact.path).unwrap();
+    assert_eq!(download.content_type, "application/jsonl");
+    assert_eq!(download.body, results_text.into_bytes());
 }
 
 #[test]

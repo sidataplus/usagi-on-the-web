@@ -3,17 +3,17 @@ use std::path::PathBuf;
 
 use axum::body::{to_bytes, Body};
 use axum::extract::{DefaultBodyLimit, Request, State};
-use axum::http::{header, HeaderName, HeaderValue, StatusCode};
+use axum::http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{from_fn, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde_json::json;
-use usagi_artifacts::job_results::job_results_response;
+use usagi_artifacts::job_results::{job_results_download_response, job_results_response};
 use usagi_common::error::{ErrorCode, ErrorEnvelope, UsagiError};
 use usagi_common::http::{
-    api_body_limit_bytes, api_key_is_authorized, error_envelope_body, is_public_probe_path,
-    API_KEY_HEADER,
+    accepts_jsonl, api_body_limit_bytes, api_key_is_authorized, error_envelope_body,
+    is_public_probe_path, API_KEY_HEADER,
 };
 use usagi_common::request::{generate_request_id, REQUEST_ID_HEADER};
 use usagi_contracts::catalog::Provenance;
@@ -435,18 +435,36 @@ async fn job_events(
 async fn job_results(
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
     let job = state
         .jobs
         .get(&id)?
         .ok_or_else(|| UsagiError::new(ErrorCode::JobNotFound, "job not found"))?;
+    if accepts_jsonl(
+        headers
+            .get(header::ACCEPT)
+            .and_then(|value| value.to_str().ok()),
+    ) {
+        if let Some(path) = job.artifact_path.clone() {
+            let download = job_results_download_response(path)?;
+            let mut response = Body::from(download.body).into_response();
+            let content_type = HeaderValue::from_str(&download.content_type)
+                .map_err(|err| UsagiError::internal(err.to_string()))?;
+            response
+                .headers_mut()
+                .insert(header::CONTENT_TYPE, content_type);
+            return Ok(response);
+        }
+    }
     Ok(Json(job_results_response(
         &id,
         job.state,
         state.jobs.result_json(&id)?,
         state.jobs.error_json(&id)?,
         job.artifact_path,
-    )?))
+    )?)
+    .into_response())
 }
 
 async fn job_cancel(

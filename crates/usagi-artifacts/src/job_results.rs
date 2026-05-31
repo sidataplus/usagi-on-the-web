@@ -27,6 +27,12 @@ pub struct JobResultArtifact {
     pub provenance: Option<serde_json::Value>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JobResultDownload {
+    pub content_type: String,
+    pub body: Vec<u8>,
+}
+
 pub fn write_mapper_batch_results<I, T>(
     options: JobResultArtifactOptions,
     rows: I,
@@ -129,6 +135,14 @@ pub fn job_results_response(
         "result": inline_result,
         "error": error
     }))
+}
+
+pub fn job_results_download_response(results_path: impl AsRef<Path>) -> Result<JobResultDownload> {
+    let artifact = read_job_result_artifact(results_path.as_ref())?;
+    Ok(JobResultDownload {
+        content_type: artifact.content_type,
+        body: std::fs::read(results_path)?,
+    })
 }
 
 fn write_mapper_batch_results_inner<I, T>(

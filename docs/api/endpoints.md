@@ -1159,6 +1159,16 @@ For large results:
 }
 ```
 
+Rails clients that need the JSONL payload should request the same endpoint with:
+
+```http
+Accept: application/jsonl
+```
+
+When the job has a JSONL artifact, the API returns the checksum-validated
+artifact body with `Content-Type: application/jsonl`. Without that `Accept`
+header, the endpoint returns the JSON metadata envelope above.
+
 ### 8.4 `POST /jobs/:id/cancel`
 
 Response:

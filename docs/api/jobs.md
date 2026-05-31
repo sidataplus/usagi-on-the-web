@@ -507,6 +507,16 @@ Response with artifact:
 }
 ```
 
+To stream a mapper batch result artifact through the API instead of reading the
+engine file path directly, call the same endpoint with:
+
+```http
+Accept: application/jsonl
+```
+
+If the job has a JSONL artifact, the API validates the manifest checksum and
+returns the artifact body as `Content-Type: application/jsonl`.
+
 ### 19.4 `POST /jobs/:id/cancel`
 
 Response:

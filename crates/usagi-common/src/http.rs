@@ -79,6 +79,16 @@ pub fn is_public_probe_path(path: &str) -> bool {
     parts.next().is_none() && matches!(endpoint, "health" | "status")
 }
 
+pub fn accepts_jsonl(accept_header: Option<&str>) -> bool {
+    accept_header.is_some_and(|value| {
+        value.split(',').any(|part| {
+            let media_type = part.trim().split(';').next().unwrap_or("").trim();
+            media_type.eq_ignore_ascii_case("application/jsonl")
+                || media_type.eq_ignore_ascii_case("application/x-ndjson")
+        })
+    })
+}
+
 fn bearer_token(authorization: Option<&str>) -> Option<&str> {
     authorization?
         .trim()
@@ -90,8 +100,8 @@ fn bearer_token(authorization: Option<&str>) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::{
-        api_body_limit_bytes_from_env_value, api_key_is_authorized, error_envelope_body,
-        is_public_probe_path, rewrite_error_envelope_request_id,
+        accepts_jsonl, api_body_limit_bytes_from_env_value, api_key_is_authorized,
+        error_envelope_body, is_public_probe_path, rewrite_error_envelope_request_id,
     };
     use crate::error::ErrorCode;
 
@@ -157,6 +167,16 @@ mod tests {
         assert!(is_public_probe_path("/mapper/status"));
         assert!(!is_public_probe_path("/search/concepts"));
         assert!(!is_public_probe_path("/jobs/job_1/status"));
+    }
+
+    #[test]
+    fn jsonl_accept_header_supports_rails_result_streaming() {
+        assert!(accepts_jsonl(Some("application/jsonl")));
+        assert!(accepts_jsonl(Some(
+            "application/json, application/x-ndjson; charset=utf-8"
+        )));
+        assert!(!accepts_jsonl(None));
+        assert!(!accepts_jsonl(Some("application/json")));
     }
 
     #[test]
