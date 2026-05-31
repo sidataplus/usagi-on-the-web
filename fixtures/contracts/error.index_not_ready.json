@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "INDEX_NOT_READY",
+    "message": "SapBERT index is not built",
+    "details": {
+      "required_artifact": "sapbert_cls.usearch"
+    },
+    "request_id": "req_contract"
+  }
+}

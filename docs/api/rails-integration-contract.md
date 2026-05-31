@@ -199,8 +199,8 @@ Example provenance:
 ```json
 {
   "catalog_artifact_id": "athena-20250827-standard-v1",
-  "thirawat_model_id": "sidataplus/THIRAWAT-SapBERT",
-  "tachiom_artifact_id": "athena-20250827-thirawat-drug-tachiom-v1",
+  "model_artifact_id": "sidataplus/THIRAWAT-SapBERT",
+  "index_artifact_id": "athena-20250827-thirawat-drug-tachiom-v1",
   "api_version": "0.1.0"
 }
 ```
@@ -228,6 +228,7 @@ request ID propagation
 JSON serialization
 timeouts
 error envelope parsing
+X-API-Key or Authorization bearer authentication
 structured logs
 safe retries for GET
 idempotency keys for job creation
@@ -239,6 +240,7 @@ idempotency keys for job creation
 CATALOG_API_URL=http://catalog-api:8788
 SEARCH_API_URL=http://search-api:8789
 MAPPER_API_URL=http://mapper-api:8790
+USAGI_API_KEY=...
 ENGINE_API_TIMEOUT_SECONDS=30
 ENGINE_API_JOB_POLL_INTERVAL_SECONDS=2
 ```
@@ -395,7 +397,8 @@ class StartAutoMapJob < ApplicationJob
     engine_job.update!(
       api_job_id: response.fetch("job_id"),
       state: response.fetch("state"),
-      status_url: response.fetch("status_url")
+      status_url: response.fetch("status_url"),
+      result_url: response.fetch("result_url")
     )
 
     PollEngineJobJob.set(wait: 2.seconds).perform_later(engine_job.id)

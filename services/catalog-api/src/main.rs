@@ -236,6 +236,7 @@ async fn build_job(
         job_id: job.id.clone(),
         state: job.state,
         status_url: format!("/jobs/{}", job.id),
+        result_url: format!("/jobs/{}/results", job.id),
     }))
 }
 

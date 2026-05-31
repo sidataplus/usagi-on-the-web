@@ -1,0 +1,14 @@
+{
+  "id": "job_map_abc",
+  "kind": "mapper_drugs_batch",
+  "queue": "map",
+  "state": "running",
+  "stage": "bimaxsim_reranking",
+  "processed": 2400,
+  "total": 5000,
+  "failed": 3,
+  "created_at": "2026-05-31T00:00:00Z",
+  "started_at": "2026-05-31T00:00:02Z",
+  "finished_at": null,
+  "updated_at": "2026-05-31T00:10:00Z"
+}

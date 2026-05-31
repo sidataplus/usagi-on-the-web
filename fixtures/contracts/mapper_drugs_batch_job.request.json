@@ -1,0 +1,21 @@
+{
+  "idempotency_key": "project_abc_mapper_drugs_batch_v1",
+  "mode": "thirawat_tachiom",
+  "candidate_top_k": 200,
+  "rerank_top_n": 100,
+  "limit": 20,
+  "items": [
+    {
+      "id": "src_001",
+      "source_code": "SRC001",
+      "source_name": "tramadol hydrochloride 50 mg capsule",
+      "source_frequency": 12
+    },
+    {
+      "id": "src_002",
+      "source_code": "SRC002",
+      "source_name": "metformin 500 mg tablet",
+      "source_frequency": 7
+    }
+  ]
+}

@@ -229,7 +229,8 @@ Response:
 {
   "job_id": "job_map_abc",
   "state": "queued",
-  "status_url": "/jobs/job_map_abc"
+  "status_url": "/jobs/job_map_abc",
+  "result_url": "/jobs/job_map_abc/results"
 }
 ```
 
@@ -533,7 +534,8 @@ Response:
 {
   "job_id": "job_map_retry_def",
   "state": "queued",
-  "status_url": "/jobs/job_map_retry_def"
+  "status_url": "/jobs/job_map_retry_def",
+  "result_url": "/jobs/job_map_retry_def/results"
 }
 ```
 

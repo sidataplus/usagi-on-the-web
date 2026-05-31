@@ -1,0 +1,33 @@
+{
+  "query": "tramadol 50 mg capsule",
+  "mode": "hybrid_rrf",
+  "results": [
+    {
+      "rank": 1,
+      "concept": {
+        "concept_id": 40162522,
+        "concept_name": "Tramadol Hydrochloride 50 MG Oral Capsule",
+        "domain_id": "Drug",
+        "vocabulary_id": "RxNorm",
+        "concept_class_id": "Clinical Drug",
+        "standard_concept": "S",
+        "concept_code": "859751"
+      },
+      "scores": {
+        "tantivy": 12.83,
+        "sapbert": 0.832,
+        "rrf": 0.0318
+      },
+      "component_ranks": {
+        "tantivy": 1,
+        "sapbert": 4
+      },
+      "method": "hybrid_rrf"
+    }
+  ],
+  "provenance": {
+    "catalog_artifact_id": "local-catalog-standard-v1",
+    "model_artifact_id": "sapbert-precomputed-fixture-v1",
+    "index_artifact_id": "local-hybrid-rrf-v1"
+  }
+}

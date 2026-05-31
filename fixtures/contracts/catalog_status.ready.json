@@ -1,0 +1,14 @@
+{
+  "status": "ready",
+  "api_version": "0.1.0",
+  "catalog": {
+    "artifact_id": "local-catalog-standard-v1",
+    "vocabulary_version": "20260227",
+    "concept_count": 50,
+    "scope": {
+      "standard_concept": "S",
+      "invalid_reason": null
+    },
+    "manifest_path": "/data/catalog/manifest.json"
+  }
+}

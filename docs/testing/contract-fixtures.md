@@ -26,46 +26,22 @@ This keeps Rails tests fast and prevents every test run from becoming a distribu
 
 ## 1. Fixture layout
 
+The API repository publishes a flat fixture bundle under `fixtures/contracts/`.
+Rails may copy these files into nested Rails fixture folders if that is more
+ergonomic, but the field shapes should stay identical.
+
 ```text
-test/fixtures/contracts/
-  catalog/
-    status.ready.json
-    status.not_configured.json
-    status.error.json
-
-  search/
-    concepts.hybrid_rrf.request.json
-    concepts.hybrid_rrf.response.json
-    batch.hybrid_rrf.request.json
-    batch.hybrid_rrf.response.json
-    status.ready.json
-    status.not_ready.json
-
-  mapper/
-    status.ready.json
-    status.not_ready.json
-    drugs_query.request.json
-    drugs_query.response.json
-    drugs_batch_job.request.json
-    drugs_batch_job.response.json
-
-  jobs/
-    status.queued.json
-    status.running.json
-    status.succeeded.json
-    status.succeeded_with_errors.json
-    status.failed.json
-    events.running.json
-    results.mapper_success.json
-    results.mapper_partial_failure.json
-
-  errors/
-    index_not_ready.json
-    catalog_not_ready.json
-    model_not_ready.json
-    signature_required.json
-    signature_invalid.json
-    engine_unavailable.json
+fixtures/contracts/
+  catalog_status.ready.json
+  search_concepts.hybrid_rrf.request.json
+  search_concepts.hybrid_rrf.response.json
+  mapper_drugs_query.request.json
+  mapper_drugs_query.response.json
+  mapper_drugs_batch_job.request.json
+  mapper_drugs_batch_job.response.json
+  jobs_status.running.json
+  jobs_results.mapper_success.json
+  error.index_not_ready.json
 ```
 
 ---
@@ -174,8 +150,8 @@ Rails should fail clearly on missing required fields.
   ],
   "provenance": {
     "catalog_artifact_id": "athena-20250827-standard-v1",
-    "tantivy_artifact_id": "athena-20250827-tantivy-v1",
-    "sapbert_artifact_id": "athena-20250827-sapbert-cls-v1"
+    "model_artifact_id": "sapbert-xlmr-merged-v1",
+    "index_artifact_id": "athena-20250827-hybrid-rrf-v1"
   }
 }
 ```
@@ -241,8 +217,8 @@ Rails should fail clearly on missing required fields.
   ],
   "provenance": {
     "catalog_artifact_id": "athena-20250827-standard-v1",
-    "tantivy_artifact_id": "athena-20250827-tantivy-v1",
-    "sapbert_artifact_id": "athena-20250827-sapbert-cls-v1"
+    "model_artifact_id": "sapbert-xlmr-merged-v1",
+    "index_artifact_id": "athena-20250827-hybrid-rrf-v1"
   }
 }
 ```
@@ -311,8 +287,8 @@ Rails should fail clearly on missing required fields.
   ],
   "provenance": {
     "catalog_artifact_id": "athena-20250827-standard-v1",
-    "thirawat_model_id": "sidataplus/THIRAWAT-SapBERT",
-    "tachiom_artifact_id": "athena-20250827-thirawat-drug-tachiom-v1"
+    "model_artifact_id": "sidataplus/THIRAWAT-SapBERT",
+    "index_artifact_id": "athena-20250827-thirawat-drug-tachiom-v1"
   }
 }
 ```
@@ -323,7 +299,8 @@ Rails should fail clearly on missing required fields.
 {
   "job_id": "job_map_abc",
   "state": "queued",
-  "status_url": "/jobs/job_map_abc"
+  "status_url": "/jobs/job_map_abc",
+  "result_url": "/jobs/job_map_abc/results"
 }
 ```
 
@@ -377,46 +354,23 @@ Rails should fail clearly on missing required fields.
 {
   "job_id": "job_map_abc",
   "state": "succeeded",
-  "items": [
-    {
-      "source_id": "src_001",
-      "source_code": "SRC001",
-      "source_name": "tramadol hydrochloride 50 mg capsule",
-      "candidates": [
-        {
-          "rank": 1,
-          "concept": {
-            "concept_id": 40162522,
-            "concept_name": "Tramadol Hydrochloride 50 MG Oral Capsule",
-            "domain_id": "Drug",
-            "vocabulary_id": "RxNorm",
-            "concept_class_id": "Clinical Drug",
-            "standard_concept": "S",
-            "concept_code": "859751"
-          },
-          "scores": {
-            "tachiom_maxsim": 0.92,
-            "bimaxsim": 0.94,
-            "tie_breaker": 0.01,
-            "final": 0.94
-          },
-          "features": {
-            "ingredient_match": true,
-            "strength_exact": true,
-            "dose_form_match": true
-          },
-          "method": "thirawat_tachiom_bimaxsim_tiebreak",
-          "provenance": {
-            "catalog_artifact_id": "athena-20250827-standard-v1",
-            "thirawat_model_id": "sidataplus/THIRAWAT-SapBERT",
-            "tachiom_artifact_id": "athena-20250827-thirawat-drug-tachiom-v1"
-          }
-        }
-      ]
+  "artifact": {
+    "artifact_id": "job_map_abc_results_v1",
+    "path": "/data/jobs/results/job_map_abc/results.jsonl",
+    "manifest_path": "/data/jobs/results/job_map_abc/manifest.json",
+    "content_type": "application/jsonl",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "provenance": {
+      "catalog_artifact_id": "athena-20250827-standard-v1",
+      "model_artifact_id": "sidataplus/THIRAWAT-SapBERT",
+      "index_artifact_id": "athena-20250827-thirawat-drug-tachiom-v1"
     }
-  ]
+  }
 }
 ```
+
+The referenced JSONL result rows contain one mapper batch item response per
+source term.
 
 ### 6.4 `jobs/results.mapper_partial_failure.json`
 
@@ -464,13 +418,13 @@ Rails should fail clearly on missing required fields.
 }
 ```
 
-### 7.2 `errors/signature_invalid.json`
+### 7.2 `errors/api_key_invalid.json`
 
 ```json
 {
   "error": {
-    "code": "SIGNATURE_INVALID",
-    "message": "Request signature is invalid",
+    "code": "UNAUTHORIZED",
+    "message": "missing or invalid API key",
     "details": {},
     "request_id": "req_bad"
   }
@@ -598,8 +552,8 @@ admin status page shows engine unavailable
 Security scenario:
 
 ```text
-valid signed request works
-bad signature fixture maps to friendly error
+valid API key request works
+bad API key fixture maps to friendly error
 ```
 
 ---

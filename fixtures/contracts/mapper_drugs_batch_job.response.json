@@ -1,0 +1,6 @@
+{
+  "job_id": "job_map_abc",
+  "state": "queued",
+  "status_url": "/jobs/job_map_abc",
+  "result_url": "/jobs/job_map_abc/results"
+}

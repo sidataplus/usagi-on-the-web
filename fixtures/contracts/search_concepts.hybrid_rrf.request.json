@@ -1,0 +1,15 @@
+{
+  "q": "tramadol 50 mg capsule",
+  "mode": "hybrid_rrf",
+  "limit": 20,
+  "filters": {
+    "domain_id": [
+      "Drug"
+    ]
+  },
+  "hybrid": {
+    "rrf_k": 60,
+    "lexical_top_k": 100,
+    "sapbert_top_k": 100
+  }
+}

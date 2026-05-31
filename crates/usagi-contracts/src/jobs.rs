@@ -139,6 +139,7 @@ pub struct JobCreateResponse {
     pub job_id: String,
     pub state: JobState,
     pub status_url: String,
+    pub result_url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

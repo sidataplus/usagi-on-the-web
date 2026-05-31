@@ -1,0 +1,13 @@
+{
+  "source_name": "tramadol hydrochloride 50 mg capsule",
+  "source_code": "SRC001",
+  "mode": "thirawat_tachiom",
+  "candidate_top_k": 200,
+  "rerank_top_n": 100,
+  "limit": 20,
+  "post_rank": {
+    "mode": "tiebreak",
+    "epsilon": 0.01,
+    "top_n": 100
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "query": {
+    "source_name": "tramadol hydrochloride 50 mg capsule",
+    "source_code": "SRC001",
+    "query_text": "tramadol hydrochloride 50 mg capsule"
+  },
+  "mode": "thirawat_tachiom",
+  "candidates": [
+    {
+      "rank": 1,
+      "concept": {
+        "concept_id": 40162522,
+        "concept_name": "Tramadol Hydrochloride 50 MG Oral Capsule",
+        "domain_id": "Drug",
+        "vocabulary_id": "RxNorm",
+        "concept_class_id": "Clinical Drug",
+        "standard_concept": "S",
+        "concept_code": "859751"
+      },
+      "scores": {
+        "tachiom_maxsim": 0.92,
+        "bimaxsim": 0.94,
+        "tie_breaker": 0.01,
+        "final": 0.94
+      },
+      "features": {
+        "ingredient_match": true,
+        "strength_exact": true,
+        "dose_form_match": true
+      },
+      "method": "thirawat_tachiom_bimaxsim_tiebreak"
+    }
+  ],
+  "provenance": {
+    "catalog_artifact_id": "local-catalog-standard-v1",
+    "model_artifact_id": "sidataplus/THIRAWAT-SapBERT",
+    "index_artifact_id": "local-thirawat-drug-tachiom-v1"
+  }
+}

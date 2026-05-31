@@ -386,7 +386,8 @@ Response:
 {
   "job_id": "job_catalog_abc",
   "state": "queued",
-  "status_url": "/jobs/job_catalog_abc"
+  "status_url": "/jobs/job_catalog_abc",
+  "result_url": "/jobs/job_catalog_abc/results"
 }
 ```
 
@@ -577,7 +578,8 @@ Response:
 {
   "job_id": "job_tantivy_abc",
   "state": "queued",
-  "status_url": "/jobs/job_tantivy_abc"
+  "status_url": "/jobs/job_tantivy_abc",
+  "result_url": "/jobs/job_tantivy_abc/results"
 }
 ```
 
@@ -604,7 +606,8 @@ Response:
 {
   "job_id": "job_sapbert_abc",
   "state": "queued",
-  "status_url": "/jobs/job_sapbert_abc"
+  "status_url": "/jobs/job_sapbert_abc",
+  "result_url": "/jobs/job_sapbert_abc/results"
 }
 ```
 
@@ -670,8 +673,8 @@ Response:
   ],
   "provenance": {
     "catalog_artifact_id": "athena-20250827-standard-v1",
-    "tantivy_artifact_id": "athena-20250827-tantivy-v1",
-    "sapbert_artifact_id": "athena-20250827-sapbert-cls-v1"
+    "model_artifact_id": "sapbert-xlmr-merged-v1",
+    "index_artifact_id": "athena-20250827-hybrid-rrf-v1"
   }
 }
 ```
@@ -817,7 +820,8 @@ Response:
 {
   "job_id": "job_thirawat_docemb_abc",
   "state": "queued",
-  "status_url": "/jobs/job_thirawat_docemb_abc"
+  "status_url": "/jobs/job_thirawat_docemb_abc",
+  "result_url": "/jobs/job_thirawat_docemb_abc/results"
 }
 ```
 
@@ -843,7 +847,8 @@ Response:
 {
   "job_id": "job_tachiom_abc",
   "state": "queued",
-  "status_url": "/jobs/job_tachiom_abc"
+  "status_url": "/jobs/job_tachiom_abc",
+  "result_url": "/jobs/job_tachiom_abc/results"
 }
 ```
 
@@ -921,8 +926,8 @@ Response:
   ],
   "provenance": {
     "catalog_artifact_id": "athena-20250827-standard-v1",
-    "thirawat_model_id": "sidataplus/THIRAWAT-SapBERT",
-    "tachiom_artifact_id": "athena-20250827-thirawat-drug-tachiom-v1"
+    "model_artifact_id": "sidataplus/THIRAWAT-SapBERT",
+    "index_artifact_id": "athena-20250827-thirawat-drug-tachiom-v1"
   }
 }
 ```
@@ -1014,7 +1019,8 @@ Response:
 {
   "job_id": "job_map_abc",
   "state": "queued",
-  "status_url": "/jobs/job_map_abc"
+  "status_url": "/jobs/job_map_abc",
+  "result_url": "/jobs/job_map_abc/results"
 }
 ```
 
@@ -1180,7 +1186,8 @@ Response:
 {
   "job_id": "job_map_retry_def",
   "state": "queued",
-  "status_url": "/jobs/job_map_retry_def"
+  "status_url": "/jobs/job_map_retry_def",
+  "result_url": "/jobs/job_map_retry_def/results"
 }
 ```
 

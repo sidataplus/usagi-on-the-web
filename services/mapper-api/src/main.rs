@@ -536,6 +536,7 @@ fn job_response(job: usagi_contracts::jobs::JobDto) -> JobCreateResponse {
         job_id: job.id.clone(),
         state: job.state,
         status_url: format!("/jobs/{}", job.id),
+        result_url: format!("/jobs/{}/results", job.id),
     }
 }
 

@@ -1,0 +1,16 @@
+{
+  "job_id": "job_map_abc",
+  "state": "succeeded",
+  "artifact": {
+    "artifact_id": "job_map_abc_results_v1",
+    "path": "/data/jobs/results/job_map_abc/results.jsonl",
+    "manifest_path": "/data/jobs/results/job_map_abc/manifest.json",
+    "content_type": "application/jsonl",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "provenance": {
+      "catalog_artifact_id": "local-catalog-standard-v1",
+      "model_artifact_id": "sidataplus/THIRAWAT-SapBERT",
+      "index_artifact_id": "local-thirawat-drug-tachiom-v1"
+    }
+  }
+}
