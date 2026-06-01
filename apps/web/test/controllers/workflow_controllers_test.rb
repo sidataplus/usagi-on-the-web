@@ -109,6 +109,17 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Export reviewed mappings"
   end
 
+  test "new project has useful empty state" do
+    get project_path(@project)
+
+    assert_response :success
+    assert_includes response.body, "Start with an import"
+    assert_includes response.body, "Import source terms"
+    assert_includes response.body, "Suggest candidates"
+    assert_includes response.body, "Review mappings"
+    assert_includes response.body, "Export approved rows"
+  end
+
   test "project overview does not show fake suggestion progress when counts are absent" do
     create_mapping!(project: @project)
     @project.engine_jobs.create!(
@@ -404,6 +415,7 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "1 waiting on suggestions"
     assert_includes response.body, "Engine attention"
     assert_includes response.body, "MODEL_NOT_CONFIGURED"
+    assert_includes response.body, "Showing up to 50 rows per page"
   end
 
   test "candidate detail explains evidence and offers fast next actions" do
@@ -442,6 +454,11 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "dose form differs"
     assert_includes response.body, "Use and next"
     assert_includes response.body, "Approve and next"
+    assert_includes response.body, "Keyboard"
+    assert_includes response.body, "A"
+    assert_includes response.body, "Approve"
+    assert_includes response.body, "N"
+    assert_includes response.body, "Next mapping"
   end
 
   test "candidate can be applied and advanced to the next mapping" do

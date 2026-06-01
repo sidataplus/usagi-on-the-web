@@ -108,6 +108,15 @@
                 <%= f.submit "Save equivalence", class: "btn btn--primary btn--sm" %>
               <% end %>
             </div>
+
+            <div class="box stack-sm">
+              <h3 class="box__title" style="margin: 0">Keyboard</h3>
+              <div class="shortcuts shortcuts--compact">
+                <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Invalid" ], [ "N", "Next mapping" ], [ "← →", "Previous / next" ] ].each do |key, label| %>
+                  <span class="shortcuts__item"><kbd><%= key %></kbd> <%= label %></span>
+                <% end %>
+              </div>
+            </div>
           </aside>
         </div>
 

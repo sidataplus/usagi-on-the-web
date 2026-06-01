@@ -358,9 +358,63 @@
 /* ---- Empty states ------------------------------------------------------- */
 .empty { text-align: center; padding: var(--space-xl) var(--space-md); }
 .empty__art { font-size: 2.5rem; }
+.empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.6rem;
+  block-size: 2.6rem;
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--color-accent) 14%, var(--color-bg));
+  color: var(--color-accent-ink);
+}
 .empty__title { font-size: 1.15rem; margin-block-start: var(--space); }
 .empty__body { color: var(--color-text-subtle); margin-block-start: var(--space-xs); }
 .empty > .btn, .empty > * + .btn { margin-block-start: var(--space-md); }
+.empty--workflow {
+  margin-block-end: var(--space);
+  text-align: start;
+}
+.empty--workflow .empty__body {
+  max-inline-size: 42rem;
+}
+.empty__actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-block-start: var(--space);
+}
+.empty-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin-block-start: var(--space);
+  padding: 0;
+  list-style: none;
+  counter-reset: empty-step;
+}
+.empty-steps li {
+  counter-increment: empty-step;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-sunken);
+  color: var(--color-text-subtle);
+  font-size: 0.88rem;
+}
+.empty-steps li::before {
+  content: counter(empty-step);
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.35rem;
+  block-size: 1.35rem;
+  margin-inline-end: var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
 
 /* ---- Flash -------------------------------------------------------------- */
 .flash {

@@ -48,6 +48,11 @@ source terms, review state, and final mapping decisions.
 | `USAGI_API_KEYS` | none, fail closed | Comma-separated API keys |
 | `USAGI_API_BODY_LIMIT_BYTES` | `262144` | JSON request body limit |
 
+When `THIRAWAT_QUERY_EMBEDDINGS_PATH` points at a ready fixture artifact,
+`/mapper/status` reports `query_mode: "precomputed"`. This is intended for
+local smoke tests and fixture-backed Rails integration checks; production should
+use the full THIRAWAT model artifact path.
+
 ## Endpoints
 
 Public probes:

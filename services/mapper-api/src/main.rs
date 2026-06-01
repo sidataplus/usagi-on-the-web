@@ -306,14 +306,30 @@ async fn status(State(state): State<AppState>) -> Json<serde_json::Value> {
     let tachiom_status = status_label(validate_tachiom_artifact(TachiomArtifactPaths {
         index_dir: state.tachiom_index_dir,
     }));
-    Json(json!({
-        "status": if model_status == "ready" && doc_status == "ready" && tachiom_status == "ready" {
-            "ready"
-        } else {
-            "not_configured"
+    let query_status = status_label(state.query_embeddings_path.as_ref().map_or(
+        Err(UsagiError::new(
+            ErrorCode::IndexNotReady,
+            "precomputed query embeddings are not configured",
+        )),
+        |path| {
+            if path.exists() {
+                Ok(())
+            } else {
+                Err(UsagiError::new(
+                    ErrorCode::IndexNotReady,
+                    format!(
+                        "precomputed query embeddings are missing {}",
+                        path.display()
+                    ),
+                ))
+            }
         },
+    ));
+    Json(json!({
+        "status": mapper_readiness_status(model_status, doc_status, tachiom_status, query_status),
         "api_version": "0.1.0",
         "domain_support": ["Drug"],
+        "query_mode": if query_status == "ready" { "precomputed" } else { "model" },
         "model": {
             "status": model_status,
             "model_id": "sidataplus/THIRAWAT-SapBERT"
@@ -322,11 +338,7 @@ async fn status(State(state): State<AppState>) -> Json<serde_json::Value> {
             "thirawat_doc_embeddings": {"status": doc_status},
             "tachiom": {"status": tachiom_status},
             "precomputed_query_embeddings": {
-                "status": if state.query_embeddings_path.as_ref().is_some_and(|path| path.exists()) {
-                    "ready"
-                } else {
-                    "not_configured"
-                }
+                "status": query_status
             }
         }
     }))
@@ -663,6 +675,22 @@ fn status_label(result: Result<(), UsagiError>) -> &'static str {
     }
 }
 
+fn mapper_readiness_status(
+    model_status: &str,
+    doc_status: &str,
+    tachiom_status: &str,
+    query_status: &str,
+) -> &'static str {
+    if doc_status == "ready"
+        && tachiom_status == "ready"
+        && (model_status == "ready" || query_status == "ready")
+    {
+        "ready"
+    } else {
+        "not_configured"
+    }
+}
+
 struct ApiError(UsagiError);
 
 impl From<UsagiError> for ApiError {
@@ -688,5 +716,34 @@ impl IntoResponse for ApiError {
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(ErrorEnvelope::from(self.0))).into_response()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::mapper_readiness_status;
+
+    #[test]
+    fn mapper_is_ready_with_full_model_artifacts() {
+        assert_eq!(
+            mapper_readiness_status("ready", "ready", "ready", "not_configured"),
+            "ready"
+        );
+    }
+
+    #[test]
+    fn mapper_is_ready_with_precomputed_query_artifacts() {
+        assert_eq!(
+            mapper_readiness_status("not_configured", "ready", "ready", "ready"),
+            "ready"
+        );
+    }
+
+    #[test]
+    fn mapper_is_not_ready_without_retrieval_artifacts() {
+        assert_eq!(
+            mapper_readiness_status("ready", "ready", "not_configured", "ready"),
+            "not_configured"
+        );
     }
 }

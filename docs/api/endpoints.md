@@ -778,6 +778,7 @@ Response:
   "status": "ready",
   "api_version": "0.1.0",
   "domain_support": ["Drug"],
+  "query_mode": "model",
   "model": {
     "status": "ready",
     "model_id": "sidataplus/THIRAWAT-SapBERT",
@@ -795,6 +796,11 @@ Response:
   }
 }
 ```
+
+For local fixture smoke tests, `query_mode` may be `"precomputed"` and the
+overall service status may be `"ready"` when THIRAWAT document embeddings,
+Tachiom, and `THIRAWAT_QUERY_EMBEDDINGS_PATH` are ready even if full model
+weights are not configured.
 
 ### 7.2 `POST /mapper/thirawat/build-embeddings-job`
 

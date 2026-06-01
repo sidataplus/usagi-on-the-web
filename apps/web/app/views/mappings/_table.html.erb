@@ -60,7 +60,7 @@
     </table>
 
     <div class="row-between small subtle" style="padding: var(--space-sm) var(--space); border-block-start: 1px solid var(--color-border)">
-      <span>Page <%= page %> of <%= total_pages %> · <%= number_with_delimiter(total) %> total</span>
+      <span>Page <%= page %> of <%= total_pages %> · <%= number_with_delimiter(total) %> total · Showing up to 50 rows per page</span>
       <div class="row" style="gap: var(--space-sm)">
         <% if page > 1 %>
           <%= link_to project_mappings_path(project, status: status, q: query, sort: sort, direction: direction, page: page - 1),

@@ -27,6 +27,30 @@
   </div>
 </div>
 
+<% if @project.total_mappings.zero? %>
+  <section class="box empty empty--workflow">
+    <div class="empty__icon"><%= lucide_icon "upload", class: "icon" %></div>
+    <h2 class="empty__title">Start with an import</h2>
+    <p class="empty__body">
+      Bring in a source vocabulary file, then let the engine suggest candidates while reviewers keep the final say.
+    </p>
+    <div class="empty__actions">
+      <%= link_to new_project_import_path(@project), class: "btn btn--primary" do %>
+        <%= lucide_icon "upload", class: "icon" %> Import source terms
+      <% end %>
+      <%= link_to manage_project_path(@project), class: "btn" do %>
+        <%= lucide_icon "settings", class: "icon" %> Check project settings
+      <% end %>
+    </div>
+    <ol class="empty-steps" aria-label="Mapping workflow">
+      <li>Import source terms</li>
+      <li>Suggest candidates</li>
+      <li>Review mappings</li>
+      <li>Export approved rows</li>
+    </ol>
+  </section>
+<% end %>
+
 <div class="workbench-strip">
   <section class="box stack-sm">
     <div class="row-between">

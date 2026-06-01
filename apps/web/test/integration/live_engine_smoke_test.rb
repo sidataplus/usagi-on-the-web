@@ -32,7 +32,7 @@ class LiveEngineSmokeTest < ActiveSupport::TestCase
     end
 
     search_results = search_client.search_concepts(
-      q: "tramadol hcl 50mg cap",
+      q: "tramadol 50 mg capsule",
       filters: { domain_id: ["Drug"] },
       limit: 3
     )
@@ -54,8 +54,8 @@ class LiveEngineSmokeTest < ActiveSupport::TestCase
     end
 
     mapper_results = mapper_client.drug_candidates(
-      source_name: "tramadol hcl 50mg cap",
-      source_code: "SRC_TRAMADOL_50",
+      source_name: "tramadol hydrochloride 50 mg capsule",
+      source_code: "SRC_TRAMADOL_50_CAP",
       limit: 3
     )
 
