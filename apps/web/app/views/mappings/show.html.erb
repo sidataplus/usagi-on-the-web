@@ -120,16 +120,16 @@
           </aside>
         </div>
 
-        <div class="grid grid--halves" style="margin-block-start: var(--space)">
-          <div class="box">
-            <h3 class="box__title row" style="gap: var(--space-xs)"><%= lucide_icon "history", class: "icon" %> History</h3>
+        <div class="grid grid--halves quiet-section">
+          <details class="details-panel">
+            <summary><%= lucide_icon "history", class: "icon" %> History</summary>
             <%= render "mappings/history", events: @events %>
-          </div>
-          <div class="box">
-            <h3 class="box__title row" style="gap: var(--space-xs)"><%= lucide_icon "message-square", class: "icon" %> Comments</h3>
+          </details>
+          <details class="details-panel">
+            <summary><%= lucide_icon "message-square", class: "icon" %> Comments</summary>
             <%= render "mappings/comments", mapping: @mapping, comments: @comments %>
             <%= render "mappings/comment_form", mapping: @mapping, comment: nil %>
-          </div>
+          </details>
         </div>
       </div>
 

@@ -100,6 +100,9 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_path(@project)
 
     assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
+    assert_select ".quiet-section", minimum: 1
+    assert_select ".details-panel", minimum: 1
     assert_includes response.body, "Review queue"
     assert_includes response.body, "Review unchecked mappings"
     assert_includes response.body, "Suggest candidates"
@@ -113,6 +116,7 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_path(@project)
 
     assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
     assert_includes response.body, "Start with an import"
     assert_includes response.body, "Import source terms"
     assert_includes response.body, "Suggest candidates"
@@ -162,6 +166,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_import_session_path(@project, import)
 
     assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
+    assert_select ".quiet-section", minimum: 1
     assert_includes response.body, "Review handoff"
     assert_includes response.body, "Ready for review"
     assert_includes response.body, "1 source term became a mapping"
@@ -222,6 +228,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_engine_jobs_path(@project)
 
     assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
+    assert_select ".quiet-section", minimum: 1
     assert_includes response.body, "Job recovery lane"
     assert_includes response.body, "Suggestion jobs feed the Review workspace"
     assert_includes response.body, "Open latest issue"
@@ -268,6 +276,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_exports_path(@project)
 
     assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
+    assert_select ".details-panel", minimum: 1
     assert_includes response.body, "Export reviewed mappings"
     assert_includes response.body, "Export readiness"
     assert_includes response.body, "1 approved mapping"
@@ -405,6 +415,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_mappings_path(@project)
 
     assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
+    assert_select ".secondary-actions", minimum: 1
     assert_includes response.body, "Review command lane"
     assert_includes response.body, "Open next unchecked"
     assert_includes response.body, "SRC_READY"
@@ -445,6 +457,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Review cockpit"
+    assert_select "details.candidate-card__why"
+    assert_select ".details-panel", minimum: 1
     assert_includes response.body, "Why this candidate"
     assert_includes response.body, "Final 0.93"
     assert_includes response.body, "BiMaxSim 0.88"
@@ -567,6 +581,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get admin_engine_status_path
 
     assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
+    assert_select "details.details-panel", minimum: 1
     assert_includes response.body, "Mapping engine readiness"
     assert_includes response.body, "Catalog lookup is ready"
     assert_includes response.body, "Hybrid search is degraded"

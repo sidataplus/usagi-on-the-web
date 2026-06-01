@@ -5,15 +5,42 @@
     <h1 class="page-head__title">Projects</h1>
     <p class="page-head__subtitle">Your concept mapping projects.</p>
   </div>
-  <div class="page-head__actions">
-    <%= link_to new_project_path, class: "btn btn--primary" do %>
+  <div class="page-head__actions secondary-actions">
+    <%= link_to new_project_path, class: "btn" do %>
       <%= lucide_icon "plus", class: "icon" %> New project
     <% end %>
   </div>
 </div>
 
 <% if @projects.any? %>
-  <div class="grid grid--cards">
+  <% next_project = @projects.first %>
+  <section class="next-action-panel" aria-label="Next project action">
+    <div class="next-action-panel__body">
+      <div class="eyebrow">Next step</div>
+      <h2 class="next-action-panel__title">Open your latest project</h2>
+      <p class="next-action-panel__copy">
+        Continue from <strong><%= next_project.name %></strong>, updated <%= time_ago_in_words(next_project.updated_at) %> ago.
+      </p>
+      <div class="next-action-panel__meta">
+        <span><%= next_project.approved_count %> of <%= next_project.total_mappings %> approved</span>
+        <span><%= next_project.unchecked_count %> unchecked</span>
+      </div>
+    </div>
+    <div class="next-action-panel__actions">
+      <%= link_to project_path(next_project), class: "btn btn--primary" do %>
+        <%= lucide_icon "folder-open", class: "icon" %> Open project
+      <% end %>
+      <%= link_to new_project_path, class: "btn" do %>
+        <%= lucide_icon "plus", class: "icon" %> New project
+      <% end %>
+    </div>
+  </section>
+
+  <section class="quiet-section" aria-label="All projects">
+    <div class="quiet-section__head">
+      <h2 class="quiet-section__title">Projects</h2>
+    </div>
+    <div class="grid grid--cards">
     <% @projects.each do |project| %>
       <%= link_to project_path(project), class: "box box--link stack-sm" do %>
         <div class="row-between">
@@ -37,14 +64,24 @@
         </div>
       <% end %>
     <% end %>
-  </div>
+    </div>
+  </section>
 
   <%= render "shared/pagination", page: @page, total_pages: @total_pages, path_proc: ->(p) { projects_path(page: p) } %>
 <% else %>
-  <div class="box empty">
-    <div class="empty__art">🐰</div>
-    <p class="empty__title">No projects yet</p>
-    <p class="empty__body">Create your first project to start mapping source codes.</p>
-    <%= link_to "New project", new_project_path, class: "btn btn--primary" %>
-  </div>
+  <section class="next-action-panel" aria-label="Next project action">
+    <div class="next-action-panel__body">
+      <div class="eyebrow">Next step</div>
+      <h2 class="next-action-panel__title">Create your first project</h2>
+      <p class="next-action-panel__copy">Start mapping source codes by setting up the project container first.</p>
+    </div>
+    <div class="next-action-panel__actions">
+      <%= link_to new_project_path, class: "btn btn--primary" do %>
+        <%= lucide_icon "plus", class: "icon" %> New project
+      <% end %>
+    </div>
+  </section>
+  <section class="quiet-section">
+    <p class="subtle small">No projects yet.</p>
+  </section>
 <% end %>

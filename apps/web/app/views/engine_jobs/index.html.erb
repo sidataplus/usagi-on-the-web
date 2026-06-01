@@ -5,8 +5,8 @@
     <h1 class="page-head__title">Engine jobs</h1>
     <p class="page-head__subtitle"><%= @project.name %></p>
   </div>
-  <div class="page-head__actions">
-    <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
+  <div class="page-head__actions secondary-actions">
+    <%= link_to project_mappings_path(@project), class: "btn" do %>
       <%= lucide_icon "table", class: "icon" %> Review mappings
     <% end %>
     <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
@@ -15,9 +15,9 @@
   </div>
 </div>
 
-<section class="job-recovery-lane" aria-label="Job recovery lane">
+<section class="job-recovery-lane next-action-panel" aria-label="Job recovery lane">
   <div>
-    <div class="eyebrow">Job recovery lane</div>
+    <div class="eyebrow">Next step · Job recovery lane</div>
     <% if @latest_issue_job.present? %>
       <h2><%= @latest_issue_job.job_type.humanize %></h2>
       <p class="small subtle">
@@ -53,7 +53,7 @@
   </div>
 </section>
 
-<div class="review-brief">
+<div class="review-brief quiet-section">
   <div>
     <strong>Suggestion jobs feed the Review workspace.</strong>
     <span class="subtle">Use this page for progress, failures, and retry decisions; candidates appear on mapping rows.</span>
@@ -61,27 +61,30 @@
   <%= link_to "Open review", project_mappings_path(@project), class: "btn btn--sm" %>
 </div>
 
-<div class="box box--flush">
-  <table class="table">
-    <thead><tr><th>Type</th><th>Status</th><th>Progress</th><th>Failed</th><th>Idempotency key</th><th>Created</th><th></th></tr></thead>
-    <tbody>
-      <% @engine_jobs.each do |job| %>
-        <tr>
-          <td><%= job.job_type.humanize.downcase %></td>
-          <td><span class="badge badge--neutral"><%= job.status.humanize %></span></td>
-          <td>
-            <% if job.total.to_i.positive? %>
-              <%= job.processed.to_i %>/<%= job.total.to_i %>
-            <% else %>
-              <span class="subtle">Not reported</span>
-            <% end %>
-          </td>
-          <td><%= job.failed.to_i %></td>
-          <td class="mono"><%= job.idempotency_key %></td>
-          <td><%= job.created_at.to_fs(:short) %></td>
-          <td><%= link_to "Open", project_engine_job_path(@project, job), class: "btn btn--sm" %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-</div>
+<details class="details-panel quiet-section">
+  <summary>Job table</summary>
+  <div class="box--flush">
+    <table class="table">
+      <thead><tr><th>Type</th><th>Status</th><th>Progress</th><th>Failed</th><th>Idempotency key</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        <% @engine_jobs.each do |job| %>
+          <tr>
+            <td><%= job.job_type.humanize.downcase %></td>
+            <td><span class="badge badge--neutral"><%= job.status.humanize %></span></td>
+            <td>
+              <% if job.total.to_i.positive? %>
+                <%= job.processed.to_i %>/<%= job.total.to_i %>
+              <% else %>
+                <span class="subtle">Not reported</span>
+              <% end %>
+            </td>
+            <td><%= job.failed.to_i %></td>
+            <td class="mono"><%= job.idempotency_key %></td>
+            <td><%= job.created_at.to_fs(:short) %></td>
+            <td><%= link_to "Open", project_engine_job_path(@project, job), class: "btn btn--sm" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</details>

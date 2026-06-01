@@ -5,27 +5,31 @@
     <h1 class="page-head__title">Engine status</h1>
     <p class="page-head__subtitle">Readiness from the internal usagi-api services.</p>
   </div>
-  <div class="page-head__actions">
+  <div class="page-head__actions secondary-actions">
     <%= link_to projects_path, class: "btn" do %>
       <%= lucide_icon "table", class: "icon" %> Review mappings
     <% end %>
   </div>
 </div>
 
-<section class="box stack-sm engine-summary">
-  <div class="row-between">
-    <div>
-      <div class="eyebrow">Mapping engine readiness</div>
-      <h2 class="box__title" style="margin: 0"><%= @mapping_ready ? "Suggestions are ready" : "Suggestions need attention" %></h2>
-    </div>
-    <span class="badge badge--<%= @mapping_ready ? "ok" : "warn" %>"><%= @mapping_ready ? "Ready" : "Needs attention" %></span>
+<section class="next-action-panel engine-summary">
+  <div class="next-action-panel__body">
+    <div class="eyebrow">Next step · Mapping engine readiness</div>
+    <h2 class="next-action-panel__title"><%= @mapping_ready ? "Suggestions are ready" : "Suggestions need attention" %></h2>
+    <p class="next-action-panel__copy">
+      Rails will keep review decisions local, but candidate suggestions depend on these internal engine services.
+    </p>
   </div>
-  <p class="subtle small">
-    Rails will keep review decisions local, but candidate suggestions depend on these internal engine services.
-  </p>
+
+  <div class="next-action-panel__actions">
+    <span class="badge badge--<%= @mapping_ready ? "ok" : "warn" %>"><%= @mapping_ready ? "Ready" : "Needs attention" %></span>
+    <%= link_to projects_path, class: "btn" do %>
+      <%= lucide_icon "table", class: "icon" %> Review mappings
+    <% end %>
+  </div>
 </section>
 
-<div class="grid grid--cards" style="margin-block-start: var(--space)">
+<div class="grid grid--cards quiet-section">
   <% @engine_services.each do |service| %>
     <section class="box stack-sm engine-service">
       <div class="row-between">
@@ -53,17 +57,17 @@
       <% end %>
 
       <% if service[:artifacts].any? %>
-        <div>
-          <div class="small subtle">Artifact IDs</div>
+        <details class="details-panel">
+          <summary class="small">Artifact IDs</summary>
           <ul class="engine-service__facts">
             <% service[:artifacts].each do |item| %>
               <li><span class="mono"><%= item %></span></li>
             <% end %>
           </ul>
-        </div>
+        </details>
       <% end %>
 
-      <details>
+      <details class="details-panel">
         <summary class="small">Raw status payload</summary>
         <pre class="code small"><%= JSON.pretty_generate(service[:payload].except("status")).truncate(1000) %></pre>
       </details>

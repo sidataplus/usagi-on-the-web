@@ -31,7 +31,7 @@
           <% if candidate.respond_to?(:concept_code) && candidate.concept_code.present? %><span class="mono"><%= candidate.concept_code %></span><% end %>
         </div>
 
-        <details class="candidate-card__why" open>
+        <details class="candidate-card__why">
           <summary>Why this candidate</summary>
           <div class="candidate-evidence">
             <% scores.each do |label, value| %>

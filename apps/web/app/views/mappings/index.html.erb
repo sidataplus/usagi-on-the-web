@@ -8,22 +8,22 @@
       <%= number_with_delimiter(@project.total_mappings) %> source codes
     </p>
   </div>
-  <div class="page-head__actions">
+  <div class="page-head__actions secondary-actions">
     <%= link_to manage_project_path(@project), class: "btn" do %>
       <%= lucide_icon "settings", class: "icon" %> Settings
     <% end %>
     <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
       <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
     <% end %>
-    <%= link_to project_export_path(@project, "inline"), data: { turbo_frame: "modal" }, class: "btn btn--primary" do %>
+    <%= link_to project_export_path(@project, "inline"), data: { turbo_frame: "modal" }, class: "btn" do %>
       <%= lucide_icon "download", class: "icon" %> Export
     <% end %>
   </div>
 </div>
 
-<section class="review-lane" aria-label="Review command lane">
+<section class="review-lane next-action-panel" aria-label="Review command lane">
   <div class="review-lane__primary">
-    <div class="eyebrow">Review command lane</div>
+    <div class="eyebrow">Next step · Review command lane</div>
     <% if @next_review_mapping.present? %>
       <h2><%= @next_review_mapping.source_name %></h2>
       <p class="small subtle">
@@ -86,7 +86,7 @@
   </div>
 </section>
 
-<div class="review-brief">
+<div class="review-brief quiet-section">
   <div>
     <strong><%= @project.drug_domain? ? "Drug mapper" : "Hybrid search" %></strong>
     <span class="subtle">suggestions feed the candidate list; reviewers still decide.</span>
@@ -119,11 +119,12 @@
   <% end %>
 </div>
 
-<div class="box" style="margin-block-start: var(--space)">
+<details class="details-panel quiet-section">
+  <summary>Shortcut help</summary>
   <div class="shortcuts">
     <span class="row" style="gap: var(--space-xs); color: var(--color-text)"><%= lucide_icon "info", class: "icon" %> <strong>Shortcuts</strong> (in detail view)</span>
     <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Invalid" ], [ "N", "Next" ], [ "E", "Edit" ], [ "← →", "Prev / next" ] ].each do |key, label| %>
       <span class="shortcuts__item"><kbd><%= key %></kbd> <%= label %></span>
     <% end %>
   </div>
-</div>
+</details>

@@ -26,6 +26,22 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
+  test "projects page leads with the next project action" do
+    get projects_path
+
+    assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
+    assert_select ".quiet-section", minimum: 1
+  end
+
+  test "settings page keeps preferences secondary to saving review defaults" do
+    get settings_path
+
+    assert_response :success
+    assert_select ".next-action-panel", text: /Next step/
+    assert_select ".details-panel", minimum: 1
+  end
+
   test "mapping detail and status update render" do
     get mapping_path(@mapping)
     assert_response :success

@@ -105,6 +105,15 @@
   align-content: start;
   gap: var(--space-sm);
 }
+.review-lane.next-action-panel > * {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.review-lane.next-action-panel .review-lane__candidate,
+.review-lane.next-action-panel .review-lane__metrics div {
+  background: var(--color-sunken);
+}
 
 .review-brief {
   display: flex;

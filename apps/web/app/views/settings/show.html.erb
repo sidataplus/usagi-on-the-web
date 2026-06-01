@@ -1,59 +1,75 @@
 <% content_for :title, "Settings" %>
 
 <div class="page-head">
-  <h1 class="page-head__title">Settings</h1>
+  <div>
+    <h1 class="page-head__title">Settings</h1>
+    <p class="page-head__subtitle">Review defaults and personal workflow preferences.</p>
+  </div>
 </div>
 
 <%= form_with url: settings_path, method: :patch, local: true, class: "prose stack" do %>
-  <div class="box stack">
-    <h2 class="box__title">Display</h2>
-    <p class="subtle small">Dark mode follows your operating system automatically.</p>
-    <div class="row-between">
-      <div>
-        <strong>Rows per page</strong>
-        <p class="subtle small">How many mappings to show in the review table.</p>
-      </div>
-      <select name="preferences[rows_per_page]" class="select" style="inline-size: auto">
-        <% [ 25, 50, 100 ].each do |n| %>
-          <option value="<%= n %>" <%= "selected" if @prefs["rows_per_page"].to_i == n %>><%= n %></option>
-        <% end %>
-      </select>
+  <section class="next-action-panel" aria-label="Next settings action">
+    <div class="next-action-panel__body">
+      <div class="eyebrow">Next step</div>
+      <h2 class="next-action-panel__title">Save review defaults</h2>
+      <p class="next-action-panel__copy">Keep the review table density and personal notifications aligned with how you work.</p>
     </div>
-  </div>
-
-  <div class="box stack">
-    <div>
-      <h2 class="box__title" style="margin: 0">Keyboard shortcuts</h2>
-      <p class="subtle small">Available while reviewing mappings.</p>
+    <div class="next-action-panel__actions">
+      <%= submit_tag "Save preferences", class: "btn btn--primary" %>
     </div>
-    <dl class="facts">
-      <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Mark invalid" ], [ "N", "Next" ], [ "E", "Edit / open details" ], [ "← →", "Previous / next in detail view" ] ].each do |key, desc| %>
-        <div><dt><%= desc %></dt><dd><kbd><%= key %></kbd></dd></div>
-      <% end %>
-    </dl>
-  </div>
+  </section>
 
-  <div class="box stack">
-    <h2 class="box__title">Notifications</h2>
-    <% [
-      [ "email_notifications", "Email notifications", "Activity summaries by email." ],
-      [ "assignment_alerts", "Assignment alerts", "When a mapping is assigned to you." ],
-      [ "weekly_digest", "Weekly digest", "A weekly roundup of project progress." ]
-    ].each do |key, label, desc| %>
-      <div class="row-between">
-        <div>
-          <strong><%= label %></strong>
-          <p class="subtle small"><%= desc %></p>
+  <section class="quiet-section" aria-label="Preference details">
+    <details class="details-panel" open>
+      <summary>Display</summary>
+      <div class="stack">
+        <p class="subtle small">Dark mode follows your operating system automatically.</p>
+        <div class="row-between">
+          <div>
+            <strong>Rows per page</strong>
+            <p class="subtle small">How many mappings to show in the review table.</p>
+          </div>
+          <select name="preferences[rows_per_page]" class="select" style="inline-size: auto">
+            <% [ 25, 50, 100 ].each do |n| %>
+              <option value="<%= n %>" <%= "selected" if @prefs["rows_per_page"].to_i == n %>><%= n %></option>
+            <% end %>
+          </select>
         </div>
-        <label class="switch">
-          <input type="checkbox" name="preferences[<%= key %>]" value="1" <%= "checked" if @prefs[key] %>>
-          <span class="switch__track"></span>
-        </label>
       </div>
-    <% end %>
-  </div>
+    </details>
 
-  <div class="row" style="justify-content: flex-end">
-    <%= submit_tag "Save preferences", class: "btn btn--primary" %>
-  </div>
+    <details class="details-panel">
+      <summary>Keyboard shortcuts</summary>
+      <div class="stack">
+        <p class="subtle small">Available while reviewing mappings.</p>
+        <dl class="facts">
+          <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Mark invalid" ], [ "N", "Next" ], [ "E", "Edit / open details" ], [ "← →", "Previous / next in detail view" ] ].each do |key, desc| %>
+            <div><dt><%= desc %></dt><dd><kbd><%= key %></kbd></dd></div>
+          <% end %>
+        </dl>
+      </div>
+    </details>
+
+    <details class="details-panel">
+      <summary>Notifications</summary>
+      <div class="stack">
+        <% [
+          [ "email_notifications", "Email notifications", "Activity summaries by email." ],
+          [ "assignment_alerts", "Assignment alerts", "When a mapping is assigned to you." ],
+          [ "weekly_digest", "Weekly digest", "A weekly roundup of project progress." ]
+        ].each do |key, label, desc| %>
+          <div class="row-between">
+            <div>
+              <strong><%= label %></strong>
+              <p class="subtle small"><%= desc %></p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" name="preferences[<%= key %>]" value="1" <%= "checked" if @prefs[key] %>>
+              <span class="switch__track"></span>
+            </label>
+          </div>
+        <% end %>
+      </div>
+    </details>
+  </section>
 <% end %>

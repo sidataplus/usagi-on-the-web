@@ -1,4 +1,21 @@
 <% content_for :title, @project.name %>
+<% has_mappings = @project.total_mappings.positive? %>
+<% has_candidates = has_mappings && @project.mapping_candidates.exists? %>
+<% engine_blocks_suggestions = has_mappings && !@engine_readiness[:ready] && !has_candidates %>
+<% next_action =
+  if !has_mappings
+    :import
+  elsif engine_blocks_suggestions
+    :engine_status
+  elsif !has_candidates
+    :suggest
+  elsif @project.unchecked_count.positive?
+    :review
+  elsif @project.approved_count.positive?
+    :export
+  else
+    :review
+  end %>
 
 <div class="page-head">
   <div>
@@ -8,7 +25,7 @@
     </div>
     <p class="page-head__subtitle"><%= @project.description %></p>
   </div>
-  <div class="page-head__actions">
+  <div class="page-head__actions secondary-actions">
     <%= link_to manage_project_path(@project), class: "btn" do %>
       <%= lucide_icon "settings", class: "icon" %> Manage
     <% end %>
@@ -21,38 +38,106 @@
     <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
       <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
     <% end %>
-    <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
+    <%= link_to project_mappings_path(@project), class: "btn" do %>
       <%= lucide_icon "table", class: "icon" %> Review mappings
     <% end %>
   </div>
 </div>
 
-<% if @project.total_mappings.zero? %>
-  <section class="box empty empty--workflow">
-    <div class="empty__icon"><%= lucide_icon "upload", class: "icon" %></div>
-    <h2 class="empty__title">Start with an import</h2>
-    <p class="empty__body">
-      Bring in a source vocabulary file, then let the engine suggest candidates while reviewers keep the final say.
-    </p>
-    <div class="empty__actions">
+<section class="next-action-panel" aria-label="Next project action">
+  <div class="next-action-panel__body">
+    <div class="eyebrow">Next step</div>
+    <% case next_action %>
+    <% when :import %>
+      <h2 class="next-action-panel__title">Start with an import</h2>
+      <p class="next-action-panel__copy">
+        Bring in a source vocabulary file, then let the engine suggest candidates while reviewers keep the final say.
+      </p>
+      <ol class="empty-steps" aria-label="Mapping workflow">
+        <li>Import source terms</li>
+        <li>Suggest candidates</li>
+        <li>Review mappings</li>
+        <li>Export approved rows</li>
+      </ol>
+    <% when :engine_status %>
+      <h2 class="next-action-panel__title">Restore suggestion readiness</h2>
+      <p class="next-action-panel__copy">
+        The project has source terms, but suggestions are blocked until the engine reports ready.
+      </p>
+    <% when :suggest %>
+      <h2 class="next-action-panel__title">Suggest candidates for imported terms</h2>
+      <p class="next-action-panel__copy">
+        Source terms are loaded. Run suggestions so reviewers can compare candidates instead of starting from a blank row.
+      </p>
+    <% when :review %>
+      <h2 class="next-action-panel__title">Review unchecked mappings</h2>
+      <p class="next-action-panel__copy">
+        <%= pluralize(@project.unchecked_count, "mapping") %> still need a human decision.
+      </p>
+    <% when :export %>
+      <h2 class="next-action-panel__title">Export reviewed mappings</h2>
+      <p class="next-action-panel__copy">
+        Approved rows are ready for a review snapshot.
+      </p>
+    <% end %>
+    <div class="next-action-panel__meta">
+      <span><%= number_with_delimiter(@project.approved_count) %> approved</span>
+      <span><%= number_with_delimiter(@project.unchecked_count) %> unchecked</span>
+      <span><%= @engine_readiness[:ready] ? "Engine ready" : "Engine needs attention" %></span>
+    </div>
+  </div>
+
+  <div class="next-action-panel__actions">
+    <% case next_action %>
+    <% when :import %>
       <%= link_to new_project_import_path(@project), class: "btn btn--primary" do %>
         <%= lucide_icon "upload", class: "icon" %> Import source terms
       <% end %>
       <%= link_to manage_project_path(@project), class: "btn" do %>
         <%= lucide_icon "settings", class: "icon" %> Check project settings
       <% end %>
-    </div>
-    <ol class="empty-steps" aria-label="Mapping workflow">
-      <li>Import source terms</li>
-      <li>Suggest candidates</li>
-      <li>Review mappings</li>
-      <li>Export approved rows</li>
-    </ol>
-  </section>
-<% end %>
+    <% when :engine_status %>
+      <% if current_user.admin? %>
+        <%= link_to admin_engine_status_path, class: "btn btn--primary" do %>
+          <%= lucide_icon "activity", class: "icon" %> Open engine status
+        <% end %>
+      <% end %>
+      <%= link_to project_mappings_path(@project), class: "btn" do %>
+        <%= lucide_icon "table", class: "icon" %> Review existing mappings
+      <% end %>
+    <% when :suggest %>
+      <%= button_to project_auto_map_path(@project), method: :post, class: "btn btn--primary" do %>
+        <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
+      <% end %>
+      <%= link_to project_mappings_path(@project, status: "unchecked"), class: "btn" do %>
+        <%= lucide_icon "table", class: "icon" %> Review mappings
+      <% end %>
+    <% when :review %>
+      <%= link_to project_mappings_path(@project, status: "unchecked"), class: "btn btn--primary" do %>
+        <%= lucide_icon "list-checks", class: "icon" %> Review unchecked mappings
+      <% end %>
+      <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
+        <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
+      <% end %>
+    <% when :export %>
+      <%= link_to project_exports_path(@project), class: "btn btn--primary" do %>
+        <%= lucide_icon "download", class: "icon" %> Export reviewed mappings
+      <% end %>
+      <%= link_to project_mappings_path(@project), class: "btn" do %>
+        <%= lucide_icon "table", class: "icon" %> Review mappings
+      <% end %>
+    <% end %>
+  </div>
+</section>
 
-<div class="workbench-strip">
-  <section class="box stack-sm">
+<section class="quiet-section" aria-label="Project supporting details">
+  <div class="quiet-section__head">
+    <h2 class="quiet-section__title">Supporting details</h2>
+  </div>
+
+  <details class="details-panel">
+    <summary>Review queue</summary>
+    <div class="stack-sm">
     <div class="row-between">
       <div>
         <h2 class="box__title" style="margin: 0">Review queue</h2>
@@ -79,9 +164,12 @@
         <%= lucide_icon "download", class: "icon" %> Export reviewed mappings
       <% end %>
     </div>
-  </section>
+    </div>
+  </details>
 
-  <section class="box stack-sm">
+  <details class="details-panel">
+    <summary>Latest suggestions</summary>
+    <div class="stack-sm">
     <h2 class="box__title" style="margin: 0">Latest suggestions</h2>
     <% if @latest_suggestion_job.present? %>
       <div class="row-between">
@@ -108,9 +196,12 @@
     <% if @latest_export.present? %>
       <p class="small subtle">Latest export: <%= @latest_export.format.humanize %> · <%= @latest_export.state.humanize %></p>
     <% end %>
-  </section>
+    </div>
+  </details>
 
-  <section class="box stack-sm">
+  <details class="details-panel">
+    <summary>Engine readiness</summary>
+    <div class="stack-sm">
     <div class="row-between">
       <h2 class="box__title" style="margin: 0">Engine readiness</h2>
       <span class="badge badge--<%= @engine_readiness[:ready] ? "ok" : "warn" %>">
@@ -146,81 +237,87 @@
         <% end %>
       <% end %>
     <% end %>
-  </section>
-</div>
-
-<div class="grid grid--tiles">
-  <% [
-    [ "Total", @project.total_mappings, "table" ],
-    [ "Approved", @project.approved_count, "circle-check" ],
-    [ "Flagged", @project.flagged_count, "flag" ],
-    [ "Unchecked", @project.unchecked_count, "clock" ]
-  ].each do |label, value, icon| %>
-    <div class="stat">
-      <div class="stat__label"><%= label %> <%= lucide_icon icon, class: "icon subtle" %></div>
-      <div class="stat__value"><%= number_with_delimiter(value) %></div>
     </div>
-  <% end %>
-</div>
+  </details>
+</section>
 
-<div class="grid grid--halves" style="margin-block-start: var(--space)">
-  <div class="box">
-    <h2 class="box__title">Recent mappings</h2>
-    <div class="stack-sm">
-      <% @recent_mappings.each do |mapping| %>
-        <div class="row-between">
-          <div class="truncate">
-            <div class="mono"><%= mapping.source_code %></div>
-            <div class="small truncate"><%= mapping.source_name %></div>
-          </div>
-          <%= status_badge(mapping) %>
+<section class="quiet-section" aria-label="Project activity">
+  <details class="details-panel">
+    <summary>Recent activity and project details</summary>
+    <div class="grid grid--tiles">
+      <% [
+        [ "Total", @project.total_mappings, "table" ],
+        [ "Approved", @project.approved_count, "circle-check" ],
+        [ "Flagged", @project.flagged_count, "flag" ],
+        [ "Unchecked", @project.unchecked_count, "clock" ]
+      ].each do |label, value, icon| %>
+        <div class="stat">
+          <div class="stat__label"><%= label %> <%= lucide_icon icon, class: "icon subtle" %></div>
+          <div class="stat__value"><%= number_with_delimiter(value) %></div>
         </div>
       <% end %>
     </div>
-  </div>
 
-  <div class="box">
-    <h2 class="box__title">Recent imports</h2>
-    <div class="stack-sm">
-      <% @recent_imports.each do |import| %>
-        <div class="row-between">
-          <div class="truncate">
-            <div><strong><%= import.filename %></strong></div>
-            <div class="small subtle"><%= import.row_count %> rows · <%= import.status.humanize %></div>
-          </div>
-          <%= link_to "Open", project_import_path(@project, import), class: "btn btn--sm" %>
+    <div class="grid grid--halves" style="margin-block-start: var(--space)">
+      <div>
+        <h2 class="box__title">Recent mappings</h2>
+        <div class="stack-sm">
+          <% @recent_mappings.each do |mapping| %>
+            <div class="row-between">
+              <div class="truncate">
+                <div class="mono"><%= mapping.source_code %></div>
+                <div class="small truncate"><%= mapping.source_name %></div>
+              </div>
+              <%= status_badge(mapping) %>
+            </div>
+          <% end %>
         </div>
-      <% end %>
-      <% if @recent_imports.empty? %><p class="subtle small">No imports yet.</p><% end %>
-    </div>
-  </div>
-</div>
+      </div>
 
-<div class="grid grid--halves" style="margin-block-start: var(--space)">
-  <div class="box">
-    <h2 class="box__title">Engine jobs</h2>
-    <div class="stack-sm">
-      <% @recent_engine_jobs.each do |job| %>
-        <div class="row-between">
-          <div>
-            <div><strong><%= job.job_type.humanize %></strong></div>
-            <div class="small subtle"><%= job.status.humanize %> · <%= job.created_at.to_fs(:short) %></div>
-          </div>
-          <%= link_to "Open", project_engine_job_path(@project, job), class: "btn btn--sm" %>
+      <div>
+        <h2 class="box__title">Recent imports</h2>
+        <div class="stack-sm">
+          <% @recent_imports.each do |import| %>
+            <div class="row-between">
+              <div class="truncate">
+                <div><strong><%= import.filename %></strong></div>
+                <div class="small subtle"><%= import.row_count %> rows · <%= import.status.humanize %></div>
+              </div>
+              <%= link_to "Open", project_import_path(@project, import), class: "btn btn--sm" %>
+            </div>
+          <% end %>
+          <% if @recent_imports.empty? %><p class="subtle small">No imports yet.</p><% end %>
         </div>
-      <% end %>
-      <% if @recent_engine_jobs.empty? %><p class="subtle small">No engine jobs yet.</p><% end %>
+      </div>
     </div>
-  </div>
 
-  <div class="box">
-    <h2 class="box__title">Details</h2>
-    <dl class="facts">
-      <div><dt>Source vocabulary</dt><dd><%= @project.source_vocabulary %></dd></div>
-      <div><dt>Targets</dt><dd><%= @project.target_vocabularies.join(", ").presence || "—" %></dd></div>
-      <div><dt>Version</dt><dd><%= @project.vocabulary_version %></dd></div>
-      <div><dt>Owner</dt><dd><%= @project.owner&.display_name || "—" %></dd></div>
-      <div><dt>Completion</dt><dd><%= @project.completion_percentage %>%</dd></div>
-    </dl>
-  </div>
-</div>
+    <div class="grid grid--halves" style="margin-block-start: var(--space)">
+      <div>
+        <h2 class="box__title">Engine jobs</h2>
+        <div class="stack-sm">
+          <% @recent_engine_jobs.each do |job| %>
+            <div class="row-between">
+              <div>
+                <div><strong><%= job.job_type.humanize %></strong></div>
+                <div class="small subtle"><%= job.status.humanize %> · <%= job.created_at.to_fs(:short) %></div>
+              </div>
+              <%= link_to "Open", project_engine_job_path(@project, job), class: "btn btn--sm" %>
+            </div>
+          <% end %>
+          <% if @recent_engine_jobs.empty? %><p class="subtle small">No engine jobs yet.</p><% end %>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="box__title">Details</h2>
+        <dl class="facts">
+          <div><dt>Source vocabulary</dt><dd><%= @project.source_vocabulary %></dd></div>
+          <div><dt>Targets</dt><dd><%= @project.target_vocabularies.join(", ").presence || "—" %></dd></div>
+          <div><dt>Version</dt><dd><%= @project.vocabulary_version %></dd></div>
+          <div><dt>Owner</dt><dd><%= @project.owner&.display_name || "—" %></dd></div>
+          <div><dt>Completion</dt><dd><%= @project.completion_percentage %>%</dd></div>
+        </dl>
+      </div>
+    </div>
+  </details>
+</section>
