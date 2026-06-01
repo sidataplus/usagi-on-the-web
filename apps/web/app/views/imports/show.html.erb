@@ -23,11 +23,16 @@
 </div>
 
 <div class="box stack-sm" style="margin-block-start: var(--space)">
+  <div class="eyebrow">Review handoff</div>
   <h2 class="box__title" style="margin: 0">Ready for review</h2>
   <p>
     <%= "#{pluralize(@import_batch.accepted_count, "source term")} became #{"a mapping".pluralize(@import_batch.accepted_count)}." %>
     Reviewers can inspect each row, search manually, or run suggestions before approving.
   </p>
+  <div class="handoff-metrics" aria-label="Import review handoff metrics">
+    <span><strong><%= pluralize(@import_mapping_count, "unchecked mapping") %></strong></span>
+    <span><strong><%= pluralize(@import_candidate_count, "saved candidate") %></strong></span>
+  </div>
   <div class="action-row">
     <%= link_to project_mappings_path(@project, status: "unchecked"), class: "btn btn--primary" do %>
       <%= lucide_icon "table", class: "icon" %> Review imported terms

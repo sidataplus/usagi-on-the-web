@@ -85,6 +85,44 @@
       <p class="small subtle">Latest export: <%= @latest_export.format.humanize %> · <%= @latest_export.state.humanize %></p>
     <% end %>
   </section>
+
+  <section class="box stack-sm">
+    <div class="row-between">
+      <h2 class="box__title" style="margin: 0">Engine readiness</h2>
+      <span class="badge badge--<%= @engine_readiness[:ready] ? "ok" : "warn" %>">
+        <%= @engine_readiness[:ready] ? "Ready" : "Needs attention" %>
+      </span>
+    </div>
+    <div class="engine-readiness">
+      <% [
+        [ "Catalog", @engine_readiness[:catalog] ],
+        [ @engine_readiness[:suggestion_label], @engine_readiness[:suggestion] ]
+      ].each do |label, payload| %>
+        <% status = payload["status"].to_s.presence || "unknown" %>
+        <% tone = status == "ready" ? "ok" : status == "degraded" ? "warn" : "bad" %>
+        <div class="engine-readiness__item" aria-label="<%= label %> <%= status.tr("_", " ") %>">
+          <span><%= label %></span>
+          <span class="badge badge--<%= tone %>"><%= status.humanize %></span>
+        </div>
+        <% if payload["error"].present? %>
+          <p class="small subtle">
+            <span class="mono"><%= payload["error"]["code"] %></span>
+            <% if payload["error"]["message"].present? %> · <%= payload["error"]["message"] %><% end %>
+          </p>
+        <% end %>
+      <% end %>
+    </div>
+    <% if @engine_readiness[:ready] %>
+      <p class="small subtle">Suggestions can run for this project.</p>
+    <% else %>
+      <p class="small subtle">Suggestions may fail until the engine reports ready.</p>
+      <% if current_user.admin? %>
+        <%= link_to admin_engine_status_path, class: "btn btn--sm" do %>
+          <%= lucide_icon "activity", class: "icon" %> Open engine status
+        <% end %>
+      <% end %>
+    <% end %>
+  </section>
 </div>
 
 <div class="grid grid--tiles">

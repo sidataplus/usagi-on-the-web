@@ -7,6 +7,9 @@ class ExportsController < ApplicationController
   def index
     authorize_project!(@project, :view)
     @exports = @project.exports.recent_first
+    @approved_count = @project.approved_count
+    @unchecked_count = @project.unchecked_count
+    @candidate_count = @project.mapping_candidates.count
   end
 
   def create

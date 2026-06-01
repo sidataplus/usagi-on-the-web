@@ -1,10 +1,26 @@
 require "test_helper"
 
 class WorkflowControllersTest < ActionDispatch::IntegrationTest
+  class EngineStatusTransport
+    def initialize(payload)
+      @payload = payload
+    end
+
+    def get_json(_path)
+      @payload
+    end
+  end
+
   setup do
     @user = create_user!(email: "demo@usagi.test", admin: true)
     @project = create_project!(user: @user)
     sign_in_as(@user)
+  end
+
+  teardown do
+    EngineClients::CatalogClient.default_transport = nil
+    EngineClients::SearchClient.default_transport = nil
+    EngineClients::MapperClient.default_transport = nil
   end
 
   test "import creates source terms and review mappings" do
@@ -110,6 +126,19 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "0 of 0"
   end
 
+  test "project overview shows engine readiness for the mapping flow" do
+    create_mapping!(project: @project)
+
+    get project_path(@project)
+
+    assert_response :success
+    assert_includes response.body, "Engine readiness"
+    assert_includes response.body, "Catalog ready"
+    assert_includes response.body, "Drug mapper ready"
+    assert_includes response.body, "Suggestions can run for this project."
+    assert_includes response.body, "Review mappings"
+  end
+
   test "import result hands reviewers to suggestions and review" do
     post project_import_sessions_path(@project), params: {
       import_session: {
@@ -122,8 +151,11 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_import_session_path(@project, import)
 
     assert_response :success
+    assert_includes response.body, "Review handoff"
     assert_includes response.body, "Ready for review"
     assert_includes response.body, "1 source term became a mapping"
+    assert_includes response.body, "1 unchecked mapping"
+    assert_includes response.body, "0 saved candidates"
     assert_includes response.body, "Suggest candidates"
     assert_includes response.body, "Review imported terms"
     refute_includes response.body, "Auto-map"
@@ -160,31 +192,59 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     create_mapping!(project: @project)
     job = @project.engine_jobs.create!(
       kind: "mapper_drugs_batch",
-      state: "succeeded",
-      processed: 0,
-      total: 0,
+      state: "succeeded_with_errors",
+      processed: 3,
+      total: 4,
+      failed: 1,
+      stage: "persist_candidates",
+      error: {
+        items: [
+          {
+            source_code: "SRC_FAIL",
+            error: { code: "BAD_REQUEST", message: "Cannot map source term", request_id: "req_job_index" }
+          }
+        ]
+      },
       input: { idempotency_key: "job-review-flow" }
     )
 
     get project_engine_jobs_path(@project)
 
     assert_response :success
+    assert_includes response.body, "Job recovery lane"
     assert_includes response.body, "Suggestion jobs feed the Review workspace"
+    assert_includes response.body, "Open latest issue"
     assert_includes response.body, "Review mappings"
-    assert_includes response.body, "Not reported"
-    refute_includes response.body, "0/0"
+    assert_includes response.body, "3/4"
+    assert_includes response.body, "1 failed"
+    assert_includes response.body, "persist_candidates"
 
     get project_engine_job_path(@project, job)
 
     assert_response :success
     assert_includes response.body, "Candidates appear on mapping rows"
     assert_includes response.body, "Review mappings"
-    assert_includes response.body, "Not reported"
-    refute_includes response.body, "0/0"
+    assert_includes response.body, "3/4"
+    assert_includes response.body, "Partial failures"
   end
 
   test "exports page frames downloads as reviewed mapping output" do
-    create_mapping!(project: @project)
+    approved = create_mapping!(project: @project, source_code: "SRC_APPROVED")
+    approved.update!(
+      status: "approved",
+      target_concept_id: 40162522,
+      target_concept_name: "tramadol hydrochloride 50 MG Oral Capsule"
+    )
+    unchecked = create_mapping!(project: @project, source_code: "SRC_UNCHECKED", source_name: "metformin hcl 500 mg tab")
+    unchecked.mapping_candidates.create!(
+      project: @project,
+      source_term: unchecked.source_term,
+      rank: 1,
+      concept_id: 19112599,
+      concept_name: "metformin hydrochloride 500 MG Oral Tablet",
+      method: "thirawat_tachiom_bimaxsim_tiebreak",
+      final_score: 0.89
+    )
     export = @project.exports.create!(
       requested_by: @user,
       format: "review_csv",
@@ -198,7 +258,12 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Export reviewed mappings"
+    assert_includes response.body, "Export readiness"
+    assert_includes response.body, "1 approved mapping"
+    assert_includes response.body, "1 unchecked mapping still needs review"
+    assert_includes response.body, "1 candidate with provenance"
     assert_includes response.body, "Review before exporting"
+    assert_includes response.body, "Candidate provenance"
     assert_includes response.body, "Review mappings"
 
     get project_export_path(@project, export)
@@ -305,6 +370,40 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "1 failed"
     assert_includes response.body, "bimaxsim_rerank"
     refute_includes response.body, "Wiring up the job is coming soon"
+  end
+
+  test "mapping review opens with a reviewer command lane" do
+    ready = create_mapping!(project: @project, source_code: "SRC_READY", source_name: "tramadol hcl 50mg cap")
+    create_mapping!(project: @project, source_code: "SRC_GAP", source_name: "metformin hcl 500 mg tab")
+    ready.mapping_candidates.create!(
+      project: @project,
+      source_term: ready.source_term,
+      rank: 1,
+      concept_id: 40162522,
+      concept_name: "tramadol hydrochloride 50 MG Oral Capsule",
+      method: "thirawat_tachiom_bimaxsim_tiebreak",
+      final_score: 0.94
+    )
+    @project.engine_jobs.create!(
+      kind: "mapper_drugs_batch",
+      state: "failed",
+      error: { "code" => "MODEL_NOT_CONFIGURED", "message" => "THIRAWAT artifacts missing" },
+      input: { idempotency_key: "review-lane" }
+    )
+
+    get project_mappings_path(@project)
+
+    assert_response :success
+    assert_includes response.body, "Review command lane"
+    assert_includes response.body, "Open next unchecked"
+    assert_includes response.body, "SRC_READY"
+    assert_includes response.body, "Best candidate"
+    assert_includes response.body, "tramadol hydrochloride 50 MG Oral Capsule"
+    assert_includes response.body, "94%"
+    assert_includes response.body, "1 ready with candidates"
+    assert_includes response.body, "1 waiting on suggestions"
+    assert_includes response.body, "Engine attention"
+    assert_includes response.body, "MODEL_NOT_CONFIGURED"
   end
 
   test "candidate detail explains evidence and offers fast next actions" do
@@ -422,6 +521,45 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Engine status"
     assert_includes response.body, "Catalog"
+  end
+
+  test "admin engine status explains degraded mapping readiness" do
+    EngineClients::CatalogClient.default_transport = EngineStatusTransport.new(
+      "status" => "ready",
+      "catalog" => {
+        "artifact_id" => "catalog-mini-v1",
+        "vocabulary_version" => "2026-05-31",
+        "concept_count" => 2
+      }
+    )
+    EngineClients::SearchClient.default_transport = EngineStatusTransport.new(
+      "status" => "degraded",
+      "search" => {
+        "tantivy" => { "status" => "ready", "artifact_id" => "tantivy-fixture-v1" },
+        "sapbert" => { "status" => "not_configured", "required_artifact" => "sapbert_cls.usearch" }
+      }
+    )
+    EngineClients::MapperClient.default_transport = EngineStatusTransport.new(
+      "status" => "not_configured",
+      "mapper" => {
+        "model" => { "status" => "not_configured", "required_artifact" => "THIRAWAT-SapBERT" },
+        "tachiom" => { "status" => "not_configured", "required_artifact" => "tachiom/index" }
+      }
+    )
+
+    get admin_engine_status_path
+
+    assert_response :success
+    assert_includes response.body, "Mapping engine readiness"
+    assert_includes response.body, "Catalog lookup is ready"
+    assert_includes response.body, "Hybrid search is degraded"
+    assert_includes response.body, "Drug mapper is not configured"
+    assert_includes response.body, "catalog-mini-v1"
+    assert_includes response.body, "2026-05-31"
+    assert_includes response.body, "sapbert_cls.usearch"
+    assert_includes response.body, "THIRAWAT-SapBERT"
+    assert_includes response.body, "tachiom/index"
+    assert_includes response.body, "Review mappings"
   end
 
   test "failed engine job can be retried from job detail" do

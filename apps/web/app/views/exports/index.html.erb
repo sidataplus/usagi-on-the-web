@@ -12,6 +12,22 @@
   </div>
 </div>
 
+<section class="export-readiness" aria-label="Export readiness">
+  <div>
+    <div class="eyebrow">Export readiness</div>
+    <strong><%= pluralize(@approved_count, "approved mapping") %></strong>
+    <p class="small subtle">Human-approved rows are ready for source-to-concept output.</p>
+  </div>
+  <div>
+    <strong><%= "#{pluralize(@unchecked_count, "unchecked mapping")} #{@unchecked_count == 1 ? "still needs" : "still need"} review" %></strong>
+    <p class="small subtle">Finish these before sharing final mapping files.</p>
+  </div>
+  <div>
+    <strong><%= pluralize(@candidate_count, "candidate") %> with provenance</strong>
+    <p class="small subtle">Candidate provenance exports preserve engine evidence for audit.</p>
+  </div>
+</section>
+
 <div class="box stack">
   <div class="row-between">
     <div>
@@ -25,6 +41,11 @@
     <%= select_tag :format_option, options_for_select(Export::FORMATS.map { |format| [format.humanize, format] }, "review_csv"), class: "input" %>
     <%= f.submit "Create export", class: "btn btn--primary" %>
   <% end %>
+
+  <div class="callout">
+    <strong>Candidate provenance</strong>
+    <p class="small subtle" style="margin: 0">Use candidate CSV or JSONL when reviewers need model scores, methods, warnings, and artifact provenance alongside decisions.</p>
+  </div>
 
   <% @exports.each do |export| %>
     <div class="row-between">

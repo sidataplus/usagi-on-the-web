@@ -45,6 +45,67 @@
 .bulkbar[hidden] { display: none; }
 
 /* ---- Review table ------------------------------------------------------- */
+.review-lane {
+  display: grid;
+  grid-template-columns: minmax(26rem, 1.4fr) minmax(18rem, 0.8fr) minmax(18rem, 0.8fr);
+  gap: var(--space);
+  margin-block-end: var(--space);
+}
+.review-lane > * {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: var(--space);
+}
+.review-lane__primary {
+  display: grid;
+  align-content: start;
+  gap: var(--space-sm);
+  border-color: color-mix(in oklch, var(--color-accent) 42%, var(--color-border));
+  background:
+    linear-gradient(135deg, color-mix(in oklch, var(--color-accent) 10%, transparent), transparent 48%),
+    var(--color-surface);
+}
+.review-lane__primary h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+.review-lane__candidate {
+  display: grid;
+  gap: 0.2rem;
+  padding: var(--space-sm);
+  border: 1px solid color-mix(in oklch, var(--color-accent) 28%, var(--color-border));
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--color-accent) 7%, var(--color-bg));
+}
+.review-lane__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+.review-lane__metrics div {
+  display: grid;
+  align-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border-radius: var(--radius);
+  background: var(--color-sunken);
+}
+.review-lane__metrics strong {
+  font-size: 1.65rem;
+  line-height: 1;
+}
+.review-lane__metrics span {
+  color: var(--color-text-subtle);
+  font-size: 0.84rem;
+}
+.review-lane__attention {
+  display: grid;
+  align-content: start;
+  gap: var(--space-sm);
+}
+
 .review-brief {
   display: flex;
   align-items: center;

@@ -7,6 +7,8 @@ class EngineJobsController < ApplicationController
   def index
     authorize_project!(@project, :view)
     @engine_jobs = @project.engine_jobs.recent_first
+    @latest_issue_job = @engine_jobs.detect { |job| %w[failed succeeded_with_errors].include?(job.state) }
+    @running_job = @engine_jobs.detect { |job| %w[queued starting running].include?(job.state) }
   end
 
   def show

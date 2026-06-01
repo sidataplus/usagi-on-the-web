@@ -20,6 +20,7 @@ class ProjectsController < ApplicationController
     @recent_engine_jobs = @project.engine_jobs.recent_first.limit(5)
     @latest_suggestion_job = @project.engine_jobs.where(kind: suggestion_job_kinds).recent_first.first
     @latest_export = @project.exports.recent_first.first
+    @engine_readiness = engine_readiness(@project)
   end
 
   def new
@@ -66,5 +67,38 @@ class ProjectsController < ApplicationController
 
     def suggestion_job_kinds
       @project.drug_domain? ? ["mapper_drugs_batch"] : ["hybrid_search_batch"]
+    end
+
+    def engine_readiness(project)
+      catalog_status = engine_status { EngineClients::CatalogClient.new.status }
+      suggestion_status = if project.drug_domain?
+        engine_status { EngineClients::MapperClient.new.status }
+      else
+        engine_status { EngineClients::SearchClient.new.status }
+      end
+
+      {
+        catalog: catalog_status,
+        suggestion: suggestion_status,
+        suggestion_label: project.drug_domain? ? "Drug mapper" : "Hybrid search",
+        ready: engine_ready?(catalog_status) && engine_ready?(suggestion_status)
+      }
+    end
+
+    def engine_status
+      yield
+    rescue EngineClients::BaseClient::Error => e
+      {
+        "status" => "unavailable",
+        "error" => {
+          "code" => e.code,
+          "message" => e.message,
+          "request_id" => e.request_id
+        }
+      }
+    end
+
+    def engine_ready?(payload)
+      payload["status"].to_s == "ready"
     end
 end

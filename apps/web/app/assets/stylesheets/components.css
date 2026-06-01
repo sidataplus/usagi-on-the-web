@@ -213,7 +213,7 @@
 /* ---- Workbench flow ----------------------------------------------------- */
 .workbench-strip {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.8fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.85fr) minmax(18rem, 0.85fr);
   gap: var(--space);
   margin-block-end: var(--space);
 }
@@ -221,6 +221,90 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+.engine-readiness {
+  display: grid;
+  gap: var(--space-xs);
+}
+.engine-readiness__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+}
+.engine-summary {
+  border-color: color-mix(in oklch, var(--color-accent) 32%, var(--color-border));
+}
+.engine-service__summary {
+  margin: 0;
+  font-weight: 700;
+}
+.engine-service__facts {
+  display: grid;
+  gap: var(--space-xs);
+  margin-block-start: var(--space-xs);
+  padding-inline-start: 1rem;
+  color: var(--color-text-subtle);
+  font-size: 0.84rem;
+}
+.callout {
+  padding: var(--space-sm);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-sunken);
+}
+.callout--warn {
+  border-color: color-mix(in oklch, var(--color-warn) 36%, var(--color-border));
+  background: color-mix(in oklch, var(--color-warn) 8%, var(--color-bg));
+}
+.export-readiness {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space);
+  margin-block-end: var(--space);
+}
+.export-readiness > div {
+  padding: var(--space);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+.export-readiness strong {
+  display: block;
+  margin-block-start: var(--space-xs);
+}
+.handoff-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+.handoff-metrics span,
+.job-recovery-lane__metrics span {
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius);
+  background: var(--color-sunken);
+}
+.job-recovery-lane {
+  display: grid;
+  grid-template-columns: minmax(28rem, 1fr) minmax(18rem, 0.45fr);
+  gap: var(--space);
+  margin-block-end: var(--space);
+}
+.job-recovery-lane > * {
+  padding: var(--space);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+.job-recovery-lane h2 {
+  margin: var(--space-xs) 0;
+  font-size: 1.15rem;
+}
+.job-recovery-lane__metrics {
+  display: grid;
+  align-content: center;
   gap: var(--space-sm);
 }
 

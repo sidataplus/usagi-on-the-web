@@ -15,6 +15,44 @@
   </div>
 </div>
 
+<section class="job-recovery-lane" aria-label="Job recovery lane">
+  <div>
+    <div class="eyebrow">Job recovery lane</div>
+    <% if @latest_issue_job.present? %>
+      <h2><%= @latest_issue_job.job_type.humanize %></h2>
+      <p class="small subtle">
+        <%= @latest_issue_job.status.humanize %>
+        <% if @latest_issue_job.stage.present? %> · <span class="mono"><%= @latest_issue_job.stage %></span><% end %>
+      </p>
+      <%= link_to project_engine_job_path(@project, @latest_issue_job), class: "btn btn--primary" do %>
+        <%= lucide_icon "triangle-alert", class: "icon" %> Open latest issue
+      <% end %>
+    <% elsif @running_job.present? %>
+      <h2><%= @running_job.job_type.humanize %></h2>
+      <p class="small subtle">Running now. Candidate rows will update when results persist.</p>
+      <%= link_to project_engine_job_path(@project, @running_job), class: "btn btn--primary" do %>
+        <%= lucide_icon "activity", class: "icon" %> Watch progress
+      <% end %>
+    <% else %>
+      <h2>No engine issues</h2>
+      <p class="small subtle">Suggestion jobs are clear. Continue reviewing candidate rows.</p>
+      <%= link_to project_mappings_path(@project), class: "btn btn--primary" do %>
+        <%= lucide_icon "table", class: "icon" %> Review mappings
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="job-recovery-lane__metrics">
+    <% target_job = @latest_issue_job || @running_job || @engine_jobs.first %>
+    <% if target_job.present? %>
+      <span><strong><%= target_job.total.to_i.positive? ? "#{target_job.processed.to_i}/#{target_job.total.to_i}" : "Not reported" %></strong> progress</span>
+      <span><strong><%= pluralize(target_job.failed.to_i, "failed") %></strong></span>
+    <% else %>
+      <span><strong>0</strong> jobs</span>
+    <% end %>
+  </div>
+</section>
+
 <div class="review-brief">
   <div>
     <strong>Suggestion jobs feed the Review workspace.</strong>

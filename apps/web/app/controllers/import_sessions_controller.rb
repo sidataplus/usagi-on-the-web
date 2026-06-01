@@ -95,6 +95,9 @@ class ImportSessionsController < ApplicationController
     authorize_project!(@project, :view)
     @import_batch = @import_session
     @source_terms = @import_session.source_terms.ordered.limit(100)
+    @import_mapping_count = @import_session.source_terms.joins(:mapping).count
+    @import_candidate_count = @project.mapping_candidates.joins(:source_term)
+                                      .where(source_term: { import_session_id: @import_session.id }).count
     render "imports/show"
   end
 

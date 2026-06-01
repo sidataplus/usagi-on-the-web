@@ -19,6 +19,12 @@ class MappingsController < ApplicationController
     @total_pages = [(@total.to_f / PER_PAGE).ceil, 1].max
     @mappings = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
     @latest_engine_job = latest_suggestion_job(@project)
+    @next_review_mapping = next_review_mapping(@project)
+    @next_review_candidate = @next_review_mapping&.persisted_candidates&.first
+    @ready_candidate_count = @project.mappings.unchecked.joins(:mapping_candidates).distinct.count
+    @waiting_suggestion_count = @project.mappings.unchecked.left_joins(:mapping_candidates)
+                                      .where(mapping_candidates: { id: nil }).count
+    @engine_attention_job = engine_attention_job(@project)
     render partial: "mappings/table", locals: table_locals if turbo_frame_request_id == "mappings_table"
   end
 
@@ -191,6 +197,17 @@ class MappingsController < ApplicationController
     def latest_suggestion_job(project)
       kinds = project.drug_domain? ? ["mapper_drugs_batch"] : ["hybrid_search_batch"]
       project.engine_jobs.where(kind: kinds).recent_first.first
+    end
+
+    def next_review_mapping(project)
+      project.mappings.unchecked.joins(:mapping_candidates).ordered.first ||
+        project.mappings.unchecked.ordered.first
+    end
+
+    def engine_attention_job(project)
+      kinds = project.drug_domain? ? ["mapper_drugs_batch"] : ["hybrid_search_batch"]
+      project.engine_jobs.where(kind: kinds, state: "failed").recent_first.first ||
+        project.engine_jobs.where(kind: kinds, state: "succeeded_with_errors").recent_first.first
     end
 
     def navigation_for(mapping)
