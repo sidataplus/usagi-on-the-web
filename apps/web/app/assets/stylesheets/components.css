@@ -260,9 +260,9 @@ summary:focus-visible {
   white-space: nowrap;
 }
 .badge--neutral { background: var(--color-sunken); color: var(--color-text-subtle); }
-.badge--ok   { background: color-mix(in oklch, var(--color-ok) 16%, var(--color-bg));   color: var(--color-ok); }
-.badge--warn { background: color-mix(in oklch, var(--color-warn) 18%, var(--color-bg)); color: color-mix(in oklch, var(--color-warn) 80%, var(--color-text)); }
-.badge--bad  { background: color-mix(in oklch, var(--color-bad) 15%, var(--color-bg));  color: var(--color-bad); }
+.badge--ok   { background: color-mix(in oklch, var(--color-ok) 16%, var(--color-bg));   color: color-mix(in oklch, var(--color-ok) 58%, var(--color-text)); }
+.badge--warn { background: color-mix(in oklch, var(--color-warn) 18%, var(--color-bg)); color: color-mix(in oklch, var(--color-warn) 58%, var(--color-text)); }
+.badge--bad  { background: color-mix(in oklch, var(--color-bad) 15%, var(--color-bg));  color: color-mix(in oklch, var(--color-bad) 66%, var(--color-text)); }
 .badge--accent { background: color-mix(in oklch, var(--color-accent) 16%, var(--color-bg)); color: var(--color-accent-ink); }
 
 /* ---- Fields ------------------------------------------------------------- */
@@ -546,14 +546,22 @@ summary:focus-visible {
 }
 
 /* ---- Flash -------------------------------------------------------------- */
-.flash {
+/* Fixed, centered stack so multiple flashes pile up instead of overlapping. */
+#flash {
   position: fixed;
   inset-block-start: var(--space);
   inset-inline: 0;
-  margin-inline: auto;
   z-index: 60;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-sm);
+  padding-inline: var(--space);
+  pointer-events: none;
+}
+.flash {
+  pointer-events: auto;
   inline-size: max-content;
-  max-inline-size: calc(100vw - 2 * var(--space));
+  max-inline-size: 100%;
   display: flex;
   align-items: center;
   gap: var(--space-sm);

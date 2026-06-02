@@ -40,15 +40,19 @@
             <% if candidate.method.present? %><span><strong>Method</strong> <%= candidate.method %></span><% end %>
           </div>
           <% if features.present? %>
-            <div class="candidate-kv">
-              <strong>Features</strong>
-              <span><%= features.map { |key, value| "#{key}: #{value}" }.join(", ") %></span>
+            <div class="candidate-facts">
+              <span class="candidate-facts__label">Features</span>
+              <% features.each do |key, value| %>
+                <span class="candidate-facts__item"><strong><%= key.to_s.humanize %></strong> <%= value %></span>
+              <% end %>
             </div>
           <% end %>
           <% if provenance.present? %>
-            <div class="candidate-kv">
-              <strong>Provenance</strong>
-              <span><%= provenance.map { |key, value| "#{key}: #{value}" }.join(", ") %></span>
+            <div class="candidate-facts">
+              <span class="candidate-facts__label">Provenance</span>
+              <% provenance.each do |key, value| %>
+                <span class="candidate-facts__item"><strong><%= key.to_s.humanize %></strong> <%= value %></span>
+              <% end %>
             </div>
           <% end %>
           <% if warnings.any? %>

@@ -288,6 +288,21 @@
   margin-block-start: var(--space-xs);
 }
 .candidate-warning { color: color-mix(in oklch, var(--color-warn) 80%, var(--color-text)); }
+.candidate-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-block-start: var(--space-xs);
+}
+.candidate-facts__label { font-weight: 700; font-size: 0.82rem; }
+.candidate-facts__item {
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius);
+  background: var(--color-sunken);
+  font-size: 0.82rem;
+}
+.candidate-facts__item strong { color: var(--color-text-subtle); font-weight: 600; }
 .candidate-card__actions {
   display: grid;
   align-content: start;

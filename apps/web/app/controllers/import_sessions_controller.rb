@@ -16,7 +16,7 @@ class ImportSessionsController < ApplicationController
 
   def new
     authorize_project!(@project, :import)
-    @import_session = @project.import_sessions.new(file_name: "source_terms.csv")
+    @import_session = @project.import_sessions.new(file_name: "source_terms.csv", source_vocabulary: @project.source_vocabulary)
     @import_batch = @import_session
     render "imports/new"
   end

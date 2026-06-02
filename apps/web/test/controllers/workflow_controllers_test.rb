@@ -464,7 +464,7 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Final 0.93"
     assert_includes response.body, "BiMaxSim 0.88"
     assert_includes response.body, "Tachiom 0.84"
-    assert_includes response.body, "ingredient_match"
+    assert_includes response.body, "Ingredient match"
     assert_includes response.body, "THIRAWAT-SapBERT"
     assert_includes response.body, "dose form differs"
     assert_includes response.body, "Use and next"
