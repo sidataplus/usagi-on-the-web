@@ -469,10 +469,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "dose form differs"
     assert_includes response.body, "Use and next"
     assert_includes response.body, "Approve and next"
-    assert_includes response.body, "Keyboard"
-    assert_includes response.body, "A"
+    assert_select ".shortcuts__item kbd", minimum: 1
     assert_includes response.body, "Approve"
-    assert_includes response.body, "N"
     assert_includes response.body, "Next mapping"
   end
 
@@ -670,6 +668,31 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_difference -> { @project.project_members.count }, -1 do
       delete project_member_path(@project, membership)
     end
+  end
+
+  test "use and approve applies the candidate and approves the mapping" do
+    mapping = create_mapping!(project: @project, source_code: "SRC_A")
+    candidate = mapping.mapping_candidates.create!(
+      project: @project, source_term: mapping.source_term, rank: 1,
+      concept_id: 40162522, concept_name: "Tramadol Hydrochloride 50 MG Oral Capsule", method: "thirawat_tachiom"
+    )
+
+    patch mapping_candidate_path(candidate, approve: "1")
+
+    assert candidate.reload.selected?
+    assert_equal 40162522, mapping.reload.target_concept_id
+    assert_equal "APPROVED", mapping.mapping_status
+    assert_equal @user, mapping.reviewed_by
+  end
+
+  test "cockpit layout toggle persists per user" do
+    mapping = create_mapping!(project: @project)
+
+    get mapping_path(mapping, layout: "hero")
+
+    assert_response :success
+    assert_equal "hero", @user.reload.prefs["cockpit_layout"]
+    assert_includes response.body, "Best match"
   end
 
   test "member management rejects unknown emails and protects the owner" do

@@ -37,6 +37,17 @@ class MappingCandidatesController < ApplicationController
         request_id: Current.request_id,
         metadata: { candidate_id: @candidate.id, concept_id: @candidate.concept_id, method: @candidate.method }
       )
+
+      if params[:approve].present?
+        mapping.update!(mapping_status: "APPROVED", reviewed_by: current_user, reviewed_at: Time.current)
+        mapping.project.audit_events.create!(
+          user: current_user,
+          subject: mapping,
+          action: "status_changed",
+          request_id: Current.request_id,
+          metadata: { from: "UNCHECKED", to: "APPROVED" }
+        )
+      end
     end
 
     @mapping = mapping

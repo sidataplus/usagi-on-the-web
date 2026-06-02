@@ -1,5 +1,6 @@
 class ManualSearchesController < ApplicationController
   include ProjectAuthorization
+  include MappingCockpit
 
   before_action :set_mapping
 
@@ -28,7 +29,7 @@ class ManualSearchesController < ApplicationController
         render turbo_stream: turbo_stream.replace(
           helpers.dom_id(@mapping, :candidate_panel),
           partial: "mappings/candidate_panel",
-          locals: { mapping: @mapping, candidates: @candidates, next_id: next_mapping_id(@mapping) }
+          locals: { mapping: @mapping, candidates: @candidates, next_id: next_mapping_id(@mapping), hero: cockpit_layout == "hero" }
         )
       end
       format.html { redirect_to mapping_path(@mapping), notice: "Search finished." }
@@ -54,13 +55,5 @@ class ManualSearchesController < ApplicationController
 
     def candidate_limit
       @mapping.project.settings.fetch("candidate_limit", 20)
-    end
-
-    def next_mapping_id(mapping)
-      ordered = mapping.project.mappings.ordered.pluck(:id)
-      index = ordered.index(mapping.id)
-      return nil unless index && index < ordered.size - 1
-
-      ordered[index + 1]
     end
 end

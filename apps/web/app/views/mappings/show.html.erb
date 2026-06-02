@@ -1,4 +1,4 @@
 <%= turbo_frame_tag "modal" do %>
   <%= render "mappings/cockpit", mapping: @mapping, siblings: @siblings,
-        candidates: @candidates, events: @events, comments: @comments %>
+        candidates: @candidates, events: @events, comments: @comments, layout: @cockpit_layout %>
 <% end %>

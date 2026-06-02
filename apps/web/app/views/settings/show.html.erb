@@ -24,6 +24,17 @@
             <% end %>
           </select>
         </div>
+        <div class="row-between">
+          <div>
+            <strong>Review cockpit layout</strong>
+            <p class="subtle small">Decision bar keeps controls on top; Best match leads with the top candidate. You can also toggle this inside the cockpit.</p>
+          </div>
+          <select name="preferences[cockpit_layout]" class="select" style="inline-size: auto">
+            <% [ [ "Decision bar", "bar" ], [ "Best match", "hero" ] ].each do |label, value| %>
+              <option value="<%= value %>" <%= "selected" if (@prefs["cockpit_layout"].presence || "bar") == value %>><%= label %></option>
+            <% end %>
+          </select>
+        </div>
       </div>
     </details>
 

@@ -1,0 +1,23 @@
+<%# locals: mapping, siblings — status decision buttons shared by both cockpit layouts. %>
+<%= button_to mapping_path(mapping), method: :patch, params: { mapping: { status: "approved" } },
+      form: { data: { turbo_frame: "_top" } }, data: { shortcut: "approve" },
+      class: "btn btn--sm #{"is-active" if mapping.approved?}" do %>
+  <%= lucide_icon "circle-check", class: "icon" %> Approve
+<% end %>
+<%= button_to mapping_path(mapping), method: :patch, params: { mapping: { status: "flagged" } },
+      form: { data: { turbo_frame: "_top" } }, data: { shortcut: "flag" },
+      class: "btn btn--sm #{"is-active" if mapping.flagged?}" do %>
+  <%= lucide_icon "flag", class: "icon" %> Flag
+<% end %>
+<%= button_to mapping_path(mapping), method: :patch, params: { mapping: { status: "invalid_status" } },
+      form: { data: { turbo_frame: "_top" } }, data: { shortcut: "invalid" },
+      class: "btn btn--sm #{"is-active" if mapping.invalid_status?}" do %>
+  <%= lucide_icon "circle-x", class: "icon" %> Invalid
+<% end %>
+<% if siblings[:next_id] %>
+  <%= button_to mapping_path(mapping, next: 1), method: :patch, params: { mapping: { status: "approved" } },
+        form: { data: { turbo_frame: "_top" } }, data: { shortcut: "approve-next" },
+        class: "btn btn--primary btn--sm" do %>
+    <%= lucide_icon "circle-check", class: "icon" %> Approve and next
+  <% end %>
+<% end %>

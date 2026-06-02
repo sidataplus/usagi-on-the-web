@@ -1,6 +1,8 @@
-<%# locals: mapping, candidates (Array<UsagiApi::ConceptResult>), next_id (optional) %>
+<%# locals: mapping, candidates (Array<UsagiApi::ConceptResult>), next_id (optional), hero (optional) %>
+<% hero = local_assigns[:hero] %>
 <div class="candidate-list">
-  <% candidates.each do |candidate| %>
+  <% candidates.each_with_index do |candidate, index| %>
+    <% featured = hero && index.zero? %>
     <% scores = {
       "Final" => candidate.respond_to?(:final_score) ? candidate.final_score : candidate.score,
       "BiMaxSim" => candidate.respond_to?(:bimaxsim_score) ? candidate.bimaxsim_score : nil,
@@ -12,12 +14,13 @@
     <% features = candidate.respond_to?(:features) ? candidate.features : {} %>
     <% provenance = candidate.respond_to?(:provenance) ? candidate.provenance : {} %>
     <% warnings = candidate.respond_to?(:warnings) ? Array(candidate.warnings) : [] %>
+    <% persisted = candidate.respond_to?(:persisted?) && candidate.persisted? %>
 
-    <article class="candidate-card <%= "is-selected" if candidate.respond_to?(:selected?) && candidate.selected? %>">
+    <article class="candidate-card <%= "candidate-card--hero" if featured %> <%= "is-selected" if candidate.respond_to?(:selected?) && candidate.selected? %>">
       <div class="candidate-card__main">
         <div class="row-between">
           <div>
-            <div class="candidate-card__rank">Rank <%= candidate.rank %></div>
+            <div class="candidate-card__rank"><%= featured ? "Best match" : "Rank #{candidate.rank}" %></div>
             <h4><%= candidate.concept_name %></h4>
           </div>
           <%= score_badge(candidate.score) %>
@@ -31,7 +34,7 @@
           <% if candidate.respond_to?(:concept_code) && candidate.concept_code.present? %><span class="mono"><%= candidate.concept_code %></span><% end %>
         </div>
 
-        <details class="candidate-card__why">
+        <details class="candidate-card__why" <%= "open" if featured && warnings.any? %>>
           <summary>Why this candidate</summary>
           <div class="candidate-evidence">
             <% scores.each do |label, value| %>
@@ -65,14 +68,20 @@
       </div>
 
       <div class="candidate-card__actions">
-        <% if candidate.respond_to?(:persisted?) && candidate.persisted? %>
+        <% if persisted %>
+          <% if featured %>
+            <%= button_to mapping_candidate_path(candidate, **{ approve: 1 }.merge(local_assigns[:next_id].present? ? { next: 1 } : {})),
+                  method: :patch, form: { data: { turbo_frame: "_top" } }, class: "btn btn--primary btn--sm" do %>
+              <%= lucide_icon "circle-check", class: "icon" %> Use and approve
+            <% end %>
+          <% end %>
           <%= button_to mapping_candidate_path(candidate), method: :patch,
                 form: { data: { turbo_frame: "_top" } }, class: "btn btn--sm" do %>
             <%= lucide_icon "target", class: "icon" %> Use
           <% end %>
-          <% if local_assigns[:next_id].present? %>
+          <% if local_assigns[:next_id].present? && !featured %>
             <%= button_to mapping_candidate_path(candidate, next: 1), method: :patch,
-                  form: { data: { turbo_frame: "_top" } }, class: "btn btn--primary btn--sm" do %>
+                  form: { data: { turbo_frame: "_top" } }, class: "btn btn--sm" do %>
               Use and next <%= lucide_icon "chevron-right", class: "icon" %>
             <% end %>
           <% end %>
@@ -92,6 +101,6 @@
     </article>
   <% end %>
   <% if candidates.empty? %>
-    <p class="subtle small">No candidates returned.</p>
+    <p class="subtle small">No candidates yet. Run suggestions or search manually above.</p>
   <% end %>
 </div>

@@ -47,6 +47,7 @@ class MappingsController < ApplicationController
   def show
     authorize_project!(@mapping.project, :view)
     @project = @mapping.project
+    @cockpit_layout = resolve_cockpit_layout
     @siblings = navigation_for(@mapping)
     @candidates = @mapping.persisted_candidates
     @events = @mapping.project.audit_events.where(subject: @mapping).recent_first
@@ -237,6 +238,15 @@ class MappingsController < ApplicationController
       kinds = project.drug_domain? ? ["mapper_drugs_batch"] : ["hybrid_search_batch"]
       project.engine_jobs.where(kind: kinds, state: "failed").recent_first.first ||
         project.engine_jobs.where(kind: kinds, state: "succeeded_with_errors").recent_first.first
+    end
+
+    # Persist a toggled cockpit layout so it sticks across mappings/sessions.
+    def resolve_cockpit_layout
+      requested = params[:layout].presence_in(COCKPIT_LAYOUTS)
+      if requested && requested != current_user.prefs["cockpit_layout"]
+        current_user.update(preferences: current_user.prefs.merge("cockpit_layout" => requested))
+      end
+      cockpit_layout
     end
 
     def after_mapping_path(mapping)
