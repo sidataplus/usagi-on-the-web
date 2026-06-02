@@ -30,9 +30,22 @@ module EngineClients
     end
 
     def results(api_job_id)
-      return transport.get_json("/jobs/#{api_job_id}/results") if transport.respond_to?(:get_json)
+      return { "job_id" => api_job_id, "state" => "succeeded", "items" => [] } unless transport.respond_to?(:get_json)
 
-      { "job_id" => api_job_id, "state" => "succeeded", "items" => [] }
+      payload = transport.get_json("/jobs/#{api_job_id}/results")
+      # The live engine returns an artifact envelope and serves the per-term
+      # results as JSONL; the stub/contract path returns inline items already.
+      return payload if Array(payload["items"]).any?
+      return payload unless payload["artifact"] && transport.respond_to?(:get_jsonl)
+
+      payload.merge("items" => result_items(api_job_id))
     end
+
+    private
+      def result_items(api_job_id)
+        transport.get_jsonl("/jobs/#{api_job_id}/results")
+      rescue BaseClient::Error
+        []
+      end
   end
 end

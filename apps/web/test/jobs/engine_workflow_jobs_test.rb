@@ -31,6 +31,23 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
     end
   end
 
+  # Mirrors the live engine: /results returns an artifact envelope (no inline
+  # items), and the per-term results are served as JSONL via get_jsonl.
+  class JsonlResultsTransport
+    def initialize(envelope:, jsonl:)
+      @envelope = envelope
+      @jsonl = jsonl
+    end
+
+    def get_json(_path)
+      @envelope
+    end
+
+    def get_jsonl(_path)
+      @jsonl
+    end
+  end
+
   class FailingSearchTransport
     def search_concepts(**)
       raise EngineClients::BaseClient::Error.new(code: "INDEX_NOT_READY", message: "Search index is not built", request_id: "req_fail")
@@ -151,6 +168,52 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
       PollEngineJobJob.perform_now(succeeded.id)
     end
     assert_equal "succeeded", succeeded.reload.state
+  end
+
+  test "persist mapper results fetches JSONL items when the engine returns an artifact envelope" do
+    engine_job = @project.engine_jobs.create!(
+      kind: "mapper_drugs_batch",
+      state: "succeeded",
+      api_job_id: "api_jsonl_results",
+      candidate_set_id: "candset_jsonl"
+    )
+    EngineClients::JobsClient.default_transport = JsonlResultsTransport.new(
+      envelope: {
+        "job_id" => "api_jsonl_results",
+        "state" => "succeeded",
+        "artifact" => { "content_type" => "application/jsonl", "path" => "data/jobs/results/api_jsonl_results/results.jsonl" }
+      },
+      jsonl: [
+        {
+          "id" => @mapping.source_term_id,
+          "candidates" => [
+            {
+              "rank" => 1,
+              "method" => "thirawat_tachiom_bimaxsim_tiebreak",
+              "concept" => {
+                "concept_id" => 40162522,
+                "concept_name" => "Tramadol Hydrochloride 50 MG Oral Capsule",
+                "domain_id" => "Drug",
+                "vocabulary_id" => "RxNorm",
+                "concept_class_id" => "Clinical Drug",
+                "standard_concept" => "S",
+                "concept_code" => "859751"
+              },
+              "scores" => { "final" => 1.0, "bimaxsim" => 1.0 },
+              "features" => { "dose_form_match" => true }
+            }
+          ]
+        }
+      ]
+    )
+
+    assert_difference -> { @mapping.mapping_candidates.count }, 1 do
+      PersistMapperResultsJob.perform_now(engine_job.id)
+    end
+
+    candidate = @mapping.mapping_candidates.last
+    assert_equal 40162522, candidate.concept_id
+    assert_equal 1.0, candidate.final_score
   end
 
   test "persist mapper results stores candidates against mappings" do
