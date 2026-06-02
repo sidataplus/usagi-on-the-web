@@ -1,5 +1,5 @@
 <%#
-  locals: project, mappings, counts, status, query, sort, direction, page, total, total_pages
+  locals: project, mappings, counts, status, query, sort, direction, page, total, total_pages, per_page
   Rendered inside the #mappings_table turbo-frame; filters/sort/pagination
   re-render only this frame.
 %>
@@ -32,7 +32,7 @@
       <thead>
         <tr>
           <th style="inline-size: 2.5rem">
-            <input type="checkbox" data-bulk_select-target="selectAll" data-action="bulk_select#toggleAll" aria-label="Select all">
+            <input type="checkbox" data-bulk-select-target="selectAll" data-action="bulk-select#toggleAll" aria-label="Select all">
           </th>
           <% [ [ "source_code", "Source code", "" ], [ "source_name", "Source / target", "" ],
                [ "source_frequency", "Freq", "num" ], [ "match_score", "Score", "" ], [ "status", "Status", "" ] ].each do |col, label, cls| %>
@@ -60,7 +60,7 @@
     </table>
 
     <div class="row-between small subtle" style="padding: var(--space-sm) var(--space); border-block-start: 1px solid var(--color-border)">
-      <span>Page <%= page %> of <%= total_pages %> · <%= number_with_delimiter(total) %> total · Showing up to 50 rows per page</span>
+      <span>Page <%= page %> of <%= total_pages %> · <%= number_with_delimiter(total) %> total · Showing up to <%= per_page %> rows per page</span>
       <div class="row" style="gap: var(--space-sm)">
         <% if page > 1 %>
           <%= link_to project_mappings_path(project, status: status, q: query, sort: sort, direction: direction, page: page - 1),

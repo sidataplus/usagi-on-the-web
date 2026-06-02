@@ -41,7 +41,7 @@ class ApplicationController < ActionController::Base
       respond_to do |format|
         format.turbo_stream do
           flash.now[:alert] = message
-          render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash"), status: :service_unavailable
+          render turbo_stream: turbo_stream.update("flash", partial: "shared/flash"), status: :service_unavailable
         end
         format.html { redirect_back fallback_location: projects_path, alert: message }
       end

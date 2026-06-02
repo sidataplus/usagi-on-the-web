@@ -1,8 +1,9 @@
 <%# locals: project — shown by the bulk_select controller when ≥1 row is picked. %>
-<div class="bulkbar" data-bulk_select-target="toolbar" hidden>
-  <%= form_with url: bulk_update_mappings_path, method: :patch, class: "row wrap" do %>
-    <input type="hidden" name="mapping_ids" data-bulk_select-target="ids">
-    <strong><span data-bulk_select-target="count">0</span> selected</strong>
+<div class="bulkbar" data-bulk-select-target="toolbar" hidden>
+  <%= form_with url: bulk_update_mappings_path, method: :patch, class: "row wrap",
+        data: { action: "turbo:submit-end->bulk-select#clear" } do %>
+    <input type="hidden" name="mapping_ids" data-bulk-select-target="ids">
+    <strong><span data-bulk-select-target="count">0</span> selected</strong>
     <div class="spacer row" style="gap: var(--space-sm)">
       <button type="submit" name="status" value="approved" class="btn btn--sm">
         <%= lucide_icon "circle-check", class: "icon" %> Approve
@@ -13,7 +14,7 @@
       <button type="submit" name="status" value="invalid_status" class="btn btn--sm">
         <%= lucide_icon "circle-x", class: "icon" %> Invalid
       </button>
-      <button type="button" class="btn btn--plain btn--sm" data-action="bulk_select#clear">Clear</button>
+      <button type="button" class="btn btn--plain btn--sm" data-action="bulk-select#clear">Clear</button>
     </div>
   <% end %>
 </div>

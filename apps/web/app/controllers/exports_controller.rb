@@ -35,7 +35,7 @@ class ExportsController < ApplicationController
   def show
     authorize_project!(@project, :export)
     respond_to do |format|
-      format.html
+      format.html { @export ? render(:show) : render(:modal) }
       format.csv do
         export = @export || create_inline_export
         data = Exports::CsvBuilder.new(@project, format: export.format).to_csv

@@ -1,5 +1,7 @@
 <% content_for :title, "Engine jobs" %>
 
+<%= render "shared/project_nav", project: @project, active: :jobs %>
+
 <div class="page-head">
   <div>
     <h1 class="page-head__title">Engine jobs</h1>
@@ -70,7 +72,7 @@
         <% @engine_jobs.each do |job| %>
           <tr>
             <td><%= job.job_type.humanize.downcase %></td>
-            <td><span class="badge badge--neutral"><%= job.status.humanize %></span></td>
+            <td><span class="badge badge--<%= job_state_tone(job.state) %>"><%= job.status.humanize %></span></td>
             <td>
               <% if job.total.to_i.positive? %>
                 <%= job.processed.to_i %>/<%= job.total.to_i %>
@@ -79,10 +81,13 @@
               <% end %>
             </td>
             <td><%= job.failed.to_i %></td>
-            <td class="mono"><%= job.idempotency_key %></td>
+            <td class="mono"><%= job.idempotency_key.presence || "—" %></td>
             <td><%= job.created_at.to_fs(:short) %></td>
             <td><%= link_to "Open", project_engine_job_path(@project, job), class: "btn btn--sm" %></td>
           </tr>
+        <% end %>
+        <% if @engine_jobs.empty? %>
+          <tr><td colspan="7" class="subtle" style="text-align: center; padding: var(--space-lg)">No engine jobs yet. Run “Suggest candidates” to generate mapping suggestions.</td></tr>
         <% end %>
       </tbody>
     </table>

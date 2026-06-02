@@ -1,5 +1,6 @@
 class MappingCandidatesController < ApplicationController
   include ProjectAuthorization
+  include MappingCockpit
 
   before_action :set_candidate, only: :update
   before_action :set_mapping, only: :index
@@ -38,7 +39,14 @@ class MappingCandidatesController < ApplicationController
       )
     end
 
-    redirect_to after_candidate_path(mapping), notice: "Candidate applied. Review before approving."
+    @mapping = mapping
+    respond_to do |format|
+      format.turbo_stream do
+        advance = Mapping.find_by(id: next_mapping_id(mapping)) if params[:next].present?
+        render turbo_stream: cockpit_decision_streams(mapping, advance_to: advance)
+      end
+      format.html { redirect_to after_candidate_path(mapping), notice: "Candidate applied. Review before approving." }
+    end
   end
 
   private
@@ -53,13 +61,5 @@ class MappingCandidatesController < ApplicationController
     def after_candidate_path(mapping)
       next_id = next_mapping_id(mapping)
       params[:next].present? && next_id.present? ? mapping_path(next_id) : mapping_path(mapping)
-    end
-
-    def next_mapping_id(mapping)
-      ordered = mapping.project.mappings.ordered.pluck(:id)
-      index = ordered.index(mapping.id)
-      return nil unless index && index < ordered.size - 1
-
-      ordered[index + 1]
     end
 end

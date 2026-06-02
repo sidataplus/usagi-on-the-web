@@ -1,5 +1,7 @@
 <% content_for :title, "Review — #{@project.name}" %>
 
+<%= render "shared/project_nav", project: @project, active: :review %>
+
 <div class="page-head">
   <div>
     <h1 class="page-head__title">Mapping review</h1>
@@ -9,9 +11,6 @@
     </p>
   </div>
   <div class="page-head__actions secondary-actions">
-    <%= link_to manage_project_path(@project), class: "btn" do %>
-      <%= lucide_icon "settings", class: "icon" %> Settings
-    <% end %>
     <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
       <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
     <% end %>
@@ -109,13 +108,13 @@
   <% end %>
 </div>
 
-<div data-controller="bulk_select">
+<div data-controller="bulk-select">
   <%= render "mappings/bulk_operations", project: @project %>
 
   <%= turbo_frame_tag "mappings_table" do %>
     <%= render "mappings/table", project: @project, mappings: @mappings, counts: @counts,
           status: @status, query: @query, sort: @sort, direction: @direction,
-          page: @page, total: @total, total_pages: @total_pages %>
+          page: @page, total: @total, total_pages: @total_pages, per_page: @per_page %>
   <% end %>
 </div>
 
@@ -123,7 +122,7 @@
   <summary>Shortcut help</summary>
   <div class="shortcuts">
     <span class="row" style="gap: var(--space-xs); color: var(--color-text)"><%= lucide_icon "info", class: "icon" %> <strong>Shortcuts</strong> (in detail view)</span>
-    <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Invalid" ], [ "N", "Next" ], [ "E", "Edit" ], [ "← →", "Prev / next" ] ].each do |key, label| %>
+    <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Invalid" ], [ "N", "Next" ], [ "← →", "Prev / next" ] ].each do |key, label| %>
       <span class="shortcuts__item"><kbd><%= key %></kbd> <%= label %></span>
     <% end %>
   </div>

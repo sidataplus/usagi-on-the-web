@@ -23,19 +23,35 @@
   </head>
 
   <body data-controller="keyboard sidebar">
-    <div class="app">
-      <%= render "shared/brand" %>
-      <%= render "shared/topbar" %>
-      <%= render "shared/nav" %>
+    <a class="skip-link" href="#main-content">Skip to content</a>
 
-      <div class="app__main main">
-        <div class="main__body">
-          <%= render "shared/flash" %>
-          <%= yield %>
+    <% if signed_in? %>
+      <div class="app">
+        <%= render "shared/brand" %>
+        <%= render "shared/topbar" %>
+        <%= render "shared/nav" %>
+
+        <div class="app__main main">
+          <main id="main-content" class="main__body" tabindex="-1">
+            <div id="flash" aria-live="polite"><%= render "shared/flash" %></div>
+            <%= yield %>
+          </main>
+          <%= render "shared/footer" %>
         </div>
+      </div>
+    <% else %>
+      <%# Unauthenticated shell: brand + content + footer, no app nav or account chrome. %>
+      <div class="public-shell">
+        <header class="public-shell__head">
+          <%= render "shared/brand" %>
+        </header>
+        <main id="main-content" class="public-shell__body" tabindex="-1">
+          <div id="flash" aria-live="polite"><%= render "shared/flash" %></div>
+          <%= yield %>
+        </main>
         <%= render "shared/footer" %>
       </div>
-    </div>
+    <% end %>
 
     <%# Top-level frame the mapping detail / export dialogs render into. %>
     <%= turbo_frame_tag "modal" %>

@@ -1,0 +1,25 @@
+<%# Inline quick-export dialog, opened from the review screen into the #modal frame. %>
+<%= turbo_frame_tag "modal" do %>
+  <div class="modal" data-controller="modal" data-action="click->modal#backdrop">
+    <div class="modal__dialog" style="max-inline-size: 28rem" role="dialog" aria-modal="true" aria-label="Export mappings">
+      <div class="modal__head">
+        <h2 class="row" style="gap: var(--space-xs); font-size: 1.15rem"><%= lucide_icon "download", class: "icon" %> Export mappings</h2>
+        <button type="button" class="btn btn--icon" data-action="modal#close" aria-label="Close"><%= lucide_icon "x", class: "icon" %></button>
+      </div>
+      <div class="modal__body stack">
+        <p class="subtle">
+          Export all <%= number_with_delimiter(@project.total_mappings) %> mappings from
+          <strong><%= @project.name %></strong>.
+        </p>
+        <% download_format = @export&.format.to_s.end_with?("_jsonl") ? :jsonl : :csv %>
+        <% download_path = @export ? project_export_path(@project, @export, format: download_format) : project_export_path(@project, format: :csv) %>
+        <%= link_to download_path, data: { turbo_frame: "_top" }, class: "btn btn--primary btn--block" do %>
+          <%= lucide_icon "download", class: "icon" %> Download <%= download_format.to_s.upcase %>
+        <% end %>
+        <%= link_to project_exports_path(@project), data: { turbo_frame: "_top" }, class: "btn btn--block" do %>
+          <%= lucide_icon "settings-2", class: "icon" %> More export formats
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>

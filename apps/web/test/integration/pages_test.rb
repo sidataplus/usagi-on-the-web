@@ -34,12 +34,13 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_select ".quiet-section", minimum: 1
   end
 
-  test "settings page keeps preferences secondary to saving review defaults" do
+  test "settings page lets the reviewer save preferences" do
     get settings_path
 
     assert_response :success
-    assert_select ".next-action-panel", text: /Next step/
     assert_select ".details-panel", minimum: 1
+    assert_includes response.body, "Rows per page"
+    assert_includes response.body, "Save preferences"
   end
 
   test "mapping detail and status update render" do

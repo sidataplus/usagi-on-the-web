@@ -1,5 +1,7 @@
 <% content_for :title, "Manage — #{@project.name}" %>
 
+<%= render "shared/project_nav", project: @project, active: :manage %>
+
 <div class="page-head">
   <div>
     <h1 class="page-head__title">Manage project</h1>
@@ -24,12 +26,24 @@
       </div>
       <div class="grid grid--halves" style="gap: var(--space)">
         <div class="field">
-          <%= f.label :source_vocabulary, "Source vocabulary", class: "field__label" %>
-          <%= f.text_field :source_vocabulary, class: "input" %>
+          <%= f.label :mapping_domain, "Mapping domain", class: "field__label" %>
+          <%= f.select :mapping_domain, Project::MAPPING_DOMAINS.map { |domain| [ domain, domain ] }, {}, class: "select" %>
+          <p class="field__hint">Drug uses the THIRAWAT drug mapper; other domains use hybrid search.</p>
         </div>
         <div class="field">
           <%= f.label :status, class: "field__label" %>
           <%= f.select :status, Project.statuses.keys.map { |s| [ s.humanize, s ] }, {}, class: "select" %>
+        </div>
+      </div>
+      <div class="grid grid--halves" style="gap: var(--space)">
+        <div class="field">
+          <%= f.label :source_vocabulary, "Source vocabulary", class: "field__label" %>
+          <%= f.text_field :source_vocabulary, class: "input" %>
+        </div>
+        <div class="field">
+          <%= f.label :target_vocabularies, "Target vocabularies", class: "field__label" %>
+          <%= f.text_field :target_vocabularies, value: @project.target_vocabularies.join(", "), class: "input", placeholder: "e.g. RxNorm, SNOMED" %>
+          <p class="field__hint">Comma-separated.</p>
         </div>
       </div>
       <div class="row" style="justify-content: flex-end">

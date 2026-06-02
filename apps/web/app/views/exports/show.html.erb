@@ -1,24 +1,42 @@
-<%= turbo_frame_tag "modal" do %>
-  <div class="modal" data-controller="modal" data-action="click->modal#backdrop">
-    <div class="modal__dialog" style="max-inline-size: 28rem" role="dialog" aria-modal="true">
-      <div class="modal__head">
-        <h2 class="row" style="gap: var(--space-xs); font-size: 1.15rem"><%= lucide_icon "download", class: "icon" %> Export mappings</h2>
-        <button type="button" class="btn btn--icon" data-action="modal#close" aria-label="Close"><%= lucide_icon "x", class: "icon" %></button>
-      </div>
-      <div class="modal__body stack">
-        <p class="subtle">
-          Export all <%= number_with_delimiter(@project.total_mappings) %> mappings from
-          <strong><%= @project.name %></strong>.
-        </p>
-        <% download_format = @export&.format.to_s.end_with?("_jsonl") ? :jsonl : :csv %>
-        <% download_path = @export ? project_export_path(@project, @export, format: download_format) : project_export_path(@project, format: :csv) %>
-        <%= link_to download_path, data: { turbo_frame: "_top" }, class: "btn btn--primary btn--block" do %>
-          <%= lucide_icon "download", class: "icon" %> Download <%= download_format.to_s.upcase %>
-        <% end %>
-        <%= link_to project_mappings_path(@project), data: { turbo_frame: "_top" }, class: "btn btn--block" do %>
-          <%= lucide_icon "table", class: "icon" %> Review mappings
-        <% end %>
-      </div>
-    </div>
+<% content_for :title, "Export" %>
+<% tone = @export.state == "succeeded" ? "ok" : @export.state == "failed" ? "bad" : "neutral" %>
+<% download_format = @export.format.to_s.end_with?("_jsonl") ? :jsonl : :csv %>
+
+<%= render "shared/project_nav", project: @project, active: :exports %>
+
+<div class="page-head">
+  <div>
+    <h1 class="page-head__title">Export</h1>
+    <p class="page-head__subtitle"><%= @project.name %> · <%= @export.format_label %></p>
   </div>
-<% end %>
+  <div class="page-head__actions">
+    <%= link_to project_export_path(@project, @export, format: download_format), class: "btn btn--primary" do %>
+      <%= lucide_icon "download", class: "icon" %> Download <%= download_format.to_s.upcase %>
+    <% end %>
+    <%= link_to project_exports_path(@project), class: "btn" do %>
+      <%= lucide_icon "arrow-left", class: "icon" %> All exports
+    <% end %>
+  </div>
+</div>
+
+<div class="box">
+  <dl class="facts">
+    <div><dt>Format</dt><dd><%= @export.format_label %></dd></div>
+    <div><dt>State</dt><dd><span class="badge badge--<%= tone %>"><%= @export.state.humanize %></span></dd></div>
+    <div><dt>Rows</dt><dd><%= number_with_delimiter(@export.row_count) %></dd></div>
+    <div><dt>Requested by</dt><dd><%= @export.requested_by&.display_name || "System" %></dd></div>
+    <% if @export.finished_at.present? %>
+      <div><dt>Finished</dt><dd><%= @export.finished_at.to_fs(:short) %></dd></div>
+    <% end %>
+  </dl>
+</div>
+
+<div class="review-brief" style="margin-block-start: var(--space)">
+  <div>
+    <strong>Exports are a snapshot of the current review state.</strong>
+    <span class="subtle">Re-run after approving more mappings to refresh the download.</span>
+  </div>
+  <%= link_to project_mappings_path(@project), class: "btn btn--sm" do %>
+    <%= lucide_icon "table", class: "icon" %> Review mappings
+  <% end %>
+</div>

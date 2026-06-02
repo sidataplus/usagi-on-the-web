@@ -44,7 +44,8 @@ class Project < ApplicationRecord
   end
 
   def target_vocabularies=(values)
-    self.target_vocabulary_ids = Array(values).reject(&:blank?)
+    list = values.is_a?(String) ? values.split(",") : Array(values)
+    self.target_vocabulary_ids = list.map { |value| value.to_s.strip }.reject(&:blank?)
   end
 
   def drug_domain?

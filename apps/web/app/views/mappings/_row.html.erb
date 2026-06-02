@@ -5,7 +5,7 @@
 %>
 <tr id="<%= dom_id(mapping, :row) %>" class="<%= "is-justchanged" if local_assigns[:highlight] %>">
   <td>
-    <input type="checkbox" value="<%= mapping.id %>" data-bulk_select-target="checkbox" data-action="bulk_select#refresh" aria-label="Select row">
+    <input type="checkbox" value="<%= mapping.id %>" data-bulk-select-target="checkbox" data-action="bulk-select#refresh" aria-label="Select row">
   </td>
   <td class="mono"><%= mapping.source_code %></td>
   <td>

@@ -61,7 +61,7 @@ class ProjectsController < ApplicationController
     def project_params
       params.require(:project).permit(
         :name, :description, :source_vocabulary, :vocabulary_version, :status, :mapping_domain,
-        target_domain_ids: [], target_vocabulary_ids: [], target_vocabularies: []
+        :target_vocabularies, target_domain_ids: [], target_vocabulary_ids: []
       )
     end
 

@@ -290,7 +290,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_export_path(@project, export)
 
     assert_response :success
-    assert_includes response.body, "Export mappings"
+    assert_includes response.body, "Review CSV"
+    assert_includes response.body, "Download CSV"
     assert_includes response.body, "Review mappings"
   end
 

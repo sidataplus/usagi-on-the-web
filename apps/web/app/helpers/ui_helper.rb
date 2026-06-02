@@ -15,6 +15,20 @@ module UiHelper
     "archived" => "neutral"
   }.freeze
 
+  JOB_STATE_TONE = {
+    "queued" => "neutral",
+    "running" => "accent",
+    "succeeded" => "ok",
+    "succeeded_with_errors" => "warn",
+    "failed" => "bad",
+    "cancelled" => "neutral"
+  }.freeze
+
+  # Tone for an engine/export job state badge.
+  def job_state_tone(state)
+    JOB_STATE_TONE.fetch(state.to_s, "neutral")
+  end
+
   def status_badge(mapping)
     tone = STATUS_TONE.fetch(mapping.status, "neutral")
     tag.span mapping.status_label, class: "badge badge--#{tone}"
