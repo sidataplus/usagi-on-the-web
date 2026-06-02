@@ -1,28 +1,35 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Generic click-to-open menu with click-outside + Escape to close.
+// Click-to-open menu with click-outside + Escape to close. The panel is hidden
+// with the `hidden` attribute (see `.menu__panel[hidden]` in components.css), so
+// we toggle the attribute itself — not a CSS class — and keep aria-expanded in
+// sync on the trigger button.
 export default class extends Controller {
   static targets = ["menu"]
 
   connect() {
     this.boundAway = this.closeOnClickAway.bind(this)
     this.boundKey = this.closeOnEscape.bind(this)
+    this.trigger?.setAttribute("aria-expanded", this.menuTarget.hidden ? "false" : "true")
   }
 
   toggle(event) {
     event.stopPropagation()
-    const willOpen = this.menuTarget.classList.contains("hidden")
-    this.menuTarget.classList.toggle("hidden")
-    if (willOpen) {
-      document.addEventListener("click", this.boundAway)
-      document.addEventListener("keydown", this.boundKey)
-    } else {
-      this.removeListeners()
-    }
+    if (this.menuTarget.hidden) this.open()
+    else this.close()
+  }
+
+  open() {
+    this.menuTarget.hidden = false
+    this.trigger?.setAttribute("aria-expanded", "true")
+    document.addEventListener("click", this.boundAway)
+    document.addEventListener("keydown", this.boundKey)
   }
 
   close() {
-    this.menuTarget.classList.add("hidden")
+    if (this.menuTarget.hidden) return
+    this.menuTarget.hidden = true
+    this.trigger?.setAttribute("aria-expanded", "false")
     this.removeListeners()
   }
 
@@ -31,12 +38,18 @@ export default class extends Controller {
   }
 
   closeOnEscape(event) {
-    if (event.key === "Escape") this.close()
+    if (event.key !== "Escape") return
+    this.close()
+    this.trigger?.focus()
   }
 
   removeListeners() {
     document.removeEventListener("click", this.boundAway)
     document.removeEventListener("keydown", this.boundKey)
+  }
+
+  get trigger() {
+    return this.element.querySelector('[data-action~="dropdown#toggle"]')
   }
 
   disconnect() {

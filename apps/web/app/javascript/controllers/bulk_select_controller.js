@@ -21,7 +21,9 @@ export default class extends Controller {
     const ids = selected.map((box) => box.value)
 
     if (this.hasToolbarTarget) {
-      this.toolbarTarget.classList.toggle("hidden", ids.length === 0)
+      // The toolbar hides via the `hidden` attribute (`.bulkbar[hidden]`), so
+      // toggle the attribute itself rather than a class.
+      this.toolbarTarget.hidden = ids.length === 0
     }
     if (this.hasCountTarget) {
       this.countTarget.textContent = ids.length

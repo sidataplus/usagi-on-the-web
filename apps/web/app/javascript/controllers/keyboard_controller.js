@@ -27,8 +27,7 @@ export default class extends Controller {
       a: "approve",
       f: "flag",
       i: "invalid",
-      n: "next",
-      e: "edit"
+      n: "next"
     }
     const arrows = {
       ArrowLeft: "prev",

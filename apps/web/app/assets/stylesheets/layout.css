@@ -72,3 +72,59 @@
 .grid--cards { grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); }
 .grid--tiles { grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
 .grid--halves { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+
+/* Skip link: off-screen until a keyboard user focuses it. */
+.skip-link {
+  position: fixed;
+  inset-block-start: var(--space-sm);
+  inset-inline-start: var(--space-sm);
+  z-index: 100;
+  padding: var(--space-sm) var(--space);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font-weight: 600;
+  transform: translateY(calc(-100% - var(--space-lg)));
+  transition: transform 120ms ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+  text-decoration: none;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+/* The main landmark is only a programmatic focus target for the skip link. */
+#main-content:focus { outline: none; }
+
+/* Unauthenticated shell: a slim brand bar over centered content + footer. */
+.public-shell {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+}
+.public-shell__head {
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.public-shell__body {
+  flex: 1;
+  inline-size: 100%;
+  max-inline-size: var(--measure);
+  margin-inline: auto;
+  padding: var(--space-lg) var(--space-md);
+}
+
+/* Centered sign-in card. */
+.auth-shell {
+  min-block-size: 55dvh;
+  display: grid;
+  place-items: center;
+}
+.auth-card {
+  inline-size: 100%;
+  max-inline-size: 25rem;
+}
+.auth-card .page-head__title { font-size: 1.5rem; }
+.auth-card > .subtle { margin-block-end: var(--space-md); }
