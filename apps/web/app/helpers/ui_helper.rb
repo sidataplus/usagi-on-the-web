@@ -51,4 +51,9 @@ module UiHelper
   def nav_link_class(active)
     active ? "nav__link is-active" : "nav__link"
   end
+
+  # [label, value] role options a manager can assign (every role except owner).
+  def assignable_roles
+    ProjectMember::ROLES.reject { |role| role == "owner" }.map { |role| [ role.humanize, role ] }
+  end
 end

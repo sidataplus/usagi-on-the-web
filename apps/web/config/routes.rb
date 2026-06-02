@@ -29,6 +29,7 @@ Rails.application.routes.draw do
       end
     end
     resources :mappings, only: %i[index]
+    resources :members, only: %i[create update destroy], controller: "project_members"
     resources :exports, only: %i[index create show]
     resource :export, only: %i[show], controller: "exports"
     resource :auto_map, only: %i[create]

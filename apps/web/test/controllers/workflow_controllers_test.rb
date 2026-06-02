@@ -652,4 +652,34 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "req_partial"
     assert_includes response.body, "Retry"
   end
+
+  test "project owner adds, re-roles, and removes a member" do
+    member_user = create_user!(email: "reviewer2@usagi.test")
+
+    assert_difference -> { @project.project_members.count }, 1 do
+      post project_members_path(@project), params: { email: "Reviewer2@Usagi.test", role: "reviewer" }
+    end
+    assert_redirected_to manage_project_path(@project)
+    membership = @project.project_members.find_by(user: member_user)
+    assert_equal "reviewer", membership.role
+    assert_equal "member_added", @project.audit_events.last.action
+
+    patch project_member_path(@project, membership), params: { role: "admin" }
+    assert_equal "admin", membership.reload.role
+
+    assert_difference -> { @project.project_members.count }, -1 do
+      delete project_member_path(@project, membership)
+    end
+  end
+
+  test "member management rejects unknown emails and protects the owner" do
+    post project_members_path(@project), params: { email: "nobody@usagi.test" }
+    assert_equal "No user found with that email.", flash[:alert]
+
+    owner_membership = @project.project_members.find_by(role: "owner")
+    assert_no_difference -> { @project.project_members.count } do
+      delete project_member_path(@project, owner_membership)
+    end
+    assert_match "owner can't be removed", flash[:alert]
+  end
 end
