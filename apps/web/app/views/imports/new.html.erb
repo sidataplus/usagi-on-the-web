@@ -15,10 +15,7 @@
       <div class="callout callout--warn"><%= @import_batch.errors.full_messages.to_sentence %></div>
     <% end %>
 
-    <div class="field">
-      <%= f.label :source_vocabulary, class: "field__label" %>
-      <%= f.text_field :source_vocabulary, class: "input", placeholder: "e.g. NDC" %>
-    </div>
+    <p class="subtle small">Imported terms use this project's source vocabulary (<strong><%= @project.source_vocabulary.presence || "unset" %></strong>).</p>
 
     <div class="field">
       <span class="field__label">Source file</span>

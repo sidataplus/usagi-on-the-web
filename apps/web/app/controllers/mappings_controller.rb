@@ -126,9 +126,12 @@ class MappingsController < ApplicationController
   end
 
   def bulk_update
-    @mappings = Mapping.where(id: params[:mapping_ids].to_s.split(","))
-    @project = @mappings.first&.project
+    ids = params[:mapping_ids].to_s.split(",")
+    @project = Mapping.find_by(id: ids.first)&.project
     authorize_project!(@project, :review) if @project
+    # Scope to the authorized project so a crafted id list can't touch mappings
+    # in other projects (the request is only authorized for this one).
+    @mappings = @project ? @project.mappings.where(id: ids) : Mapping.none
     @mappings.find_each do |mapping|
       from = mapping.mapping_status
       mapping.update!(status: params[:status], reviewed_by: current_user, reviewed_at: Time.current)

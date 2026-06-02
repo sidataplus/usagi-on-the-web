@@ -1,5 +1,7 @@
-<%# locals: mapping, candidates, next_id (optional) %>
-<div id="<%= dom_id(mapping, :candidate_panel) %>" class="box stack-sm">
+<%# locals: mapping, candidates, next_id (optional), hero (optional). The frame is
+    the single root carrying the id so manual search replaces frame-for-frame (no
+    duplicate id); display:block overrides the global turbo-frame display:contents. %>
+<%= turbo_frame_tag dom_id(mapping, :candidate_panel), class: "box stack-sm", style: "display: block" do %>
   <div class="row-between">
     <h3 class="box__title row" style="gap: var(--space-xs); margin: 0"><%= lucide_icon "sparkles", class: "icon" %> Suggested candidates</h3>
     <div class="row" style="gap: var(--space-xs)">
@@ -10,4 +12,4 @@
     </div>
   </div>
   <%= render "mappings/candidates", mapping: mapping, candidates: candidates, next_id: local_assigns[:next_id], hero: local_assigns[:hero] %>
-</div>
+<% end %>

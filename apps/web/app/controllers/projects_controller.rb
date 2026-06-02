@@ -10,7 +10,8 @@ class ProjectsController < ApplicationController
     scope = current_user.admin? ? Project.all : current_user.projects
     scope = scope.order(updated_at: :desc)
     @total_pages = [(scope.count.to_f / PER_PAGE).ceil, 1].max
-    @projects = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
+    @projects = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE).to_a
+    @mapping_counts = Mapping.where(project_id: @projects.map(&:id)).group(:project_id, :mapping_status).count
   end
 
   def show

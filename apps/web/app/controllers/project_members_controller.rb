@@ -49,8 +49,12 @@ class ProjectMembersController < ApplicationController
       @project = Project.find(params[:project_id])
     end
 
+    # Owner is never assignable through these endpoints (it is set once at
+    # project creation); a crafted role="owner" falls back to reviewer.
+    ASSIGNABLE_ROLES = (ProjectMember::ROLES - %w[owner]).freeze
+
     def member_role
-      ProjectMember::ROLES.include?(params[:role]) ? params[:role] : "reviewer"
+      ASSIGNABLE_ROLES.include?(params[:role]) ? params[:role] : "reviewer"
     end
 
     def audit_member(action, user, role: nil)

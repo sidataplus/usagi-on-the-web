@@ -705,4 +705,67 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     end
     assert_match "owner can't be removed", flash[:alert]
   end
+
+  test "member role cannot be escalated to owner via crafted params" do
+    member_user = create_user!(email: "ru2@usagi.test")
+
+    post project_members_path(@project), params: { email: member_user.email, role: "owner" }
+
+    assert_equal "reviewer", @project.project_members.find_by(user: member_user).role
+    assert_equal 1, @project.project_members.where(role: "owner").count
+  end
+
+  test "bulk update approves selected mappings and ignores ids from other projects" do
+    m1 = create_mapping!(project: @project, source_code: "SRC_A")
+    m2 = create_mapping!(project: @project, source_code: "SRC_B", source_name: "metformin hcl 500 mg tab")
+    foreign = create_mapping!(project: create_project!(user: @user), source_code: "SRC_X")
+
+    post bulk_update_mappings_path,
+      params: { mapping_ids: "#{m1.id},#{m2.id},#{foreign.id}", status: "approved" },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :success
+    assert_equal "APPROVED", m1.reload.mapping_status
+    assert_equal "APPROVED", m2.reload.mapping_status
+    assert_equal "UNCHECKED", foreign.reload.mapping_status
+  end
+
+  test "review table sorts by source code" do
+    create_mapping!(project: @project, source_code: "SRC_ZZZ", source_name: "zeta")
+    create_mapping!(project: @project, source_code: "SRC_AAA", source_name: "alpha")
+
+    get project_mappings_path(@project, sort: "source_code", direction: "asc"),
+      headers: { "Turbo-Frame" => "mappings_table" }
+
+    assert_response :success
+    assert response.body.index("SRC_AAA") < response.body.index("SRC_ZZZ"), "expected SRC_AAA before SRC_ZZZ"
+  end
+
+  test "approve and next advances the cockpit via turbo stream" do
+    mapping = create_mapping!(project: @project, source_code: "SRC_A")
+    create_mapping!(project: @project, source_code: "SRC_B", source_name: "metformin hcl 500 mg tab")
+
+    patch mapping_path(mapping, next: "1"), params: { mapping: { status: "approved" } },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :success
+    assert_equal "text/vnd.turbo-stream.html", response.media_type
+    assert_includes response.body, "turbo-stream"
+    assert_includes response.body, "metformin hcl 500 mg tab"
+    assert_equal "APPROVED", mapping.reload.mapping_status
+  end
+
+  test "manual search returns a 503 when the engine is unavailable" do
+    EngineClients::MapperClient.default_transport = Class.new do
+      def post_json(*)
+        raise EngineClients::BaseClient::Error.new(code: "ENGINE_UNAVAILABLE", message: "engine down", status: 503)
+      end
+    end.new
+    mapping = create_mapping!(project: @project)
+
+    post mapping_manual_search_path(mapping), params: { q: "tramadol hcl 50mg cap" },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :service_unavailable
+  end
 end

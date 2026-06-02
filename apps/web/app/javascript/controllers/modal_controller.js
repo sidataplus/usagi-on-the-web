@@ -6,8 +6,17 @@ import { Controller } from "@hotwired/stimulus"
 // to the opener on close. Closing empties the frame so it can be reopened.
 export default class extends Controller {
   connect() {
-    this.previouslyFocused = document.activeElement
     this.dialog = this.element.querySelector("[role=dialog]") || this.element
+    // Stash the opener on the persistent #modal frame so it survives advances
+    // (each advance replaces this controller's element). Capture once: on an
+    // advance, activeElement is already <body>, so we must not overwrite it.
+    const frame = document.getElementById("modal")
+    if (frame && !frame._modalOpener) {
+      const opener = document.activeElement
+      if (opener && opener !== document.body && opener.focus && !this.element.contains(opener)) {
+        frame._modalOpener = opener
+      }
+    }
     this.boundKey = this.onKeydown.bind(this)
     document.addEventListener("keydown", this.boundKey)
     document.body.classList.add("overflow-hidden")
@@ -16,10 +25,15 @@ export default class extends Controller {
 
   disconnect() {
     document.removeEventListener("keydown", this.boundKey)
+    // Only a true close (the frame was emptied) unlocks scroll and restores
+    // focus; an advance keeps the next cockpit in the frame.
+    const frame = document.getElementById("modal")
+    if (frame && frame.innerHTML.trim() !== "") return
+
     document.body.classList.remove("overflow-hidden")
-    if (this.previouslyFocused && this.previouslyFocused.focus) {
-      this.previouslyFocused.focus()
-    }
+    const opener = frame && frame._modalOpener
+    if (opener && opener.isConnected && opener.focus) opener.focus()
+    if (frame) delete frame._modalOpener
   }
 
   // Close when the backdrop (the element carrying the action) is clicked,

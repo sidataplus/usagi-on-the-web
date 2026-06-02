@@ -1,7 +1,7 @@
 <%# locals: mapping, siblings, candidates, events, comments, layout. Rendered inside
     the top-level #modal turbo-frame, and re-rendered into it when advancing. %>
-<% domain_hint = mapping.source_term.source_domain_hint.presence || mapping.project.mapping_domain %>
-<% source_vocab = mapping.source_term.source_vocabulary.presence || mapping.project.source_vocabulary %>
+<% domain_hint = mapping.source_term&.source_domain_hint.presence || mapping.project.mapping_domain %>
+<% source_vocab = mapping.source_term&.source_vocabulary.presence || mapping.project.source_vocabulary %>
 <div class="modal" data-controller="modal" data-action="click->modal#backdrop">
   <div class="modal__dialog modal__dialog--review" data-keyboard-scope role="dialog" aria-modal="true" aria-label="Review <%= mapping.source_name %>">
 
@@ -34,16 +34,12 @@
       <div class="cockpit cockpit--<%= layout %>">
         <% if layout == "hero" %>
           <%= render "mappings/candidate_search", mapping: mapping %>
-          <%= turbo_frame_tag dom_id(mapping, :candidate_panel) do %>
-            <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id], hero: true %>
-          <% end %>
+          <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id], hero: true %>
           <%= render "mappings/cockpit_bar", mapping: mapping, siblings: siblings %>
         <% else %>
           <%= render "mappings/cockpit_bar", mapping: mapping, siblings: siblings %>
           <%= render "mappings/candidate_search", mapping: mapping %>
-          <%= turbo_frame_tag dom_id(mapping, :candidate_panel) do %>
-            <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id], hero: false %>
-          <% end %>
+          <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id], hero: false %>
         <% end %>
       </div>
 

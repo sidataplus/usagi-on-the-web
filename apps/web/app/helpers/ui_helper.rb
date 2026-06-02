@@ -56,4 +56,18 @@ module UiHelper
   def assignable_roles
     ProjectMember::ROLES.reject { |role| role == "owner" }.map { |role| [ role.humanize, role ] }
   end
+
+  # Review stats for one project drawn from a preloaded grouped-count hash
+  # ({ [project_id, "APPROVED"] => n, ... }), avoiding per-card COUNT queries.
+  def project_review_stats(counts, project_id)
+    approved = counts.fetch([ project_id, "APPROVED" ], 0)
+    total = counts.select { |(pid, _status), _n| pid == project_id }.values.sum
+    {
+      total: total,
+      approved: approved,
+      flagged: counts.fetch([ project_id, "FLAGGED" ], 0),
+      unchecked: counts.fetch([ project_id, "UNCHECKED" ], 0),
+      completion: total.zero? ? 0 : ((approved.to_f / total) * 100).round
+    }
+  end
 end

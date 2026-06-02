@@ -39,13 +39,14 @@ class MappingCandidatesController < ApplicationController
       )
 
       if params[:approve].present?
+        from_status = mapping.mapping_status
         mapping.update!(mapping_status: "APPROVED", reviewed_by: current_user, reviewed_at: Time.current)
         mapping.project.audit_events.create!(
           user: current_user,
           subject: mapping,
           action: "status_changed",
           request_id: Current.request_id,
-          metadata: { from: "UNCHECKED", to: "APPROVED" }
+          metadata: { from: from_status, to: "APPROVED" }
         )
       end
     end

@@ -28,7 +28,7 @@
   <td><%= status_badge(mapping) %></td>
   <td class="num">
     <div class="menu" data-controller="dropdown">
-      <button type="button" class="btn btn--icon" data-action="dropdown#toggle" aria-label="Row actions">
+      <button type="button" class="btn btn--icon" data-action="dropdown#toggle" aria-haspopup="true" aria-label="Row actions">
         <%= lucide_icon "ellipsis", class: "icon" %>
       </button>
       <div class="menu__panel" data-dropdown-target="menu" hidden>

@@ -13,15 +13,16 @@
 </div>
 
 <% if @projects.any? %>
-  <% resume_project = @projects.detect { |p| p.unchecked_count.positive? } || @projects.first %>
-  <% has_work = resume_project.unchecked_count.positive? %>
+  <% resume_project = @projects.detect { |p| project_review_stats(@mapping_counts, p.id)[:unchecked].positive? } || @projects.first %>
+  <% resume_stats = project_review_stats(@mapping_counts, resume_project.id) %>
+  <% has_work = resume_stats[:unchecked].positive? %>
   <section class="next-action-panel" aria-label="Next project action">
     <div class="next-action-panel__body">
       <div class="eyebrow">Next step</div>
       <% if has_work %>
         <h2 class="next-action-panel__title">Continue reviewing</h2>
         <p class="next-action-panel__copy">
-          <strong><%= resume_project.name %></strong> has <%= pluralize(resume_project.unchecked_count, "mapping") %> still waiting on a decision.
+          <strong><%= resume_project.name %></strong> has <%= pluralize(resume_stats[:unchecked], "mapping") %> still waiting on a decision.
         </p>
       <% else %>
         <h2 class="next-action-panel__title">Open your latest project</h2>
@@ -30,8 +31,8 @@
         </p>
       <% end %>
       <div class="next-action-panel__meta">
-        <span><%= resume_project.approved_count %> of <%= resume_project.total_mappings %> approved</span>
-        <span><%= resume_project.unchecked_count %> unchecked</span>
+        <span><%= resume_stats[:approved] %> of <%= resume_stats[:total] %> approved</span>
+        <span><%= resume_stats[:unchecked] %> unchecked</span>
       </div>
     </div>
     <div class="next-action-panel__actions">
@@ -56,6 +57,7 @@
     </div>
     <div class="grid grid--cards">
     <% @projects.each do |project| %>
+      <% stats = project_review_stats(@mapping_counts, project.id) %>
       <%= link_to project_path(project), class: "box box--link stack-sm" do %>
         <div class="row-between">
           <strong><%= project.name %></strong>
@@ -65,14 +67,14 @@
 
         <div>
           <div class="meter__label">
-            <span><%= project.approved_count %> of <%= project.total_mappings %> approved</span>
-            <span><%= project.completion_percentage %>%</span>
+            <span><%= stats[:approved] %> of <%= stats[:total] %> approved</span>
+            <span><%= stats[:completion] %>%</span>
           </div>
-          <div class="meter"><div class="meter__fill" style="inline-size: <%= project.completion_percentage %>%"></div></div>
+          <div class="meter"><div class="meter__fill" style="inline-size: <%= stats[:completion] %>%"></div></div>
         </div>
 
         <div class="row small subtle" style="gap: var(--space)">
-          <span class="row" style="gap: var(--space-xs)" aria-label="<%= pluralize(project.flagged_count, "flagged mapping") %>"><%= lucide_icon "flag", class: "icon" %> <%= project.flagged_count %></span>
+          <span class="row" style="gap: var(--space-xs)" aria-label="<%= pluralize(stats[:flagged], "flagged mapping") %>"><%= lucide_icon "flag", class: "icon" %> <%= stats[:flagged] %></span>
           <span class="row" style="gap: var(--space-xs)" aria-label="Source vocabulary <%= project.source_vocabulary %>"><%= lucide_icon "building-2", class: "icon" %> <%= project.source_vocabulary %></span>
           <span class="spacer"><%= time_ago_in_words(project.updated_at) %> ago</span>
         </div>

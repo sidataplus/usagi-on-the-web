@@ -38,7 +38,7 @@ module Imports
           source_name: row[:source_name],
           source_frequency: row[:source_frequency].to_i,
           source_domain_hint: row[:source_domain_hint],
-          source_vocabulary: import_session.source_vocabulary.presence || project.source_vocabulary,
+          source_vocabulary: project.source_vocabulary,
           source_row_number: row_number,
           raw_row: row[:raw_row] || {}
         )
