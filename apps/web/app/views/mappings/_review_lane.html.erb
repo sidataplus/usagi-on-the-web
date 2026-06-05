@@ -1,0 +1,65 @@
+<%# locals: project, next_review_mapping, next_review_candidate, ready_candidate_count, waiting_suggestion_count, engine_attention_job %>
+<section id="review_command_lane" class="review-lane next-action-panel" aria-label="Review command lane">
+  <div class="review-lane__primary">
+    <div class="eyebrow">Next step · Review command lane</div>
+    <% if next_review_mapping.present? %>
+      <h2><%= next_review_mapping.source_name %></h2>
+      <p class="small subtle">
+        <span class="mono"><%= next_review_mapping.source_code %></span>
+        · <%= pluralize(next_review_mapping.mapping_candidates.count, "saved candidate") %>
+        · freq <%= number_with_delimiter(next_review_mapping.source_frequency) %>
+      </p>
+      <% if next_review_candidate.present? %>
+        <div class="review-lane__candidate">
+          <span class="eyebrow">Best candidate</span>
+          <strong><%= next_review_candidate.concept_name %></strong>
+          <span class="small subtle">
+            <%= next_review_candidate.vocabulary_id %>
+            <% if next_review_candidate.domain_id.present? %> · <%= next_review_candidate.domain_id %><% end %>
+            <% if next_review_candidate.score.present? %> · <%= score_badge(next_review_candidate.score) %><% end %>
+          </span>
+        </div>
+      <% end %>
+      <%= link_to mapping_path(next_review_mapping), data: { turbo_frame: "modal" }, class: "btn btn--primary" do %>
+        <%= lucide_icon "square-pen", class: "icon" %> Open next unchecked
+      <% end %>
+    <% else %>
+      <h2>All mappings reviewed</h2>
+      <p class="small subtle">Flagged and invalid rows are still available from the filters below.</p>
+      <%= link_to project_exports_path(project), class: "btn btn--primary" do %>
+        <%= lucide_icon "download", class: "icon" %> Export reviewed mappings
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="review-lane__metrics">
+    <div aria-label="<%= number_with_delimiter(ready_candidate_count) %> ready with candidates">
+      <strong><%= number_with_delimiter(ready_candidate_count) %></strong>
+      <span>ready with candidates</span>
+    </div>
+    <div aria-label="<%= number_with_delimiter(waiting_suggestion_count) %> waiting on suggestions">
+      <strong><%= number_with_delimiter(waiting_suggestion_count) %></strong>
+      <span>waiting on suggestions</span>
+    </div>
+  </div>
+
+  <div class="review-lane__attention">
+    <% if engine_attention_job.present? %>
+      <div class="eyebrow">Engine attention</div>
+      <strong><%= engine_attention_job.status.humanize %></strong>
+      <% if engine_attention_job.error.present? %>
+        <p class="small subtle">
+          <span class="mono"><%= engine_attention_job.error["code"] %></span>
+          <% if engine_attention_job.error["message"].present? %> · <%= engine_attention_job.error["message"] %><% end %>
+        </p>
+      <% end %>
+      <%= link_to project_engine_job_path(project, engine_attention_job), class: "btn btn--sm" do %>
+        <%= lucide_icon "activity", class: "icon" %> Open job
+      <% end %>
+    <% else %>
+      <div class="eyebrow">Engine attention</div>
+      <strong>Clear</strong>
+      <p class="small subtle">No failed suggestion run is blocking review.</p>
+    <% end %>
+  </div>
+</section>

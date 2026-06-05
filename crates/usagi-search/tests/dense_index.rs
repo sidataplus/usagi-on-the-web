@@ -2,7 +2,8 @@ use std::fs;
 
 use usagi_catalog::builder::{build_catalog_from_athena, BuildCatalogOptions};
 use usagi_search::dense_index::{
-    build_sapbert_dense_index, build_sapbert_dense_index_from_precomputed, search_sapbert_dense,
+    build_sapbert_dense_index, build_sapbert_dense_index_from_precomputed,
+    lookup_precomputed_sapbert_query_vector, search_sapbert_dense,
     search_sapbert_dense_from_precomputed_query, DenseDocument, DenseSearchOptions,
     PrecomputedDenseEmbeddings, PrecomputedDenseQueries, PrecomputedDenseQuery,
     SapbertDenseBuildOptions, SapbertPrecomputedBuildOptions,
@@ -145,6 +146,31 @@ fn dense_index_builds_and_searches_from_precomputed_embedding_artifacts() {
 
     assert_eq!(results[0].concept.concept_id, 100);
     assert_eq!(results[0].method, "sapbert_cls");
+}
+
+#[test]
+fn precomputed_query_lookup_returns_none_for_unknown_queries() {
+    let dir = tempfile::tempdir().unwrap();
+    let query_path = dir.path().join("queries.json");
+    fs::write(
+        &query_path,
+        serde_json::to_vec_pretty(&PrecomputedDenseQueries {
+            queries: vec![PrecomputedDenseQuery {
+                q: "tramadol 50 mg capsule".to_string(),
+                vector: vec![0.99, 0.01],
+            }],
+        })
+        .unwrap(),
+    )
+    .unwrap();
+
+    let vector = lookup_precomputed_sapbert_query_vector(&query_path, "metformin 500 mg tablet")
+        .unwrap();
+    assert!(vector.is_none());
+
+    let vector =
+        lookup_precomputed_sapbert_query_vector(&query_path, "tramadol 50 mg capsule").unwrap();
+    assert_eq!(vector, Some(vec![0.99, 0.01]));
 }
 
 fn write_athena_fixture(path: &std::path::Path) {

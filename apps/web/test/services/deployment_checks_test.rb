@@ -50,6 +50,42 @@ class DeploymentChecksTest < ActiveSupport::TestCase
     assert_not_includes errors, "JOBS_API_URL must point at a private engine host in production"
   end
 
+  test "local deploy auth is blocked for internet-facing production hosts" do
+    errors = DeploymentChecks.production_errors(
+      {
+        "USAGI_LOCAL_DEPLOY" => "1",
+        "APP_HOSTS" => "usagi.example.org",
+        "USAGI_API_SHARED_SECRET" => "secret",
+        "SECRET_KEY_BASE" => "rails-secret",
+        "DATABASE_URL" => "postgres://db/usagi",
+        "CATALOG_API_URL" => "http://catalog-api:8788",
+        "SEARCH_API_URL" => "http://search-api:8789",
+        "MAPPER_API_URL" => "http://mapper-api:8790",
+        "JOBS_API_URL" => "http://mapper-api:8790"
+      }
+    )
+
+    assert_includes errors, "USAGI_LOCAL_DEPLOY must not be enabled for internet-facing production hosts"
+  end
+
+  test "local deploy auth is allowed for localhost compose hosts" do
+    errors = DeploymentChecks.production_errors(
+      {
+        "USAGI_LOCAL_DEPLOY" => "1",
+        "APP_HOSTS" => "localhost,127.0.0.1",
+        "USAGI_API_SHARED_SECRET" => "secret",
+        "SECRET_KEY_BASE" => "rails-secret",
+        "DATABASE_URL" => "postgres://db/usagi",
+        "CATALOG_API_URL" => "http://catalog-api:8788",
+        "SEARCH_API_URL" => "http://search-api:8789",
+        "MAPPER_API_URL" => "http://mapper-api:8790",
+        "JOBS_API_URL" => "http://mapper-api:8790"
+      }
+    )
+
+    assert_not_includes errors, "USAGI_LOCAL_DEPLOY must not be enabled for internet-facing production hosts"
+  end
+
   test "production engine URLs accept Tailscale IPs and MagicDNS hostnames" do
     errors = DeploymentChecks.production_errors(
       {

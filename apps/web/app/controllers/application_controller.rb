@@ -26,6 +26,7 @@ class ApplicationController < ActionController::Base
     end
 
     def authenticate_user!
+      LocalDeployAuth.sign_in!(session) if LocalDeployAuth.enabled?
       return if signed_in?
 
       redirect_to new_session_path, alert: "Sign in to continue."

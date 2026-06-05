@@ -129,6 +129,9 @@ jobs SQLite and result directory
 
 Rails must never read these files directly.
 
+The THIRAWAT document embedding artifact can be built remotely with Modal and
+restored into `/data` before building Tachiom. See `infra/modal/README.md`.
+
 ## Smoke
 
 After deploy:

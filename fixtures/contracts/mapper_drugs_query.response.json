@@ -1,21 +1,21 @@
 {
   "query": {
-    "source_name": "tramadol hydrochloride 50 mg capsule",
-    "source_code": "SRC001",
-    "query_text": "tramadol hydrochloride 50 mg capsule"
+    "source_name": "Augmentin 875/125",
+    "source_code": "SRC_AUGMENTIN_875_125",
+    "query_text": "Augmentin 875/125 (SRC_AUGMENTIN_875_125)"
   },
   "mode": "thirawat_tachiom",
   "candidates": [
     {
       "rank": 1,
       "concept": {
-        "concept_id": 40162522,
-        "concept_name": "Tramadol Hydrochloride 50 MG Oral Capsule",
+        "concept_id": 123456,
+        "concept_name": "amoxicillin 875 MG / clavulanate 125 MG Oral Tablet",
         "domain_id": "Drug",
         "vocabulary_id": "RxNorm",
         "concept_class_id": "Clinical Drug",
         "standard_concept": "S",
-        "concept_code": "859751"
+        "concept_code": "fixture-augmentin-875-125"
       },
       "scores": {
         "tachiom_maxsim": 0.92,
@@ -24,7 +24,6 @@
         "final": 0.94
       },
       "features": {
-        "ingredient_match": true,
         "strength_exact": true,
         "dose_form_match": true
       },

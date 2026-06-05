@@ -151,7 +151,7 @@ impl DrugCues {
         let normalized = normalize_text(text);
         let tokens: Vec<&str> = normalized.split_whitespace().collect();
         Self {
-            strengths: extract_strengths(&tokens),
+            strengths: extract_strengths(text, &tokens),
             forms: extract_members(&tokens, dose_form_map),
             routes: extract_members(&tokens, route_map),
             releases: extract_members(&tokens, release_map),
@@ -173,7 +173,7 @@ fn normalize_text(text: &str) -> String {
         .collect()
 }
 
-fn extract_strengths(tokens: &[&str]) -> Vec<String> {
+fn extract_strengths(original: &str, tokens: &[&str]) -> Vec<String> {
     let mut strengths = Vec::new();
     for (index, token) in tokens.iter().enumerate() {
         if let Some((amount, unit)) = split_amount_unit(token) {
@@ -189,9 +189,40 @@ fn extract_strengths(tokens: &[&str]) -> Vec<String> {
             }
         }
     }
+    if strengths.is_empty() {
+        strengths.extend(extract_unitless_slash_mg_strengths(original));
+    }
     strengths.sort();
     strengths.dedup();
     strengths
+}
+
+fn extract_unitless_slash_mg_strengths(original: &str) -> Vec<String> {
+    normalize_text_preserving_slash(original)
+        .split_whitespace()
+        .filter(|token| token.contains('/'))
+        .flat_map(|token| {
+            let parts: Vec<&str> = token.split('/').filter(|part| !part.is_empty()).collect();
+            if parts.len() < 2 || !parts.iter().all(|part| is_number(part)) {
+                return Vec::new();
+            }
+
+            parts.into_iter().map(|amount| format!("{amount}mg")).collect()
+        })
+        .collect()
+}
+
+fn normalize_text_preserving_slash(text: &str) -> String {
+    text.to_lowercase()
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || ch == '.' || ch == '/' {
+                ch
+            } else {
+                ' '
+            }
+        })
+        .collect()
 }
 
 fn split_amount_unit(token: &str) -> Option<(&str, &'static str)> {

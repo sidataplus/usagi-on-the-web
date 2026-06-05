@@ -851,29 +851,181 @@ mark job failed
 
 Do not mutate a live index in place. That is how search services become haunted.
 
-## 14. Index packs, later
+## 14. Artifact packs and distribution
 
-Index packs are not required for API stabilization, but manifests should be compatible with future packs.
+API v0.1 reads artifacts from the local `/data` directory layout. Operators may
+still build artifacts elsewhere and distribute them as immutable packs, as long
+as unpacking the pack recreates the documented layout and every artifact
+manifest validates.
 
-Future pack format:
+### 14.1 Pack format
+
+Preferred pack formats:
 
 ```text
+usagi-indexpack-athena-20250827-standard-full.tar.zst
 usagi-indexpack-athena-20250827-standard-full.zip
-  catalog/
-    catalog.sqlite
-    manifest.json
-  search/
-    tantivy/
-    sapbert/
-  mapper/
-    thirawat-drug/
-  pack_manifest.json
 ```
 
-API v0.1 only needs local artifact directories and manifests.
+Full pack layout:
 
-For operator build commands and the required catalog, Tantivy, SapBERT/USearch,
-THIRAWAT, and Tachiom build order, see
+```text
+pack_manifest.json
+catalog/
+  catalog.sqlite
+  manifest.json
+search/
+  tantivy/
+    index/
+    manifest.json
+  sapbert/
+    sapbert_cls.usearch
+    concept_ids.arrow
+    manifest.json
+mapper/
+  thirawat-drug/
+    doc_embeddings/
+      token_vectors.npy
+      token_ids.npy
+      doclens.npy
+      doc_ids.arrow
+      manifest.json
+    tachiom/
+      index.bin
+      manifest.json
+models/
+  sapbert/
+  thirawat-sapbert/
+```
+
+Partial packs are allowed when the target path is explicit. For example, the
+Modal pipeline may produce:
+
+```text
+usagi-thirawat-docemb-athena-20250827-thirawat-drug-docemb-v1.tar.zst
+  mapper/
+    thirawat-drug/
+      doc_embeddings/
+        token_vectors.npy
+        token_ids.npy
+        doclens.npy
+        doc_ids.arrow
+        manifest.json
+```
+
+Restore partial packs with:
+
+```bash
+tar --zstd -xf usagi-thirawat-docemb-athena-20250827-thirawat-drug-docemb-v1.tar.zst -C data
+```
+
+### 14.2 Pack manifest
+
+Every pack must include a `pack_manifest.json` or sidecar
+`*.manifest.json` with:
+
+```json
+{
+  "pack_kind": "usagi-artifact-pack",
+  "pack_schema_version": "usagi-artifact-pack-v1",
+  "artifact_scope": "full|thirawat-doc-embeddings",
+  "athena_version": "20250827",
+  "created_at": "2026-06-05T00:00:00Z",
+  "created_by": {
+    "service": "modal",
+    "pipeline": "usagi-artifact-builds"
+  },
+  "contains": [
+    "mapper/thirawat-drug/doc_embeddings"
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "athena-20250827-thirawat-drug-docemb-v1",
+      "artifact_kind": "thirawat-doc-embeddings",
+      "manifest_path": "mapper/thirawat-drug/doc_embeddings/manifest.json"
+    }
+  ],
+  "inputs": [
+    {
+      "artifact_id": "athena-20250827-standard-v1",
+      "artifact_kind": "catalog.sqlite"
+    },
+    {
+      "artifact_id": "sidataplus-thirawat-sapbert-merged-v1",
+      "artifact_kind": "thirawat-sapbert-model"
+    }
+  ],
+  "checksums": [
+    {
+      "path": "mapper/thirawat-drug/doc_embeddings/token_vectors.npy",
+      "sha256": "..."
+    }
+  ],
+  "license_notes": {
+    "athena": "operator must confirm redistribution rights",
+    "models": "operator must confirm model artifact redistribution rights",
+    "derived_embeddings": "private by default"
+  }
+}
+```
+
+### 14.3 Distribution targets
+
+Recommended targets:
+
+| Target | Use when | Notes |
+|---|---|---|
+| Private object storage | default internal artifact exchange | S3/R2/GCS works well for large packs |
+| Private Hugging Face Dataset | operators want versioned packs and resumable uploads | use `hf upload-large-folder` for large folders |
+| Modal Volume | build handoff during Modal jobs | copy out to durable storage after build |
+| OCI/Docker artifact image | small or controlled packs only | keep separate from service images |
+
+Hugging Face Dataset requirements:
+
+```text
+repo_type = dataset
+private = true unless release is approved
+README.md documents restore path and license constraints
+pack_manifest.json or sidecar manifests included
+large folders use hf upload-large-folder
+```
+
+OCI/Docker artifact image requirements:
+
+```text
+publish artifacts separately from runtime API images
+tag by Athena/model/schema version, not only latest
+extract/copy into /data during provisioning
+avoid huge mutable layers for frequently rebuilt artifacts
+```
+
+Example image name:
+
+```text
+ghcr.io/sidataplus/usagi-on-the-web/usagi-artifacts-athena-20250827:sha-...
+```
+
+Do not bake runtime service binaries and full data artifacts into the same image
+by default.
+
+### 14.4 Privacy and license policy
+
+Artifact packs may contain Athena-derived vocabulary rows, model-derived
+vectors, and generated indexes. Treat packs as private until an operator has
+confirmed:
+
+```text
+Athena vocabulary redistribution is permitted
+model artifact redistribution is permitted
+derived embedding redistribution is permitted
+the target registry, bucket, or Dataset access controls are correct
+```
+
+Public Hugging Face Datasets, public object storage, or public OCI images
+require an explicit release decision.
+
+For operator build commands, Modal remote GPU staging, and the required catalog,
+Tantivy, SapBERT/USearch, THIRAWAT, and Tachiom build order, see
 `docs/manual/api/05-artifact-builds.md`.
 
 ## 15. Security constraints

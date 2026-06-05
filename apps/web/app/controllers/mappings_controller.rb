@@ -56,18 +56,27 @@ class MappingsController < ApplicationController
 
   def update
     authorize_project!(@mapping.project, :review)
+    return reject_unmapped_approval! if approving_params?(mapping_params) && !approval_target_present?(mapping_params)
+
     if @mapping.update(mapping_params)
       if @mapping.mapping_status_previously_changed?
         @mapping.update!(reviewed_by: current_user, reviewed_at: Time.current)
       end
+      @remove_from_current_table = remove_from_referrer_filter?(@mapping)
+      prepare_review_refresh_state(@mapping.project) if @remove_from_current_table
       audit_mapping("mapping_updated", to: @mapping.mapping_status)
       respond_to do |format|
         format.turbo_stream do
           advance = Mapping.find_by(id: navigation_for(@mapping)[:next_id]) if params[:next].present?
           if advance
             render turbo_stream: cockpit_decision_streams(@mapping, advance_to: advance)
-          else
+          elsif @remove_from_current_table
             render :update
+          else
+            render turbo_stream: cockpit_decision_streams(
+              @mapping,
+              keep_open: !approving_params?(mapping_params)
+            )
           end
         end
         format.html { redirect_to after_mapping_path(@mapping), notice: "Mapping saved." }
@@ -79,9 +88,16 @@ class MappingsController < ApplicationController
   end
 
   def status
+    return reject_unmapped_approval! if approving_status?(params[:status]) && !@mapping.approvable?
+
     transition_to(params[:status])
-    @project = @mapping.project
-    @counts = status_counts(@project)
+    @remove_from_current_table = remove_from_referrer_filter?(@mapping)
+    if @remove_from_current_table
+      prepare_review_refresh_state(@mapping.project)
+    else
+      @project = @mapping.project
+      @counts = status_counts(@project)
+    end
     respond_to do |format|
       format.turbo_stream
       format.html { redirect_to project_mappings_path(@project) }
@@ -111,6 +127,8 @@ class MappingsController < ApplicationController
   end
 
   def approve
+    return reject_unmapped_approval! unless @mapping.approvable?
+
     transition_to("approved")
     redirect_to mapping_path(@mapping), notice: "Mapping approved."
   end
@@ -132,6 +150,10 @@ class MappingsController < ApplicationController
     # Scope to the authorized project so a crafted id list can't touch mappings
     # in other projects (the request is only authorized for this one).
     @mappings = @project ? @project.mappings.where(id: ids) : Mapping.none
+    if approving_status?(params[:status]) && @mappings.where(target_concept_id: nil).exists?
+      redirect_to(@project ? project_mappings_path(@project) : projects_path, alert: "Pick target concepts before approving selected mappings.")
+      return
+    end
     @mappings.find_each do |mapping|
       from = mapping.mapping_status
       mapping.update!(status: params[:status], reviewed_by: current_user, reviewed_at: Time.current)
@@ -189,6 +211,7 @@ class MappingsController < ApplicationController
 
     def transition_to(status)
       authorize_project!(@mapping.project, :review)
+
       from = @mapping.mapping_status
       @mapping.update!(status: status, reviewed_by: current_user, reviewed_at: Time.current)
       audit_mapping("status_changed", from: from, to: @mapping.mapping_status)
@@ -202,6 +225,42 @@ class MappingsController < ApplicationController
         request_id: Current.request_id,
         metadata: { from: from, to: to }.compact
       )
+    end
+
+    def approving_params?(attributes)
+      approving_status?(attributes[:status])
+    end
+
+    def approving_status?(status)
+      Mapping.normalize_status(status) == "APPROVED"
+    end
+
+    def approval_target_present?(attributes)
+      @mapping.approvable? || attributes[:target_concept_id].present? || attributes[:concept_id].present?
+    end
+
+    def reject_unmapped_approval!
+      respond_to do |format|
+        format.turbo_stream { redirect_to mapping_path(@mapping), alert: "Pick a target concept before approving." }
+        format.html { redirect_to mapping_path(@mapping), alert: "Pick a target concept before approving." }
+      end
+    end
+
+    def remove_from_referrer_filter?(mapping)
+      status = referrer_status_filter
+      status.present? && Mapping.normalize_status(status) != mapping.mapping_status
+    end
+
+    def referrer_status_filter
+      referrer_params["status"].presence
+    end
+
+    def referrer_params
+      return {} if request.referer.blank?
+
+      Rack::Utils.parse_nested_query(URI.parse(request.referer).query)
+    rescue URI::InvalidURIError
+      {}
     end
 
     def sort_params
@@ -261,5 +320,42 @@ class MappingsController < ApplicationController
       { project: @project, mappings: @mappings, counts: @counts, status: @status, query: @query,
         sort: @sort, direction: @direction, page: @page, total: @total, total_pages: @total_pages,
         per_page: @per_page }
+    end
+
+    def review_lane_locals
+      {
+        project: @project,
+        next_review_mapping: @next_review_mapping,
+        next_review_candidate: @next_review_candidate,
+        ready_candidate_count: @ready_candidate_count,
+        waiting_suggestion_count: @waiting_suggestion_count,
+        engine_attention_job: @engine_attention_job
+      }
+    end
+
+    def prepare_review_refresh_state(project)
+      @project = project
+      @status = referrer_params["status"].presence_in(STATUS_FILTERS)
+      @query = referrer_params["q"].to_s
+      @sort = referrer_params["sort"].presence_in(SORTS.keys) || "source_frequency"
+      @direction = referrer_params["direction"] == "asc" ? :asc : :desc
+      @per_page = per_page
+
+      config = SORTS.fetch(@sort)
+      scope = @project.mappings.search(@query).by_status(@status)
+      scope = scope.joins(config[:join]) if config[:join]
+      scope = scope.order(Arel.sql("#{config[:column]} #{@direction == :asc ? "ASC" : "DESC"}")).order(id: :asc)
+      @counts = status_counts(@project)
+      @total = scope.count
+      @total_pages = [(@total.to_f / @per_page).ceil, 1].max
+      @page = [[referrer_params["page"].to_i, 1].max, @total_pages].min
+      @mappings = scope.offset((@page - 1) * @per_page).limit(@per_page)
+      @latest_engine_job = latest_suggestion_job(@project)
+      @next_review_mapping = next_review_mapping(@project)
+      @next_review_candidate = @next_review_mapping&.persisted_candidates&.first
+      @ready_candidate_count = @project.mappings.unchecked.joins(:mapping_candidates).distinct.count
+      @waiting_suggestion_count = @project.mappings.unchecked.left_joins(:mapping_candidates)
+                                        .where(mapping_candidates: { id: nil }).count
+      @engine_attention_job = engine_attention_job(@project)
     end
 end

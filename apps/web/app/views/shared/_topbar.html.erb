@@ -25,11 +25,11 @@
       <%= link_to settings_path, class: "menu__item" do %>
         <%= lucide_icon "settings", class: "icon" %> Settings
       <% end %>
-      <% if signed_in? %>
+      <% if signed_in? && !LocalDeployAuth.enabled? %>
         <%= button_to session_path, method: :delete, class: "menu__item" do %>
           <%= lucide_icon "log-out", class: "icon" %> Log out
         <% end %>
-      <% else %>
+      <% elsif !signed_in? %>
         <%= link_to new_session_path, class: "menu__item" do %>
           <%= lucide_icon "log-in", class: "icon" %> Sign in
         <% end %>

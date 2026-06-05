@@ -191,12 +191,12 @@ class EngineClientsTest < ActiveSupport::TestCase
     transport = FixtureTransport.new("/search/concepts" => response)
 
     results = EngineClients::SearchClient.new(transport: transport).search_concepts(
-      q: "tramadol 50 mg capsule",
+      q: "Augmentin 875/125",
       filters: { domain_id: ["Drug"] },
       limit: 20
     )
 
-    assert_equal 40162522, results.first.concept_id
+    assert_equal 123456, results.first.concept_id
     assert_equal "hybrid_rrf", results.first.method
     assert_equal 12.83, results.first.scores["tantivy"]
     assert_equal "local-catalog-standard-v1", results.first.provenance["catalog_artifact_id"]

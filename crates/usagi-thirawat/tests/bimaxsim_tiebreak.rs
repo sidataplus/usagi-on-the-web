@@ -64,6 +64,34 @@ fn tiebreak_prefers_matching_strength_and_form_inside_epsilon() {
 }
 
 #[test]
+fn tiebreak_treats_slash_strength_shorthand_as_milligrams() {
+    let ranked = rank_near_ties(
+        "Augmentin 875/125",
+        vec![
+            TieBreakCandidate {
+                concept_id: 2,
+                concept_name: "amoxicillin 500 MG / clavulanate 125 MG Oral Tablet".to_string(),
+                bimaxsim: 0.914,
+                tachiom_maxsim: 0.88,
+            },
+            TieBreakCandidate {
+                concept_id: 1,
+                concept_name: "amoxicillin 875 MG / clavulanate 125 MG Oral Tablet".to_string(),
+                bimaxsim: 0.912,
+                tachiom_maxsim: 0.87,
+            },
+        ],
+        TieBreakOptions {
+            epsilon: 0.01,
+            top_n: 100,
+        },
+    );
+
+    assert_eq!(ranked[0].concept_id, 1);
+    assert_eq!(ranked[0].features.strength_exact, Some(true));
+}
+
+#[test]
 fn tiebreak_does_not_reorder_outside_epsilon() {
     let ranked = rank_near_ties(
         "amoxicillin clavulanate 875 mg tablet",

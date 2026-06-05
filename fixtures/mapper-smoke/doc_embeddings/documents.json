@@ -2,27 +2,39 @@
   "documents": [
     {
       "concept": {
-        "concept_id": 40162522,
-        "concept_name": "Tramadol Hydrochloride 50 MG Oral Capsule",
+        "concept_id": 123456,
+        "concept_name": "amoxicillin 875 MG / clavulanate 125 MG Oral Tablet",
         "domain_id": "Drug",
         "vocabulary_id": "RxNorm",
         "concept_class_id": "Clinical Drug",
         "standard_concept": "S",
-        "concept_code": "859751"
+        "concept_code": "fixture-augmentin-875-125"
       },
       "token_vectors": [[1.0, 0.0], [0.0, 1.0]]
     },
     {
       "concept": {
-        "concept_id": 40162523,
-        "concept_name": "Tramadol Hydrochloride 100 MG Oral Tablet",
+        "concept_id": 123457,
+        "concept_name": "amoxicillin 500 MG / clavulanate 125 MG Oral Tablet",
         "domain_id": "Drug",
         "vocabulary_id": "RxNorm",
         "concept_class_id": "Clinical Drug",
         "standard_concept": "S",
-        "concept_code": "fixture-100"
+        "concept_code": "fixture-augmentin-500-125"
       },
-      "token_vectors": [[1.0, 0.0], [0.8, 0.2]]
+      "token_vectors": [[1.0, 0.0], [0.7, 0.7]]
+    },
+    {
+      "concept": {
+        "concept_id": 123458,
+        "concept_name": "amoxicillin 875 MG Oral Tablet",
+        "domain_id": "Drug",
+        "vocabulary_id": "RxNorm",
+        "concept_class_id": "Clinical Drug",
+        "standard_concept": "S",
+        "concept_code": "fixture-amoxicillin-875"
+      },
+      "token_vectors": [[1.0, 0.0], [0.2, 0.8]]
     }
   ]
 }

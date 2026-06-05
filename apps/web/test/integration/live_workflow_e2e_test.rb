@@ -36,15 +36,15 @@ class LiveWorkflowE2ETest < ActionDispatch::IntegrationTest
       drug_project,
       <<~CSV
         source_code,source_name,source_frequency
-        SRC_TRAMADOL_50_CAP,tramadol hydrochloride 50 mg capsule,12
+        SRC_AUGMENTIN_875_125,Augmentin 875/125,12
         SRC_MISSING,query with no precomputed embedding,4
       CSV
     )
 
-    good_mapping = drug_project.mappings.joins(:source_term).find_by!(source_terms: { source_code: "SRC_TRAMADOL_50_CAP" })
-    post mapping_manual_search_path(good_mapping), params: { q: "tramadol hydrochloride 50 mg capsule" }
+    good_mapping = drug_project.mappings.joins(:source_term).find_by!(source_terms: { source_code: "SRC_AUGMENTIN_875_125" })
+    post mapping_manual_search_path(good_mapping), params: { q: "Augmentin 875/125" }
     assert_redirected_to mapping_path(good_mapping)
-    assert good_mapping.reload.mapping_candidates.exists?(concept_id: 40162522)
+    assert good_mapping.reload.mapping_candidates.exists?(concept_id: 123456)
 
     perform_enqueued_jobs(only: StartAutoMapJob) do
       post project_auto_map_path(drug_project)
@@ -58,7 +58,7 @@ class LiveWorkflowE2ETest < ActionDispatch::IntegrationTest
     assert_equal "succeeded_with_errors", mapper_job.state
     assert_equal 2, mapper_job.processed
     assert_equal 1, mapper_job.failed
-    assert drug_project.mapping_candidates.exists?(concept_id: 40162522)
+    assert drug_project.mapping_candidates.exists?(concept_id: 123456)
     failed_item = mapper_job.error.fetch("items").find { |item| item["source_code"] == "SRC_MISSING" }
     assert_equal "EMBEDDING_FAILED", failed_item.fetch("error").fetch("code")
 
@@ -78,7 +78,7 @@ class LiveWorkflowE2ETest < ActionDispatch::IntegrationTest
       mixed_project,
       <<~CSV
         source_code,source_name,source_frequency,source_domain_hint
-        MIX_TRAMADOL,tramadol 50 mg capsule,8,Drug
+        MIX_AUGMENTIN,Augmentin 875/125,8,Drug
       CSV
     )
 
@@ -88,11 +88,11 @@ class LiveWorkflowE2ETest < ActionDispatch::IntegrationTest
     assert_redirected_to project_engine_jobs_path(mixed_project)
 
     hybrid_job = mixed_project.engine_jobs.hybrid_search_batch.recent_first.first
-    mixed_mapping = mixed_project.mappings.joins(:source_term).find_by!(source_terms: { source_code: "MIX_TRAMADOL" })
+    mixed_mapping = mixed_project.mappings.joins(:source_term).find_by!(source_terms: { source_code: "MIX_AUGMENTIN" })
     assert_equal "succeeded", hybrid_job.state
     assert_equal 1, hybrid_job.processed
     assert_equal 0, hybrid_job.failed
-    assert mixed_mapping.mapping_candidates.exists?(concept_id: 100)
+    assert mixed_mapping.mapping_candidates.exists?(concept_id: 123456)
 
     get project_engine_job_path(mixed_project, hybrid_job)
     assert_response :success
@@ -102,7 +102,7 @@ class LiveWorkflowE2ETest < ActionDispatch::IntegrationTest
     get project_mappings_path(mixed_project)
     assert_response :success
     assert_includes response.body, "ready with candidates"
-    assert_includes response.body, "Tramadol Hydrochloride 50 MG Oral Capsule"
+    assert_includes response.body, "amoxicillin 875 MG / clavulanate 125 MG Oral Tablet"
   end
 
   private

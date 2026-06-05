@@ -219,6 +219,15 @@ curl -fsS \
 
 ## 4. Build THIRAWAT Drug Document Embeddings
 
+This is the GPU-targeted stage. It can run on the API compute server, but for a
+full Athena Drug/RxNorm build the preferred operator path is to run it remotely
+on Modal and then import the generated `doc_embeddings` artifact back into the
+runtime `/data` volume.
+
+The current Rust encoder path still uses Candle on CPU; the Modal pipeline is
+wired so the stage can move to GPU execution without changing artifact layout
+when CUDA support is enabled in `usagi-embed`.
+
 Create the THIRAWAT document embedding job after the catalog and THIRAWAT model
 artifact are ready:
 
@@ -250,9 +259,85 @@ data/mapper/thirawat-drug/doc_embeddings/doc_ids.arrow
 data/mapper/thirawat-drug/doc_embeddings/manifest.json
 ```
 
+### Remote GPU Build With Modal
+
+Use Modal when the serving API host does not have enough GPU/CPU/RAM for the
+document embedding build, or when the build should run as a disposable
+maintenance job.
+
+The Modal path reuses the same API job flow:
+
+```text
+Modal Volume /data
+  -> mapper-api
+  -> /mapper/thirawat/build-embeddings-job
+  -> api-worker --queues embed --once
+  -> data/mapper/thirawat-drug/doc_embeddings/
+  -> /exports/usagi-thirawat-docemb-*.tar.zst
+```
+
+Stage only the required inputs into the Modal Volume:
+
+```text
+data/catalog/catalog.sqlite
+data/catalog/manifest.json
+data/models/thirawat-sapbert/
+```
+
+Run:
+
+```bash
+modal volume create usagi-artifacts-data
+modal volume put usagi-artifacts-data ./data/catalog /data/catalog
+modal volume put usagi-artifacts-data ./data/models/thirawat-sapbert /data/models/thirawat-sapbert
+
+USAGI_MODAL_GPU=L40S \
+uv run infra/modal/modal_artifact_pipeline.py \
+  --idempotency-key thirawat-docemb-athena-20250827-drug-v1 \
+  --artifact-id athena-20250827-thirawat-drug-docemb-v1 \
+  --catalog-artifact-id athena-20250827-standard-v1 \
+  --model-artifact-id sidataplus-thirawat-sapbert-merged-v1 \
+  --batch-size 16
+```
+
+Expected Modal outputs:
+
+```text
+/data/mapper/thirawat-drug/doc_embeddings/
+/exports/usagi-thirawat-docemb-athena-20250827-thirawat-drug-docemb-v1.tar.zst
+/exports/usagi-thirawat-docemb-athena-20250827-thirawat-drug-docemb-v1.tar.zst.manifest.json
+```
+
+Download and restore on the API compute server:
+
+```bash
+modal volume get usagi-artifacts-data \
+  /exports/usagi-thirawat-docemb-athena-20250827-thirawat-drug-docemb-v1.tar.zst \
+  ./artifacts/
+
+tar --zstd -xf artifacts/usagi-thirawat-docemb-athena-20250827-thirawat-drug-docemb-v1.tar.zst \
+  -C data
+```
+
+Then continue with Stage 5 on the API compute server. See
+`infra/modal/README.md` for Hugging Face upload, Volume layout, and restore
+details.
+
+Keep Modal exports private unless Athena vocabulary, model, and derived
+embedding redistribution rights have been reviewed.
+
 ## 5. Build Tachiom Index
 
-Create the Tachiom build job after THIRAWAT document embeddings are ready:
+Create the Tachiom build job after THIRAWAT document embeddings are ready. If
+Stage 4 ran on Modal, first restore the downloaded pack so the runtime host has:
+
+```text
+data/mapper/thirawat-drug/doc_embeddings/manifest.json
+data/mapper/thirawat-drug/doc_embeddings/token_vectors.npy
+data/mapper/thirawat-drug/doc_embeddings/token_ids.npy
+data/mapper/thirawat-drug/doc_embeddings/doclens.npy
+data/mapper/thirawat-drug/doc_embeddings/doc_ids.arrow
+```
 
 ```bash
 curl -fsS \

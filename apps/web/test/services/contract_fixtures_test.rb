@@ -9,7 +9,7 @@ class ContractFixturesTest < ActiveSupport::TestCase
       EngineClients::SearchClient.new.send(:concept_result_from_payload, result, provenance: payload.fetch("provenance"))
     end
 
-    assert_equal 40162522, results.first.concept_id
+    assert_equal 123456, results.first.concept_id
     assert_equal "hybrid_rrf", results.first.method
     assert_equal "local-catalog-standard-v1", results.first.provenance.fetch("catalog_artifact_id")
   end
@@ -24,7 +24,7 @@ class ContractFixturesTest < ActiveSupport::TestCase
 
     assert_equal "thirawat_tachiom_bimaxsim_tiebreak", result.method
     assert_equal 0.94, result.score
-    assert_equal true, result.features.fetch("ingredient_match")
+    assert_equal true, result.features.fetch("strength_exact")
     assert_equal "sidataplus/THIRAWAT-SapBERT", result.provenance.fetch("model_artifact_id")
   end
 

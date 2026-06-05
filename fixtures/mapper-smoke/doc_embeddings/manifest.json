@@ -41,8 +41,8 @@
       "embedding_kind": "projected_token_vectors"
     },
     "counts": {
-      "documents": 2,
-      "tokens": 4,
+      "documents": 3,
+      "tokens": 6,
       "dimension": 2
     }
   }

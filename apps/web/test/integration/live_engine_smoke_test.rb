@@ -24,7 +24,7 @@ class LiveEngineSmokeTest < ActiveSupport::TestCase
     end
 
     search_results = search_client.search_concepts(
-      q: "tramadol 50 mg capsule",
+      q: "Augmentin 875/125",
       filters: { domain_id: ["Drug"] },
       limit: 3
     )
@@ -43,17 +43,17 @@ class LiveEngineSmokeTest < ActiveSupport::TestCase
       limit_per_item: 1,
       items: [
         {
-          id: "src_live_tramadol_50",
-          source_code: "SRC_TRAMADOL_50_CAP",
-          q: "tramadol 50 mg capsule",
+          id: "src_live_augmentin_875_125",
+          source_code: "SRC_AUGMENTIN_875_125",
+          q: "Augmentin 875/125",
           filters: { vocabulary_id: ["RxNorm"] }
         }
       ]
     )
 
     item = response.fetch("items").first
-    assert_equal "src_live_tramadol_50", item.fetch("id")
-    assert_equal 100, item.fetch("results").first.fetch("concept").fetch("concept_id")
+    assert_equal "src_live_augmentin_875_125", item.fetch("id")
+    assert_equal 123456, item.fetch("results").first.fetch("concept").fetch("concept_id")
     assert_equal "local-hybrid-rrf-v1", response.fetch("provenance").fetch("index_artifact_id")
   end
 
@@ -66,8 +66,8 @@ class LiveEngineSmokeTest < ActiveSupport::TestCase
     end
 
     mapper_results = mapper_client.drug_candidates(
-      source_name: "tramadol hydrochloride 50 mg capsule",
-      source_code: "SRC_TRAMADOL_50_CAP",
+      source_name: "Augmentin 875/125",
+      source_code: "SRC_AUGMENTIN_875_125",
       limit: 3
     )
 
@@ -83,15 +83,15 @@ class LiveEngineSmokeTest < ActiveSupport::TestCase
       id: "proj_live_#{SecureRandom.hex(6)}",
       settings: { "candidate_limit" => 1 }
     )
-    item_id = "live-tramadol-#{SecureRandom.hex(6)}"
+    item_id = "live-augmentin-#{SecureRandom.hex(6)}"
     create_response = mapper_client.start_drug_batch_job(
       project: project,
       idempotency_key: "rails-live-mapper-#{SecureRandom.hex(12)}",
       items: [
         {
           id: item_id,
-          source_name: "tramadol hydrochloride 50 mg capsule",
-          source_code: "SRC_TRAMADOL_50_CAP"
+          source_name: "Augmentin 875/125",
+          source_code: "SRC_AUGMENTIN_875_125"
         }
       ]
     )
@@ -105,7 +105,7 @@ class LiveEngineSmokeTest < ActiveSupport::TestCase
     results = jobs_client.results(job_id)
     result_item = results.fetch("items").find { |item| item.fetch("id") == item_id }
     assert_not_nil result_item
-    assert_equal 40162522, result_item.fetch("candidates").first.fetch("concept").fetch("concept_id")
+    assert_equal 123456, result_item.fetch("candidates").first.fetch("concept").fetch("concept_id")
   end
 
   private

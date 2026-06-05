@@ -20,6 +20,7 @@
 
 /* ---- Filters bar -------------------------------------------------------- */
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+.filters .search { flex: 1 1 18rem; }
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 .chip {
   padding: 0.3em 0.75em;
@@ -114,6 +115,40 @@
 .review-lane.next-action-panel .review-lane__metrics div {
   background: var(--color-sunken);
 }
+@media (max-width: 80rem) {
+  .review-lane {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .review-lane__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 40rem) {
+  .filters {
+    display: grid;
+  }
+  .filters .search,
+  .filters .chips {
+    min-inline-size: 0;
+    inline-size: 100%;
+  }
+  .chips {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chip {
+    text-align: center;
+  }
+  .review-lane__primary h2 {
+    font-size: 1.12rem;
+  }
+  .review-lane__metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .review-lane__metrics strong {
+    font-size: 1.35rem;
+  }
+}
 
 .review-brief {
   display: flex;
@@ -128,10 +163,20 @@
 }
 .review-brief__job {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-sm);
   color: var(--color-text-subtle);
   font-size: 0.9rem;
+}
+@media (max-width: 40rem) {
+  .review-brief {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .review-brief__job {
+    justify-content: flex-start;
+  }
 }
 
 .review__target { display: flex; align-items: center; gap: 0.4em; font-size: 0.85rem; margin-block-start: 0.15rem; }
@@ -171,6 +216,26 @@
 .modal__body { padding: var(--space-md); max-block-size: 72dvh; overflow-y: auto; }
 .modal__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space); padding: var(--space-md); border-block-start: 1px solid var(--color-border); }
 .modal__nav { display: flex; align-items: center; gap: var(--space-xs); }
+@media (max-width: 40rem) {
+  .modal {
+    padding: 0;
+  }
+  .modal__dialog {
+    min-block-size: 100dvh;
+    border-radius: 0;
+    border-inline: 0;
+  }
+  .modal__head,
+  .modal__foot {
+    flex-wrap: wrap;
+  }
+  .modal__body {
+    max-block-size: none;
+  }
+  .modal__foot > * {
+    inline-size: 100%;
+  }
+}
 
 /* ---- Review cockpit (bar / hero layouts) ------------------------------- */
 .cockpit { display: grid; gap: var(--space); }
@@ -220,6 +285,18 @@
 }
 
 .cockpit-search { display: flex; gap: var(--space-sm); }
+@media (max-width: 40rem) {
+  .cockpit-bar,
+  .cockpit-bar__equivalence,
+  .cockpit-bar__actions,
+  .cockpit-search {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cockpit-bar__target {
+    min-inline-size: 0;
+  }
+}
 
 /* Featured best-match candidate. */
 .candidate-card--hero {
@@ -350,6 +427,14 @@
   align-content: start;
   gap: var(--space-xs);
   min-inline-size: 8.5rem;
+}
+@media (max-width: 40rem) {
+  .candidate-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .candidate-card__actions {
+    min-inline-size: 0;
+  }
 }
 
 /* History timeline */

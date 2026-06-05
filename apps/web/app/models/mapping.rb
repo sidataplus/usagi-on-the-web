@@ -156,6 +156,10 @@ class Mapping < ApplicationRecord
     target_concept_id.present?
   end
 
+  def approvable?
+    mapped?
+  end
+
   def persisted_candidates
     mapping_candidates.order(rank: :asc, final_score: :desc, id: :asc)
   end

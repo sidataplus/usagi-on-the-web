@@ -71,17 +71,15 @@
         <% if persisted %>
           <% if featured %>
             <%= button_to mapping_candidate_path(candidate, **{ approve: 1 }.merge(local_assigns[:next_id].present? ? { next: 1 } : {})),
-                  method: :patch, form: { data: { turbo_frame: "_top" } }, class: "btn btn--primary btn--sm" do %>
+                  method: :patch, class: "btn btn--primary btn--sm" do %>
               <%= lucide_icon "circle-check", class: "icon" %> Use and approve
             <% end %>
           <% end %>
-          <%= button_to mapping_candidate_path(candidate), method: :patch,
-                form: { data: { turbo_frame: "_top" } }, class: "btn btn--sm" do %>
+          <%= button_to mapping_candidate_path(candidate), method: :patch, class: "btn btn--sm" do %>
             <%= lucide_icon "target", class: "icon" %> Use
           <% end %>
           <% if local_assigns[:next_id].present? && !featured %>
-            <%= button_to mapping_candidate_path(candidate, next: 1), method: :patch,
-                  form: { data: { turbo_frame: "_top" } }, class: "btn btn--sm" do %>
+            <%= button_to mapping_candidate_path(candidate, next: 1), method: :patch, class: "btn btn--sm" do %>
               Use and next <%= lucide_icon "chevron-right", class: "icon" %>
             <% end %>
           <% end %>
@@ -93,7 +91,7 @@
                   domain_id: candidate.domain_id, vocabulary_id: candidate.vocabulary_id,
                   concept_class_id: candidate.concept_class_id, standard_concept: candidate.standard_concept,
                   concept_code: candidate.concept_code } },
-                form: { data: { turbo_frame: "_top" } }, class: "btn btn--sm" do %>
+                class: "btn btn--sm" do %>
             <%= lucide_icon "target", class: "icon" %> Use
           <% end %>
         <% end %>

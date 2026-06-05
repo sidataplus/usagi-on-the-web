@@ -3,13 +3,14 @@
 import { pathToFileURL } from "node:url";
 
 export const LIVE_BROWSER_WORKFLOW_TERMS = Object.freeze({
-  drugSuccess: "tramadol hydrochloride 50 mg capsule",
+  drugSuccess: "Augmentin 875/125",
   drugExpectedFailure: "query with no precomputed embedding",
-  hybridSuccess: "tramadol 50 mg capsule",
+  hybridSuccess: "Augmentin 875/125",
+  expectedTarget: "amoxicillin 875 MG / clavulanate 125 MG Oral Tablet",
 });
 
 const DEFAULTS = Object.freeze({
-  baseUrl: "http://127.0.0.1:3220",
+  baseUrl: "http://127.0.0.1:3000",
   email: "demo@usagi.test",
   password: "password123",
   pollAttempts: 20,
@@ -53,7 +54,7 @@ export async function runLiveBrowserWorkflow(options = {}) {
   await step(evidence, "drug_import", async () => {
     return importRows(tab, config, drugProject.id, [
       "source_code,source_name,source_frequency",
-      `SRC_TRAMADOL_50_CAP,${LIVE_BROWSER_WORKFLOW_TERMS.drugSuccess},12`,
+      `SRC_AUGMENTIN_875_125,${LIVE_BROWSER_WORKFLOW_TERMS.drugSuccess},12`,
       `SRC_MISSING,${LIVE_BROWSER_WORKFLOW_TERMS.drugExpectedFailure},4`,
     ].join("\n"), [
       "Import confirmed. Source terms are ready for review.",
@@ -67,8 +68,8 @@ export async function runLiveBrowserWorkflow(options = {}) {
     await settle(tab);
     return snapshotCheck(tab, [
       "2 saved candidates",
-      "Tramadol Hydrochloride 50 MG Oral Capsule",
-      "#40162522",
+      LIVE_BROWSER_WORKFLOW_TERMS.expectedTarget,
+      "#123456",
     ]);
   });
 
@@ -100,7 +101,7 @@ export async function runLiveBrowserWorkflow(options = {}) {
       "1 ready with candidates",
       "1 waiting on suggestions",
       "Succeeded with errors",
-      "Tramadol Hydrochloride 50 MG Oral Capsule",
+      LIVE_BROWSER_WORKFLOW_TERMS.expectedTarget,
     ]);
   });
 
@@ -119,7 +120,7 @@ export async function runLiveBrowserWorkflow(options = {}) {
   await step(evidence, "mixed_import", async () => {
     return importRows(tab, config, mixedProject.id, [
       "source_code,source_name,source_frequency,source_domain_hint",
-      `MIX_TRAMADOL_OK,${LIVE_BROWSER_WORKFLOW_TERMS.hybridSuccess},8,Drug`,
+      `MIX_AUGMENTIN_OK,${LIVE_BROWSER_WORKFLOW_TERMS.hybridSuccess},8,Drug`,
     ].join("\n"), [
       "Import confirmed. Source terms are ready for review.",
       "1 source term became",
@@ -149,13 +150,13 @@ export async function runLiveBrowserWorkflow(options = {}) {
     await goto(tab, config, `/projects/${mixedProject.id}/mappings`);
     const snapshot = await pollSnapshot(tab, config, [
       "1 ready with candidates",
-      "Tramadol Hydrochloride 50 MG Oral Capsule",
+      LIVE_BROWSER_WORKFLOW_TERMS.expectedTarget,
     ]);
     return {
       checks: includesAll(snapshot, [
         "1 ready with candidates",
         "0 waiting on suggestions",
-        "Tramadol Hydrochloride 50 MG Oral Capsule",
+        LIVE_BROWSER_WORKFLOW_TERMS.expectedTarget,
       ]),
       screenshot: await maybeScreenshot(tab, config, "mixed-review-candidates"),
     };

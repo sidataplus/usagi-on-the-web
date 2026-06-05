@@ -12,7 +12,7 @@
 
   <%= status_badge(mapping) %>
 
-  <%= form_with model: mapping, url: mapping_path(mapping), method: :patch, data: { turbo_frame: "_top" }, class: "cockpit-bar__equivalence" do |f| %>
+  <%= form_with model: mapping, url: mapping_path(mapping), method: :patch, class: "cockpit-bar__equivalence" do |f| %>
     <%= f.label :equivalence, "Equivalence", class: "sr-only" %>
     <%= f.select :equivalence, Mapping::EQUIVALENCE_LABELS.map { |k, v| [ v, k ] }, { include_blank: "Equivalence" }, class: "select", style: "inline-size: auto" %>
     <%= f.submit "Save", class: "btn btn--sm" %>

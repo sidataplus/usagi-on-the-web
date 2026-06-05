@@ -56,6 +56,11 @@ engine health from inside the rails-web container
 Rails engine clients over signed HTTP
 ```
 
+Local compose enables `USAGI_LOCAL_DEPLOY=1` by default. Rails auto-signs in a
+single passwordless reviewer account (`local@usagi.test`) and seeds one demo
+project on first boot. Do not enable this flag on internet-facing production
+hosts.
+
 Stop the stack:
 
 ```bash
@@ -596,6 +601,10 @@ build job, or restore process before starting production engine services with
 `USAGI_API_ENV=production`.
 
 For build order and commands, see `docs/manual/api/05-artifact-builds.md`.
+The THIRAWAT document embedding stage can run remotely on Modal; see
+`infra/modal/README.md`. Artifact pack formats, Hugging Face Dataset guidance,
+and OCI/Docker artifact image constraints are documented in
+`docs/api/artifacts.md`.
 
 ## Backups
 

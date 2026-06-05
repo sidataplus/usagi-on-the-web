@@ -21,7 +21,7 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
   end
 
   setup do
-    @user = create_user!(email: "demo@usagi.test", admin: true)
+    @user = create_user!(admin: true)
     @project = create_project!(user: @user)
     sign_in_as(@user)
   end
@@ -366,6 +366,33 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal "UNCHECKED", mapping.mapping_status
   end
 
+  test "turbo candidate apply keeps the review cockpit open for approval" do
+    mapping = create_mapping!(project: @project)
+    candidate = mapping.mapping_candidates.create!(
+      project: @project,
+      source_term: mapping.source_term,
+      concept_id: 40162522,
+      concept_name: "tramadol hydrochloride 50 MG Oral Capsule",
+      domain_id: "Drug",
+      vocabulary_id: "RxNorm",
+      rank: 1,
+      final_score: 0.91,
+      method: "thirawat_tachiom_bimaxsim_tiebreak"
+    )
+
+    patch mapping_candidate_path(candidate),
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :success
+    assert candidate.reload.selected?
+    assert_equal 40162522, mapping.reload.target_concept_id
+    assert_equal "UNCHECKED", mapping.mapping_status
+    assert_includes response.body, %(target="modal")
+    assert_includes response.body, "Review cockpit"
+    assert_includes response.body, "tramadol hydrochloride 50 MG Oral Capsule"
+    assert_no_match(/<turbo-stream action="update" target="modal">\s*<template>\s*<\/template>/m, response.body)
+  end
+
   test "manual target update does not auto approve mapping" do
     mapping = create_mapping!(project: @project)
 
@@ -383,6 +410,30 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal 40162522, mapping.reload.target_concept_id
     assert_equal "UNCHECKED", mapping.mapping_status
     assert_equal "Equivalent", mapping.equivalence
+  end
+
+  test "turbo manual target update keeps the review cockpit open" do
+    mapping = create_mapping!(project: @project)
+
+    patch mapping_path(mapping),
+      params: {
+        mapping: {
+          concept_id: 40162522,
+          concept_name: "tramadol hydrochloride 50 MG Oral Capsule",
+          vocabulary_id: "RxNorm",
+          domain_id: "Drug",
+          equivalence: "Equivalent"
+        }
+      },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :success
+    assert_equal 40162522, mapping.reload.target_concept_id
+    assert_equal "UNCHECKED", mapping.mapping_status
+    assert_includes response.body, %(target="modal")
+    assert_includes response.body, "Review cockpit"
+    assert_includes response.body, "tramadol hydrochloride 50 MG Oral Capsule"
+    assert_no_match(/<turbo-stream action="update" target="modal">\s*<template>\s*<\/template>/m, response.body)
   end
 
   test "auto map queues a project level engine workflow" do
@@ -523,12 +574,26 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
   test "mapping can be approved and advanced to the next mapping" do
     mapping = create_mapping!(project: @project, source_code: "SRC_A")
     next_mapping = create_mapping!(project: @project, source_code: "SRC_B", source_name: "metformin hcl 500 mg tab")
+    mapping.update!(
+      target_concept_id: 40162522,
+      target_concept_name: "tramadol hydrochloride 50 MG Oral Capsule"
+    )
 
     patch mapping_path(mapping, next: "1"), params: { mapping: { status: "approved" } }
 
     assert_redirected_to mapping_path(next_mapping)
     assert_equal "APPROVED", mapping.reload.mapping_status
     assert_equal @user, mapping.reviewed_by
+  end
+
+  test "unmapped mapping cannot be approved" do
+    mapping = create_mapping!(project: @project, source_code: "SRC_UNMAPPED")
+
+    patch mapping_path(mapping), params: { mapping: { status: "approved" } }
+
+    assert_redirected_to mapping_path(mapping)
+    assert_equal "UNCHECKED", mapping.reload.mapping_status
+    assert_nil mapping.reviewed_by
   end
 
   test "CSV export records export and audit event" do
@@ -765,6 +830,12 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     m1 = create_mapping!(project: @project, source_code: "SRC_A")
     m2 = create_mapping!(project: @project, source_code: "SRC_B", source_name: "metformin hcl 500 mg tab")
     foreign = create_mapping!(project: create_project!(user: @user), source_code: "SRC_X")
+    [m1, m2, foreign].each do |mapping|
+      mapping.update!(
+        target_concept_id: 40162522,
+        target_concept_name: "tramadol hydrochloride 50 MG Oral Capsule"
+      )
+    end
 
     post bulk_update_mappings_path,
       params: { mapping_ids: "#{m1.id},#{m2.id},#{foreign.id}", status: "approved" },
@@ -785,11 +856,17 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert response.body.index("SRC_AAA") < response.body.index("SRC_ZZZ"), "expected SRC_AAA before SRC_ZZZ"
+    assert_includes response.body, %(data-label="Source / target")
+    assert_includes response.body, %(data-label="Actions")
   end
 
   test "approve and next advances the cockpit via turbo stream" do
     mapping = create_mapping!(project: @project, source_code: "SRC_A")
     create_mapping!(project: @project, source_code: "SRC_B", source_name: "metformin hcl 500 mg tab")
+    mapping.update!(
+      target_concept_id: 40162522,
+      target_concept_name: "tramadol hydrochloride 50 MG Oral Capsule"
+    )
 
     patch mapping_path(mapping, next: "1"), params: { mapping: { status: "approved" } },
       headers: { "Accept" => "text/vnd.turbo-stream.html" }
@@ -798,6 +875,31 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal "text/vnd.turbo-stream.html", response.media_type
     assert_includes response.body, "turbo-stream"
     assert_includes response.body, "metformin hcl 500 mg tab"
+    assert_equal "APPROVED", mapping.reload.mapping_status
+  end
+
+  test "approving from unchecked filter refreshes review context" do
+    mapping = create_mapping!(project: @project, source_code: "SRC_A")
+    mapping.update!(
+      target_concept_id: 40162522,
+      target_concept_name: "tramadol hydrochloride 50 MG Oral Capsule"
+    )
+
+    patch mapping_path(mapping), params: { mapping: { status: "approved" } },
+      headers: {
+        "Accept" => "text/vnd.turbo-stream.html",
+        "Referer" => project_mappings_url(@project, status: "unchecked")
+      }
+
+    assert_response :success
+    assert_includes response.body, %(target="review_command_lane")
+    assert_includes response.body, %(target="mappings_table")
+    assert_includes response.body, "All mappings reviewed"
+    assert_includes response.body, "Unchecked <span class=\"chip__count\">0</span>"
+    assert_includes response.body, "Approved <span class=\"chip__count\">1</span>"
+    assert_includes response.body, "No mappings match these filters."
+    assert_no_match %(target="#{dom_id(mapping, :row)}"), response.body
+    assert_no_match %(action="refresh"), response.body
     assert_equal "APPROVED", mapping.reload.mapping_status
   end
 

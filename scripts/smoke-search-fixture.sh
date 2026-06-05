@@ -88,30 +88,30 @@ cargo run -q -p api-worker --bin usagi-worker -- --queues embed --once >/dev/nul
 
 auth_curl \
   -H 'Content-Type: application/json' \
-  -d '{"q":"tramadol 50 mg capsule","mode":"sapbert_cls","limit":1}' \
+  -d '{"q":"Augmentin 875/125","mode":"sapbert_cls","limit":1}' \
   "${SEARCH_BASE_URL}/search/concepts" |
-python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["results"][0]["concept"]["concept_id"] == 100; print(json.dumps({"top_concept_id": data["results"][0]["concept"]["concept_id"]}))'
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["results"][0]["concept"]["concept_id"] == 123456; print(json.dumps({"top_concept_id": data["results"][0]["concept"]["concept_id"]}))'
 
 auth_curl \
   -H 'Content-Type: application/json' \
-  -d '{"mode":"lexical_tantivy","limit_per_item":1,"items":[{"id":"q1","q":"tramadol 50 mg capsule"}]}' \
+  -d '{"mode":"lexical_tantivy","limit_per_item":1,"items":[{"id":"q1","q":"Augmentin 875/125"}]}' \
   "${SEARCH_BASE_URL}/search/batch" |
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["provenance"]["catalog_artifact_id"] == "local-catalog-standard-v1"; assert data["provenance"]["index_artifact_id"] == "local-tantivy-v1"; print(json.dumps({"batch_provenance": data["provenance"]}))'
 
 auth_curl \
   -H 'Content-Type: application/json' \
-  -d '{"mode":"sapbert_cls","limit_per_item":1,"items":[{"id":"q1","q":"tramadol 50 mg capsule"}]}' \
+  -d '{"mode":"sapbert_cls","limit_per_item":1,"items":[{"id":"q1","q":"Augmentin 875/125"}]}' \
   "${SEARCH_BASE_URL}/search/batch" |
-python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["results"][0]["concept"]["concept_id"] == 100; assert data["provenance"]["index_artifact_id"] == "local-sapbert-cls-v1"; print(json.dumps({"sapbert_batch_top_concept_id": data["items"][0]["results"][0]["concept"]["concept_id"]}))'
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["results"][0]["concept"]["concept_id"] == 123456; assert data["provenance"]["index_artifact_id"] == "local-sapbert-cls-v1"; print(json.dumps({"sapbert_batch_top_concept_id": data["items"][0]["results"][0]["concept"]["concept_id"]}))'
 
 auth_curl \
   -H 'Content-Type: application/json' \
-  -d '{"mode":"hybrid_rrf","limit_per_item":1,"filters":{"domain_id":["Drug"]},"hybrid":{"rrf_k":60,"lexical_top_k":10,"sapbert_top_k":10},"items":[{"id":"q1","source_code":"SRC_TRAMADOL_50_CAP","q":"tramadol 50 mg capsule","filters":{"vocabulary_id":["RxNorm"]}}]}' \
+  -d '{"mode":"hybrid_rrf","limit_per_item":1,"filters":{"domain_id":["Drug"]},"hybrid":{"rrf_k":60,"lexical_top_k":10,"sapbert_top_k":10},"items":[{"id":"q1","source_code":"SRC_AUGMENTIN_875_125","q":"Augmentin 875/125","filters":{"vocabulary_id":["RxNorm"]}}]}' \
   "${SEARCH_BASE_URL}/search/batch" |
-python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["results"][0]["concept"]["concept_id"] == 100; assert data["provenance"]["index_artifact_id"] == "local-hybrid-rrf-v1"; print(json.dumps({"hybrid_batch_top_concept_id": data["items"][0]["results"][0]["concept"]["concept_id"]}))'
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["results"][0]["concept"]["concept_id"] == 123456; assert data["provenance"]["index_artifact_id"] == "local-hybrid-rrf-v1"; print(json.dumps({"hybrid_batch_top_concept_id": data["items"][0]["results"][0]["concept"]["concept_id"]}))'
 
 auth_curl \
   -H 'Content-Type: application/json' \
-  -d '{"q":"tramadol 50 mg capsule","mode":"hybrid_rrf","concept_id":100}' \
+  -d '{"q":"Augmentin 875/125","mode":"hybrid_rrf","concept_id":123456}' \
   "${SEARCH_BASE_URL}/search/explain" |
-python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["concept_id"] == 100; assert "hybrid_rrf" in data["explanation"]; assert "sapbert" in data["explanation"]; print(json.dumps({"hybrid_explain_concept_id": data["concept_id"]}))'
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["concept_id"] == 123456; assert "hybrid_rrf" in data["explanation"]; assert "sapbert" in data["explanation"]; print(json.dumps({"hybrid_explain_concept_id": data["concept_id"]}))'

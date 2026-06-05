@@ -32,7 +32,7 @@ cargo run -q -p mapper-api >"${WORK_DIR}/mapper-api.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT
 
-for _ in {1..100}; do
+for _ in {1..300}; do
   if curl -fsS "${BASE_URL}/mapper/health" >/dev/null 2>&1; then
     break
   fi
@@ -43,15 +43,15 @@ curl -fsS "${BASE_URL}/mapper/health" >/dev/null
 auth_curl \
   -H 'Content-Type: application/json' \
   -d '{
-    "source_name": "tramadol hydrochloride 50 mg capsule",
-    "source_code": "SRC_TRAMADOL_50_CAP",
+    "source_name": "Augmentin 875/125",
+    "source_code": "SRC_AUGMENTIN_875_125",
     "mode": "thirawat_tachiom",
     "candidate_top_k": 10,
     "rerank_top_n": 10,
     "limit": 1
   }' \
   "${BASE_URL}/mapper/drugs/query" |
-python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["candidates"][0]["concept"]["concept_id"] == 40162522; print(json.dumps({"top_concept_id": data["candidates"][0]["concept"]["concept_id"]}))'
+python3 -c 'import json,sys; data=json.load(sys.stdin); concept=data["candidates"][0]["concept"]; assert concept["concept_id"] == 123456; assert "amoxicillin 875 MG / clavulanate 125 MG" in concept["concept_name"]; print(json.dumps({"top_concept_id": concept["concept_id"], "top_concept_name": concept["concept_name"]}))'
 
 auth_curl \
   -H 'Content-Type: application/json' \
@@ -62,22 +62,22 @@ auth_curl \
     "limit": 1,
     "items": [
       {
-        "id": "SRC_TRAMADOL_50_CAP",
-        "source_name": "tramadol hydrochloride 50 mg capsule",
-        "source_code": "SRC_TRAMADOL_50_CAP"
+        "id": "SRC_AUGMENTIN_875_125",
+        "source_name": "Augmentin 875/125",
+        "source_code": "SRC_AUGMENTIN_875_125"
       }
     ]
   }' \
   "${BASE_URL}/mapper/drugs/batch" |
-python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["candidates"][0]["concept"]["concept_id"] == 40162522; assert data["provenance"]["model_artifact_id"] == "sidataplus/THIRAWAT-SapBERT"; assert data["provenance"]["index_artifact_id"].endswith("/manifest.json"); print(json.dumps({"batch_top_concept_id": data["items"][0]["candidates"][0]["concept"]["concept_id"], "batch_provenance": data["provenance"]}))'
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["candidates"][0]["concept"]["concept_id"] == 123456; assert data["provenance"]["model_artifact_id"] == "sidataplus/THIRAWAT-SapBERT"; assert data["provenance"]["index_artifact_id"].endswith("/manifest.json"); print(json.dumps({"batch_top_concept_id": data["items"][0]["candidates"][0]["concept"]["concept_id"], "batch_provenance": data["provenance"]}))'
 
 auth_curl \
   -H 'Content-Type: application/json' \
   -d '{
-    "source_name": "tramadol hydrochloride 50 mg capsule",
-    "source_code": "SRC_TRAMADOL_50_CAP",
+    "source_name": "Augmentin 875/125",
+    "source_code": "SRC_AUGMENTIN_875_125",
     "mode": "thirawat_tachiom",
-    "concept_id": 40162522
+    "concept_id": 123456
   }' \
   "${BASE_URL}/mapper/drugs/explain" |
-python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["concept"]["concept_id"] == 40162522; assert data["token_debug"]["enabled"] is False; assert "bimaxsim" in data["scores"]; print(json.dumps({"explain_concept_id": data["concept"]["concept_id"], "token_debug": data["token_debug"]}))'
+python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["concept"]["concept_id"] == 123456; assert data["token_debug"]["enabled"] is False; assert "bimaxsim" in data["scores"]; assert data["features"]["strength_exact"] is True; print(json.dumps({"explain_concept_id": data["concept"]["concept_id"], "token_debug": data["token_debug"]}))'

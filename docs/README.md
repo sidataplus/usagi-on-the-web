@@ -20,6 +20,7 @@ docs/manual/api/05-artifact-builds.md
 docs/manual/web/03-verification.md
 docs/manual/web/04-deployment.md
 infra/aws/README.md
+infra/modal/README.md
 ```
 
 ## Reading order

@@ -1,12 +1,16 @@
 {
   "documents": [
     {
-      "concept_id": 100,
+      "concept_id": 123456,
       "vector": [1.0, 0.0]
     },
     {
-      "concept_id": 200,
-      "vector": [0.0, 1.0]
+      "concept_id": 123457,
+      "vector": [0.8, 0.2]
+    },
+    {
+      "concept_id": 123458,
+      "vector": [0.4, 0.6]
     }
   ]
 }

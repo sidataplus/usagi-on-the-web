@@ -28,7 +28,7 @@ use usagi_contracts::search::{
 use usagi_embed::xlm_roberta::{encode_sapbert_cls, XlmRobertaEncodeOptions};
 use usagi_jobs::store::{CreateJob, JobStore};
 use usagi_search::dense_index::{
-    search_sapbert_dense, search_sapbert_dense_from_precomputed_query, DenseSearchOptions,
+    lookup_precomputed_sapbert_query_vector, search_sapbert_dense, DenseSearchOptions,
 };
 use usagi_search::hybrid::{fuse_rrf, RrfOptions};
 use usagi_search::sapbert_artifact::{validate_sapbert_artifact, SapbertArtifactPaths};
@@ -398,37 +398,37 @@ fn sapbert_query_results(
     q: &str,
     limit: usize,
 ) -> Result<Vec<usagi_contracts::search::SearchResult>, ApiError> {
-    if let Some(query_embeddings_path) = &state.sapbert_query_embeddings_path {
-        return Ok(search_sapbert_dense_from_precomputed_query(
-            DenseSearchOptions {
-                artifact_dir: state.sapbert_index_dir.clone(),
-                catalog_db_path: state.catalog_db_path.clone(),
-                query_vector: Vec::new(),
-                limit,
-            },
-            query_embeddings_path,
-            q,
-        )?);
-    }
-    let query_embedding = encode_sapbert_cls(
-        XlmRobertaEncodeOptions {
-            model_dir: state.sapbert_model_dir.clone(),
-            max_length: state.sapbert_max_length,
-        },
-        &[q],
-    )?
-    .into_iter()
-    .next()
-    .ok_or_else(|| {
-        ApiError(UsagiError::new(
-            ErrorCode::EmbeddingFailed,
-            "SapBERT query encoder produced no vectors",
-        ))
-    })?;
+    let query_vector = if let Some(query_embeddings_path) = &state.sapbert_query_embeddings_path
+    {
+        lookup_precomputed_sapbert_query_vector(query_embeddings_path, q)?
+    } else {
+        None
+    };
+    let query_vector = match query_vector {
+        Some(vector) => vector,
+        None => {
+            let query_embedding = encode_sapbert_cls(
+                XlmRobertaEncodeOptions {
+                    model_dir: state.sapbert_model_dir.clone(),
+                    max_length: state.sapbert_max_length,
+                },
+                &[q],
+            )?
+            .into_iter()
+            .next()
+            .ok_or_else(|| {
+                ApiError(UsagiError::new(
+                    ErrorCode::EmbeddingFailed,
+                    "SapBERT query encoder produced no vectors",
+                ))
+            })?;
+            query_embedding.vector
+        }
+    };
     Ok(search_sapbert_dense(DenseSearchOptions {
         artifact_dir: state.sapbert_index_dir.clone(),
         catalog_db_path: state.catalog_db_path.clone(),
-        query_vector: query_embedding.vector,
+        query_vector,
         limit,
     })?)
 }

@@ -4,11 +4,11 @@
   has_comments = mapping.mapping_comments.any?
 %>
 <tr id="<%= dom_id(mapping, :row) %>" class="<%= "is-justchanged" if local_assigns[:highlight] %>">
-  <td>
+  <td data-label="Select">
     <input type="checkbox" value="<%= mapping.id %>" data-bulk-select-target="checkbox" data-action="bulk-select#refresh" aria-label="Select row">
   </td>
-  <td class="mono"><%= mapping.source_code %></td>
-  <td>
+  <td class="mono" data-label="Source code"><%= mapping.source_code %></td>
+  <td data-label="Source / target">
     <%= link_to mapping_path(mapping), data: { turbo_frame: "modal" }, class: "review__source" do %>
       <%= mapping.source_name %>
     <% end %>
@@ -23,17 +23,20 @@
       <% if has_comments %><%= lucide_icon "message-square", class: "icon icon--sm" %><% end %>
     </div>
   </td>
-  <td class="num subtle"><%= number_with_delimiter(mapping.source_frequency) %></td>
-  <td><%= score_badge(mapping.match_score) %></td>
-  <td><%= status_badge(mapping) %></td>
-  <td class="num">
+  <td class="num subtle" data-label="Freq"><%= number_with_delimiter(mapping.source_frequency) %></td>
+  <td data-label="Score"><%= score_badge(mapping.match_score) %></td>
+  <td data-label="Status"><%= status_badge(mapping) %></td>
+  <td class="num" data-label="Actions">
     <div class="menu" data-controller="dropdown">
       <button type="button" class="btn btn--icon" data-action="dropdown#toggle" aria-haspopup="true" aria-label="Row actions">
         <%= lucide_icon "ellipsis", class: "icon" %>
       </button>
       <div class="menu__panel" data-dropdown-target="menu" hidden>
         <%= button_to status_mapping_path(mapping, status: "approved"), method: :patch,
-              form: { data: { turbo_frame: "_top" } }, class: "menu__item" do %>
+              form: { data: { turbo_frame: "_top" } },
+              disabled: !mapping.approvable?,
+              title: ("Pick a target concept before approving" unless mapping.approvable?),
+              class: "menu__item" do %>
           <%= lucide_icon "circle-check", class: "icon" %> Approve
         <% end %>
         <%= button_to status_mapping_path(mapping, status: "flagged"), method: :patch,

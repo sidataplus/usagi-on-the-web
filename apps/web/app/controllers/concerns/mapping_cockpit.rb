@@ -36,8 +36,10 @@ module MappingCockpit
       }
     end
 
-    # advance_to: the next Mapping to load into the open cockpit, or nil to close it.
-    def cockpit_decision_streams(current_mapping, advance_to: nil)
+    # advance_to: the next Mapping to load into the open cockpit.
+    # keep_open: re-render the current Mapping after target-only edits.
+    # When neither is present, close the cockpit after a completed decision.
+    def cockpit_decision_streams(current_mapping, advance_to: nil, keep_open: false)
       streams = [
         turbo_stream.replace(
           helpers.dom_id(current_mapping, :row),
@@ -47,6 +49,8 @@ module MappingCockpit
       ]
       streams << if advance_to
         turbo_stream.update("modal", partial: "mappings/cockpit", locals: cockpit_locals(advance_to))
+      elsif keep_open
+        turbo_stream.update("modal", partial: "mappings/cockpit", locals: cockpit_locals(current_mapping))
       else
         turbo_stream.update("modal", "")
       end

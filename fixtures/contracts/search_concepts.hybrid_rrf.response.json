@@ -1,17 +1,17 @@
 {
-  "query": "tramadol 50 mg capsule",
+  "query": "Augmentin 875/125",
   "mode": "hybrid_rrf",
   "results": [
     {
       "rank": 1,
       "concept": {
-        "concept_id": 40162522,
-        "concept_name": "Tramadol Hydrochloride 50 MG Oral Capsule",
+        "concept_id": 123456,
+        "concept_name": "amoxicillin 875 MG / clavulanate 125 MG Oral Tablet",
         "domain_id": "Drug",
         "vocabulary_id": "RxNorm",
         "concept_class_id": "Clinical Drug",
         "standard_concept": "S",
-        "concept_code": "859751"
+        "concept_code": "fixture-augmentin-875-125"
       },
       "scores": {
         "tantivy": 12.83,

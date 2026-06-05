@@ -1,4 +1,20 @@
 <%# Replace the row (with a gentle highlight cue) after an inline status change. %>
-<%= turbo_stream.replace dom_id(@mapping, :row) do %>
-  <%= render "mappings/row", mapping: @mapping, highlight: true %>
+<% if @remove_from_current_table %>
+  <%= turbo_stream.replace "review_command_lane", partial: "mappings/review_lane", locals: {
+        project: @project,
+        next_review_mapping: @next_review_mapping,
+        next_review_candidate: @next_review_candidate,
+        ready_candidate_count: @ready_candidate_count,
+        waiting_suggestion_count: @waiting_suggestion_count,
+        engine_attention_job: @engine_attention_job
+      } %>
+  <%= turbo_stream.update "mappings_table", partial: "mappings/table", locals: {
+        project: @project, mappings: @mappings, counts: @counts, status: @status, query: @query,
+        sort: @sort, direction: @direction, page: @page, total: @total, total_pages: @total_pages,
+        per_page: @per_page
+      } %>
+<% else %>
+  <%= turbo_stream.replace dom_id(@mapping, :row) do %>
+    <%= render "mappings/row", mapping: @mapping, highlight: true %>
+  <% end %>
 <% end %>

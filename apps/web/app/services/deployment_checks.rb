@@ -7,6 +7,10 @@ class DeploymentChecks
 
   def self.production_errors(env = ENV)
     errors = []
+    if env["USAGI_LOCAL_DEPLOY"] == "1" && !local_app_hosts?(env["APP_HOSTS"])
+      errors << "USAGI_LOCAL_DEPLOY must not be enabled for internet-facing production hosts"
+    end
+
     REQUIRED_SECRET_KEYS.each do |key|
       errors << "#{key} is required in production" if env[key].to_s.blank?
     end
@@ -24,6 +28,11 @@ class DeploymentChecks
 
     errors
   end
+
+  def self.local_app_hosts?(value)
+    value.to_s.split(",").map { |host| host.strip.downcase }.intersect?(%w[localhost 127.0.0.1])
+  end
+  private_class_method :local_app_hosts?
 
   def self.localhost_url?(value)
     uri = URI.parse(value)

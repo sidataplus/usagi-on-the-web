@@ -1,6 +1,6 @@
 {
-  "source_name": "tramadol hydrochloride 50 mg capsule",
-  "source_code": "SRC001",
+  "source_name": "Augmentin 875/125",
+  "source_code": "SRC_AUGMENTIN_875_125",
   "mode": "thirawat_tachiom",
   "candidate_top_k": 200,
   "rerank_top_n": 100,

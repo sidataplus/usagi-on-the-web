@@ -2,7 +2,7 @@ require "test_helper"
 
 class ProductWalkthroughTest < ActionDispatch::IntegrationTest
   setup do
-    @user = create_user!(email: "walkthrough@usagi.test", admin: true)
+    @user = create_user!(admin: true)
     @project = create_project!(user: @user)
     sign_in_as(@user)
   end
@@ -11,7 +11,7 @@ class ProductWalkthroughTest < ActionDispatch::IntegrationTest
     post project_import_sessions_path(@project), params: {
       import_session: {
         filename: "walkthrough.csv",
-        rows_text: "source_code,source_name,source_frequency\nSRC_TRAMADOL,tramadol hcl 50mg cap,12\n"
+        rows_text: "source_code,source_name,source_frequency\nSRC_TRAMADOL_50_CAP,tramadol hydrochloride 50 mg capsule,12\n"
       }
     }
 
@@ -19,7 +19,7 @@ class ProductWalkthroughTest < ActionDispatch::IntegrationTest
     mapping = @project.mappings.includes(:source_term).last
 
     assert_redirected_to project_import_session_path(@project, import)
-    assert_equal "SRC_TRAMADOL", mapping.source_code
+    assert_equal "SRC_TRAMADOL_50_CAP", mapping.source_code
     assert_equal "UNCHECKED", mapping.mapping_status
 
     post mapping_manual_search_path(mapping), params: { q: mapping.source_name }
@@ -51,7 +51,7 @@ class ProductWalkthroughTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_equal "text/csv", response.media_type
-    assert_includes response.body, "SRC_TRAMADOL"
+    assert_includes response.body, "SRC_TRAMADOL_50_CAP"
     assert_includes response.body, candidate.concept_name
 
     actions = @project.audit_events.order(:created_at).pluck(:action)

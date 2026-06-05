@@ -2,10 +2,13 @@ class SessionsController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[new create]
 
   def new
+    redirect_to projects_path and return if LocalDeployAuth.enabled?
     redirect_to projects_path if signed_in?
   end
 
   def create
+    redirect_to projects_path and return if LocalDeployAuth.enabled?
+
     user = User.find_by(email: params[:email].to_s.strip.downcase)
 
     if user&.authenticate(params[:password].to_s)
@@ -20,6 +23,11 @@ class SessionsController < ApplicationController
   end
 
   def destroy
+    if LocalDeployAuth.enabled?
+      redirect_to projects_path
+      return
+    end
+
     reset_session
     redirect_to new_session_path, notice: "Signed out."
   end

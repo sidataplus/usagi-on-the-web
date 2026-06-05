@@ -209,11 +209,10 @@ pub fn search_sapbert_dense(options: DenseSearchOptions) -> Result<Vec<SearchRes
     Ok(results)
 }
 
-pub fn search_sapbert_dense_from_precomputed_query(
-    mut options: DenseSearchOptions,
+pub fn lookup_precomputed_sapbert_query_vector(
     query_embeddings_path: impl AsRef<std::path::Path>,
     q: &str,
-) -> Result<Vec<SearchResult>> {
+) -> Result<Option<Vec<f32>>> {
     let queries: PrecomputedDenseQueries =
         serde_json::from_slice(&fs::read(query_embeddings_path.as_ref())?).map_err(|err| {
             UsagiError::new(
@@ -224,17 +223,26 @@ pub fn search_sapbert_dense_from_precomputed_query(
                 ),
             )
         })?;
-    let query = queries
+    Ok(queries
         .queries
         .into_iter()
         .find(|query| query.q == q)
+        .map(|query| query.vector))
+}
+
+pub fn search_sapbert_dense_from_precomputed_query(
+    mut options: DenseSearchOptions,
+    query_embeddings_path: impl AsRef<std::path::Path>,
+    q: &str,
+) -> Result<Vec<SearchResult>> {
+    let query_vector = lookup_precomputed_sapbert_query_vector(query_embeddings_path, q)?
         .ok_or_else(|| {
             UsagiError::new(
                 ErrorCode::EmbeddingFailed,
                 format!("missing precomputed SapBERT query embedding for {q}"),
             )
         })?;
-    options.query_vector = query.vector;
+    options.query_vector = query_vector;
     search_sapbert_dense(options)
 }
 

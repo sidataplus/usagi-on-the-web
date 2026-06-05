@@ -44,7 +44,7 @@ own catalog builds, mapper artifacts, Rails projects, or mapping decisions.
 | `SAPBERT_INDEX_DIR` | `data/search/sapbert` | SapBERT dense artifact |
 | `SAPBERT_MODEL_DIR` | `data/models/sapbert` | SapBERT model artifact |
 | `SAPBERT_MAX_LENGTH` | `96` | SapBERT sequence length |
-| `SAPBERT_QUERY_EMBEDDINGS_PATH` | unset | Precomputed query fixture path |
+| `SAPBERT_QUERY_EMBEDDINGS_PATH` | unset | Optional fixture-only query vectors for smoke tests |
 | `USAGI_API_KEYS` | none, fail closed | Comma-separated API keys |
 | `USAGI_API_BODY_LIMIT_BYTES` | `262144` | JSON request body limit |
 
@@ -108,8 +108,14 @@ Run the worker:
 cargo run -p api-worker --bin usagi-worker -- --queues index,embed --once
 ```
 
-For fixture builds, set `SAPBERT_PRECOMPUTED_EMBEDDINGS_PATH` for the worker and
-`SAPBERT_QUERY_EMBEDDINGS_PATH` for `search-api`.
+Runtime `sapbert_cls` and `hybrid_rrf` search encodes query text with the
+SapBERT model at request time. For fixture builds, set
+`SAPBERT_PRECOMPUTED_EMBEDDINGS_PATH` for the worker.
+
+Targeted fixture smoke scripts may set `SAPBERT_QUERY_EMBEDDINGS_PATH` so they
+can test known dense-search queries without a full model checkout. Do not set it
+for full local Docker or production serving; mount the real SapBERT model under
+`SAPBERT_MODEL_DIR` so arbitrary reviewer queries are embedded at request time.
 
 ## Query Examples
 

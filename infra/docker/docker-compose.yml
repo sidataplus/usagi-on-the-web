@@ -59,6 +59,7 @@ services:
       JOBS_API_URL: http://mapper-api:8790
       APP_HOSTS: ${APP_HOSTS:-localhost,127.0.0.1}
       FORCE_SSL: ${FORCE_SSL:-false}
+      USAGI_LOCAL_DEPLOY: ${USAGI_LOCAL_DEPLOY:-1}
     networks:
       - public
       - app_private
@@ -76,7 +77,6 @@ services:
       TANTIVY_INDEX_DIR: /data/search/tantivy/index
       SAPBERT_INDEX_DIR: /data/search/sapbert
       SAPBERT_MODEL_DIR: /data/models/sapbert
-      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
     networks:
       - app_private
 
@@ -92,7 +92,6 @@ services:
       TANTIVY_INDEX_DIR: /data/search/tantivy/index
       SAPBERT_INDEX_DIR: /data/search/sapbert
       SAPBERT_MODEL_DIR: /data/models/sapbert
-      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
     networks:
       - app_private
 
@@ -125,8 +124,6 @@ services:
       TANTIVY_INDEX_DIR: /data/search/tantivy/index
       SAPBERT_INDEX_DIR: /data/search/sapbert
       SAPBERT_MODEL_DIR: /data/models/sapbert
-      SAPBERT_PRECOMPUTED_EMBEDDINGS_PATH: /data/search/sapbert-doc-embeddings.json
-      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
       THIRAWAT_MODEL_DIR: /data/models/thirawat-sapbert
       THIRAWAT_ARTIFACT_DIR: /data/mapper/thirawat-drug
       TACHIOM_INDEX_DIR: /data/mapper/thirawat-drug/tachiom

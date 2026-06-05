@@ -1,3 +1,4 @@
 concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concept	concept_code	valid_start_date	valid_end_date	invalid_reason
-100	Tramadol Hydrochloride 50 MG Oral Capsule	Drug	RxNorm	Clinical Drug	S	859751	20000101	20991231	
-200	Tramadol	Drug	RxNorm	Ingredient	S	10689	20000101	20991231	
+123456	amoxicillin 875 MG / clavulanate 125 MG Oral Tablet	Drug	RxNorm	Clinical Drug	S	fixture-augmentin-875-125	20000101	20991231	""
+123457	amoxicillin 500 MG / clavulanate 125 MG Oral Tablet	Drug	RxNorm	Clinical Drug	S	fixture-augmentin-500-125	20000101	20991231	""
+123458	amoxicillin 875 MG Oral Tablet	Drug	RxNorm	Clinical Drug	S	fixture-amoxicillin-875	20000101	20991231	""

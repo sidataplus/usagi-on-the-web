@@ -140,6 +140,8 @@ Tailscale. Do not expose them to the public internet.
 
 Build catalog, search, and mapper artifacts on the local compute server. See
 `docs/manual/api/05-artifact-builds.md` for the full build order.
+The THIRAWAT document embedding stage can also run as a Modal maintenance job;
+see `infra/modal/README.md`.
 
 For API compute host sizing, see **API Compute Server Sizing** in
 `docs/manual/web/04-deployment.md`. A practical starting point is **8 vCPU /

@@ -55,7 +55,11 @@ class MappingCandidatesController < ApplicationController
     respond_to do |format|
       format.turbo_stream do
         advance = Mapping.find_by(id: next_mapping_id(mapping)) if params[:next].present?
-        render turbo_stream: cockpit_decision_streams(mapping, advance_to: advance)
+        render turbo_stream: cockpit_decision_streams(
+          mapping,
+          advance_to: advance,
+          keep_open: advance.blank? && params[:approve].blank?
+        )
       end
       format.html { redirect_to after_candidate_path(mapping), notice: "Candidate applied. Review before approving." }
     end

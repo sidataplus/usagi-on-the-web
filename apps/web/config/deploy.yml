@@ -106,7 +106,6 @@ accessories:
         TANTIVY_INDEX_DIR: /data/search/tantivy/index
         SAPBERT_INDEX_DIR: /data/search/sapbert
         SAPBERT_MODEL_DIR: /data/models/sapbert
-        SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
       secret:
         - USAGI_API_SHARED_SECRET
     directories:
@@ -125,7 +124,6 @@ accessories:
         TANTIVY_INDEX_DIR: /data/search/tantivy/index
         SAPBERT_INDEX_DIR: /data/search/sapbert
         SAPBERT_MODEL_DIR: /data/models/sapbert
-        SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
       secret:
         - USAGI_API_SHARED_SECRET
     directories:
@@ -164,7 +162,6 @@ accessories:
         SAPBERT_INDEX_DIR: /data/search/sapbert
         SAPBERT_MODEL_DIR: /data/models/sapbert
         SAPBERT_PRECOMPUTED_EMBEDDINGS_PATH: /data/search/sapbert-doc-embeddings.json
-        SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
         THIRAWAT_MODEL_DIR: /data/models/thirawat-sapbert
         THIRAWAT_ARTIFACT_DIR: /data/mapper/thirawat-drug
         TACHIOM_INDEX_DIR: /data/mapper/thirawat-drug/tachiom
