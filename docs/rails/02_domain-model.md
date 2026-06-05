@@ -634,6 +634,16 @@ cancelled
 3. `api_job_id` links to API jobs when present.
 4. Hybrid search batch jobs may be Rails-side only and not have `api_job_id`.
 5. Job updates should broadcast Turbo replacements.
+6. `input["idempotency_key"]` stores the API idempotency key when a Rails job
+   creates or retries an API job.
+7. A clean `succeeded` mapper mirror is reusable; `queued`, `starting`, and
+   `running` mirrors with an `api_job_id` should be polled instead of replaced.
+8. `failed` and `succeeded_with_errors` mapper mirrors are retryable and should
+   be reset before creating a replacement API job with the same idempotency key.
+9. Engine failures stored in `error` should preserve the parsed envelope fields:
+   `code`, `message`, `details`, and `request_id` when present.
+10. Itemized partial failures should store enough item detail to retry or
+    explain the failed source term without discarding successful candidates.
 
 ---
 

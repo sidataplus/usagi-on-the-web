@@ -11,6 +11,15 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     end
   end
 
+  class ExplodingJobsTransport
+    def get_json(path)
+      raise EngineClients::BaseClient::Error.new(
+        code: "UNEXPECTED_JOBS_API_CALL",
+        message: "Unexpected jobs API call to #{path}"
+      )
+    end
+  end
+
   setup do
     @user = create_user!(email: "demo@usagi.test", admin: true)
     @project = create_project!(user: @user)
@@ -21,6 +30,7 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     EngineClients::CatalogClient.default_transport = nil
     EngineClients::SearchClient.default_transport = nil
     EngineClients::MapperClient.default_transport = nil
+    EngineClients::JobsClient.default_transport = nil
   end
 
   test "import creates source terms and review mappings" do
@@ -56,6 +66,22 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal 0, @project.source_terms.count
     assert_includes response.body, "Import preview"
     assert_includes response.body, "Confirm import"
+    assert_includes response.body, "SRC_TRAMADOL"
+  end
+
+  test "import preview accepts pasted rows without a submitted filename" do
+    post preview_project_import_sessions_path(@project), params: {
+      import_session: {
+        rows_text: "source_code,source_name,source_frequency\nSRC_TRAMADOL,tramadol hcl 50mg cap,12\n"
+      }
+    }
+
+    import = @project.import_sessions.last
+
+    assert_response :success
+    assert_equal "previewed", import.state
+    assert_equal "pasted-source-terms.csv", import.file_name
+    assert_equal 1, import.summary.fetch("rows_seen")
     assert_includes response.body, "SRC_TRAMADOL"
   end
 
@@ -651,6 +677,26 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Retry"
   end
 
+  test "local hybrid engine job detail does not require jobs api mirror" do
+    EngineClients::JobsClient.default_transport = ExplodingJobsTransport.new
+    engine_job = @project.engine_jobs.create!(
+      kind: "hybrid_search_batch",
+      state: "succeeded",
+      processed: 1,
+      total: 1,
+      failed: 0,
+      stage: "persist_results",
+      result: { "items" => [{ "id" => "SRC_OK", "candidate_count" => 2 }] }
+    )
+
+    get project_engine_job_path(@project, engine_job)
+
+    assert_response :success
+    assert_includes response.body, "Succeeded"
+    assert_includes response.body, "persist_results"
+    assert_includes response.body, "Review mappings"
+  end
+
   test "project owner adds, re-roles, and removes a member" do
     member_user = create_user!(email: "reviewer2@usagi.test")
 
@@ -758,7 +804,7 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
   test "manual search returns a 503 when the engine is unavailable" do
     EngineClients::MapperClient.default_transport = Class.new do
       def post_json(*)
-        raise EngineClients::BaseClient::Error.new(code: "ENGINE_UNAVAILABLE", message: "engine down", status: 503)
+        raise EngineClients::BaseClient::Error.new(code: "ENGINE_UNAVAILABLE", message: "engine down", request_id: "req_manual_fail", status: 503)
       end
     end.new
     mapping = create_mapping!(project: @project)
@@ -767,5 +813,9 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
       headers: { "Accept" => "text/vnd.turbo-stream.html" }
 
     assert_response :service_unavailable
+    engine_job = @project.engine_jobs.mapper_drugs_batch.last
+    assert_equal "failed", engine_job.state
+    assert_equal "ENGINE_UNAVAILABLE", engine_job.error.fetch("code")
+    assert_equal "req_manual_fail", engine_job.error.fetch("request_id")
   end
 end

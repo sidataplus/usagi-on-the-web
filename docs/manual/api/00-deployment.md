@@ -170,6 +170,15 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 USAGI_API_KEYS=smoke-secret docker compose -f infra/docker/docker-compose.api.yml up -d --build
 USAGI_SMOKE_API_KEY=smoke-secret scripts/smoke-api.sh
+cd apps/web
+USAGI_LIVE_ENGINE=1 \
+ENGINE_CLIENT_MODE=http \
+USAGI_API_KEY=smoke-secret \
+CATALOG_API_URL=http://127.0.0.1:8788 \
+SEARCH_API_URL=http://127.0.0.1:8789 \
+MAPPER_API_URL=http://127.0.0.1:8790 \
+JOBS_API_URL=http://127.0.0.1:8790 \
+bin/rails test test/integration/live_engine_smoke_test.rb
 ```
 
 Additional fixture smokes:
@@ -190,6 +199,7 @@ Rails should configure one client per service:
 CATALOG_API_URL=http://catalog-api:8788
 SEARCH_API_URL=http://search-api:8789
 MAPPER_API_URL=http://mapper-api:8790
+JOBS_API_URL=http://mapper-api:8790
 USAGI_API_KEY=...
 ENGINE_API_TIMEOUT_SECONDS=30
 ENGINE_API_JOB_POLL_INTERVAL_SECONDS=2
@@ -197,6 +207,9 @@ ENGINE_API_JOB_POLL_INTERVAL_SECONDS=2
 
 Rails should centralize API calls, propagate `X-Request-Id`, attach the API key,
 parse the shared error envelope, and mirror engine jobs in Rails-owned tables.
+Rails should fetch artifact-backed job results through `/jobs/:id/results` with
+`Accept: application/jsonl`; if that stream fails, Rails should preserve the
+engine error on the mirror instead of treating the job as an empty success.
 
 ## Troubleshooting
 

@@ -48,9 +48,34 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
     end
   end
 
+  class FailingJsonlResultsTransport
+    def get_json(_path)
+      {
+        "job_id" => "api_failed_jsonl_results",
+        "state" => "succeeded",
+        "artifact" => { "content_type" => "application/jsonl", "path" => "data/jobs/results/api_failed_jsonl_results/results.jsonl" }
+      }
+    end
+
+    def get_jsonl(_path)
+      raise EngineClients::BaseClient::Error.new(
+        code: "RESULT_STREAM_UNAVAILABLE",
+        message: "Result artifact is unavailable",
+        request_id: "req_result_stream",
+        status: 502
+      )
+    end
+  end
+
   class FailingSearchTransport
     def search_concepts(**)
       raise EngineClients::BaseClient::Error.new(code: "INDEX_NOT_READY", message: "Search index is not built", request_id: "req_fail")
+    end
+  end
+
+  class FailingMapperBatchTransport
+    def post_json(_path, _payload)
+      raise EngineClients::BaseClient::Error.new(code: "ENGINE_UNAVAILABLE", message: "mapper unavailable", request_id: "req_mapper_fail", status: 503)
     end
   end
 
@@ -65,15 +90,16 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
       @requests << [path, payload]
       {
         "items" => payload.fetch(:items).map do |item|
+          id = item.fetch(:id)
           if item.fetch(:source_code) == "DX_FAIL"
             {
-              "source_code" => item.fetch(:source_code),
+              "id" => id,
               "state" => "failed",
               "error" => { "code" => "BAD_REQUEST", "message" => "Cannot map source term" }
             }
           else
             {
-              "source_code" => item.fetch(:source_code),
+              "id" => id,
               "state" => "succeeded",
               "results" => [
                 {
@@ -139,6 +165,61 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
       end
     end
     assert_equal 1, transport.requests.size
+  end
+
+  test "start auto map records mapper job creation failures on the mirror job" do
+    EngineClients::MapperClient.default_transport = FailingMapperBatchTransport.new
+
+    error = assert_raises(EngineClients::BaseClient::Error) do
+      StartAutoMapJob.perform_now(@project.id)
+    end
+
+    engine_job = @project.engine_jobs.mapper_drugs_batch.last
+    assert_equal "ENGINE_UNAVAILABLE", error.code
+    assert_equal "failed", engine_job.state
+    assert_equal "ENGINE_UNAVAILABLE", engine_job.error.fetch("code")
+    assert_equal "req_mapper_fail", engine_job.error.fetch("request_id")
+    assert_nil engine_job.api_job_id
+  end
+
+  test "start auto map retries a local failed mirror with the same idempotency key" do
+    EngineClients::MapperClient.default_transport = FailingMapperBatchTransport.new
+    failed_job = assert_raises(EngineClients::BaseClient::Error) do
+      StartAutoMapJob.perform_now(@project.id)
+    end
+    assert_equal "ENGINE_UNAVAILABLE", failed_job.code
+    failed_mirror = @project.engine_jobs.mapper_drugs_batch.last
+
+    transport = MapperBatchTransport.new("job_id" => "api_mapper_batch_retry")
+    EngineClients::MapperClient.default_transport = transport
+
+    assert_no_difference -> { @project.engine_jobs.mapper_drugs_batch.count } do
+      retried = StartAutoMapJob.perform_now(@project.id)
+      assert_equal failed_mirror, retried
+    end
+
+    assert_equal "api_mapper_batch_retry", failed_mirror.reload.api_job_id
+    assert_equal "queued", failed_mirror.state
+    assert_equal({}, failed_mirror.error)
+    assert_equal 1, transport.requests.size
+  end
+
+  test "start auto map retries a partial mirror instead of treating it as reusable success" do
+    partial_transport = MapperBatchTransport.new("job_id" => "api_mapper_batch_partial", "state" => "succeeded_with_errors")
+    EngineClients::MapperClient.default_transport = partial_transport
+    partial_mirror = StartAutoMapJob.perform_now(@project.id)
+
+    retry_transport = MapperBatchTransport.new("job_id" => "api_mapper_batch_after_partial", "state" => "queued")
+    EngineClients::MapperClient.default_transport = retry_transport
+
+    assert_no_difference -> { @project.engine_jobs.mapper_drugs_batch.count } do
+      retried = StartAutoMapJob.perform_now(@project.id)
+      assert_equal partial_mirror, retried
+    end
+
+    assert_equal "api_mapper_batch_after_partial", partial_mirror.reload.api_job_id
+    assert_equal "queued", partial_mirror.state
+    assert_equal 1, retry_transport.requests.size
   end
 
   test "polling requeues active jobs and persists succeeded jobs" do
@@ -216,6 +297,27 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
     assert_equal 1.0, candidate.final_score
   end
 
+  test "persist mapper results records JSONL stream failures on the mirror job" do
+    engine_job = @project.engine_jobs.create!(
+      kind: "mapper_drugs_batch",
+      state: "succeeded",
+      api_job_id: "api_failed_jsonl_results",
+      candidate_set_id: "candset_failed_jsonl"
+    )
+    EngineClients::JobsClient.default_transport = FailingJsonlResultsTransport.new
+
+    error = assert_raises(EngineClients::BaseClient::Error) do
+      PersistMapperResultsJob.perform_now(engine_job.id)
+    end
+
+    engine_job.reload
+    assert_equal "RESULT_STREAM_UNAVAILABLE", error.code
+    assert_equal "failed", engine_job.state
+    assert_equal "RESULT_STREAM_UNAVAILABLE", engine_job.error.fetch("code")
+    assert_equal "req_result_stream", engine_job.error.fetch("request_id")
+    assert_not_nil engine_job.finished_at
+  end
+
   test "persist mapper results stores candidates against mappings" do
     engine_job = @project.engine_jobs.create!(
       kind: "mapper_drugs_batch",
@@ -265,6 +367,43 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
     assert_equal 1, @mapping.reload.candidate_count
   end
 
+  test "persist mapper results copies failed JSONL rows to engine job error items" do
+    engine_job = @project.engine_jobs.create!(
+      kind: "mapper_drugs_batch",
+      state: "succeeded_with_errors",
+      api_job_id: "api_partial_jsonl_results",
+      candidate_set_id: "candset_partial_jsonl",
+      failed: 1
+    )
+    EngineClients::JobsClient.default_transport = JsonlResultsTransport.new(
+      envelope: {
+        "job_id" => "api_partial_jsonl_results",
+        "state" => "succeeded_with_errors",
+        "artifact" => { "content_type" => "application/jsonl", "path" => "data/jobs/results/api_partial_jsonl_results/results.jsonl" }
+      },
+      jsonl: [
+        {
+          "id" => @mapping.source_term_id,
+          "source_code" => @mapping.source_code,
+          "q" => "tramadol hydrochloride 50 mg capsule",
+          "error" => {
+            "code" => "EMBEDDING_FAILED",
+            "message" => "No precomputed embedding",
+            "request_id" => "req_partial_jsonl"
+          }
+        }
+      ]
+    )
+
+    PersistMapperResultsJob.perform_now(engine_job.id)
+
+    failed_item = engine_job.reload.error.fetch("items").first
+    assert_equal @mapping.source_code, failed_item.fetch("source_code")
+    assert_equal "tramadol hydrochloride 50 mg capsule", failed_item.fetch("q")
+    assert_equal "EMBEDDING_FAILED", failed_item.fetch("error").fetch("code")
+    assert_equal "req_partial_jsonl", failed_item.fetch("error").fetch("request_id")
+  end
+
   test "hybrid search job records engine failures on the mirror job" do
     condition_project = create_project!(user: @user, mapping_domain: "Condition")
     create_mapping!(project: condition_project, source_code: "DX1", source_name: "diabetes mellitus")
@@ -277,6 +416,8 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
     engine_job = condition_project.engine_jobs.hybrid_search_batch.last
     assert_equal "INDEX_NOT_READY", error.code
     assert_equal "failed", engine_job.state
+    assert_equal 0, engine_job.processed
+    assert_equal 1, engine_job.failed
     assert_equal "INDEX_NOT_READY", engine_job.error.fetch("code")
     assert_equal "req_fail", engine_job.error.fetch("request_id")
   end
@@ -301,11 +442,26 @@ class EngineWorkflowJobsTest < ActiveJob::TestCase
     assert_equal 3, engine_job.total
     assert_equal 1, engine_job.failed
     assert_equal 2, transport.requests.size
+    assert_equal [success_one.source_term_id, failed.source_term_id], transport.requests.first.last.fetch(:items).map { |item| item.fetch(:id) }
     assert_equal ["DX_OK1", "DX_FAIL"], transport.requests.first.last.fetch(:items).map { |item| item.fetch(:source_code) }
     assert_equal 1, success_one.reload.mapping_candidates.count
     assert_equal 0, failed.reload.mapping_candidates.count
     assert_equal 1, success_two.reload.mapping_candidates.count
     assert_equal 0, reviewed.reload.mapping_candidates.count
     assert_equal "BAD_REQUEST", engine_job.error.fetch("items").first.fetch("error").fetch("code")
+  end
+
+  test "hybrid search job uses source domain hints for mixed projects" do
+    mixed_project = create_project!(user: @user, mapping_domain: "Mixed")
+    mapping = create_mapping!(project: mixed_project, source_code: "RX_MIXED", source_name: "tramadol 50 mg capsule")
+    mapping.source_term.update!(source_domain_hint: "Drug")
+    transport = BatchSearchTransport.new
+    EngineClients::SearchClient.default_transport = transport
+
+    RunHybridSearchJob.perform_now(mixed_project.id)
+
+    item = transport.requests.first.last.fetch(:items).first
+    assert_equal({ domain_id: ["Drug"] }, item.fetch(:filters))
+    assert_equal 1, mapping.reload.mapping_candidates.count
   end
 end

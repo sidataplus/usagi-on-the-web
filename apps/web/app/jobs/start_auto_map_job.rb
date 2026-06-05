@@ -15,18 +15,27 @@ class StartAutoMapJob < ApplicationJob
     end
     idempotency_key = "mapper-#{project.id}-#{Digest::SHA256.hexdigest(items.to_json)}"
 
-    existing_job = project.engine_jobs.mapper_drugs_batch.to_a.find { |job| job.idempotency_key == idempotency_key }
-    if existing_job
-      PollEngineJobJob.perform_later(existing_job.id) if existing_job.api_job_id.present? && existing_job.state.in?(%w[queued starting running])
-      return existing_job
+    engine_job = project.engine_jobs.mapper_drugs_batch.to_a.find { |job| job.idempotency_key == idempotency_key }
+    if reusable_mirror?(engine_job)
+      PollEngineJobJob.perform_later(engine_job.id) if engine_job.api_job_id.present? && engine_job.state.in?(%w[queued starting running])
+      return engine_job
     end
 
-    engine_job = project.engine_jobs.create!(
+    engine_job ||= project.engine_jobs.create!(
       kind: "mapper_drugs_batch",
-      state: "starting",
       mode: "thirawat_tachiom",
       candidate_set_id: "candset_#{SecureRandom.hex(8)}",
       input: { item_count: items.size, idempotency_key: idempotency_key }
+    )
+    engine_job.update!(
+      state: "starting",
+      error: {},
+      result: {},
+      api_job_id: nil,
+      status_url: nil,
+      result_url: nil,
+      started_at: Time.current,
+      finished_at: nil
     )
     response = EngineClients::MapperClient.new.start_drug_batch_job(project: project, items: items, idempotency_key: idempotency_key)
     engine_job.update!(
@@ -37,5 +46,20 @@ class StartAutoMapJob < ApplicationJob
     )
     PollEngineJobJob.perform_later(engine_job.id)
     engine_job
+  rescue EngineClients::BaseClient::Error => e
+    engine_job&.update!(
+      state: "failed",
+      error: { code: e.code, message: e.message, details: e.details, request_id: e.request_id }.compact,
+      finished_at: Time.current
+    )
+    raise
   end
+
+  private
+    def reusable_mirror?(engine_job)
+      return false unless engine_job
+      return true if engine_job.state == "succeeded"
+
+      engine_job.api_job_id.present? && engine_job.state.in?(%w[queued starting running])
+    end
 end

@@ -269,7 +269,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_120000) do
   add_foreign_key "import_sessions", "projects"
   add_foreign_key "import_sessions", "users", column: "created_by_id"
   add_foreign_key "mapping_candidates", "engine_jobs"
-  add_foreign_key "mapping_candidates", "engine_jobs"
   add_foreign_key "mapping_candidates", "mappings"
   add_foreign_key "mapping_candidates", "projects"
   add_foreign_key "mapping_candidates", "source_terms"

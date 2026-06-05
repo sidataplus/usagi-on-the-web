@@ -7,20 +7,16 @@ module EngineClients
     end
 
     def status(engine_job_or_id)
-      api_job_id = engine_job_or_id.respond_to?(:api_job_id) ? engine_job_or_id.api_job_id : engine_job_or_id
+      if engine_job_or_id.respond_to?(:api_job_id)
+        api_job_id = engine_job_or_id.api_job_id
+        return local_status(engine_job_or_id) if api_job_id.blank?
+      else
+        api_job_id = engine_job_or_id
+      end
+
       return transport.get_json("/jobs/#{api_job_id}") if transport.respond_to?(:get_json)
 
-      engine_job = engine_job_or_id
-      {
-        "id" => engine_job.api_job_id || engine_job.id,
-        "state" => engine_job.state,
-        "kind" => engine_job.kind,
-        "processed" => engine_job.processed,
-        "total" => engine_job.total,
-        "failed" => engine_job.failed,
-        "result" => engine_job.result,
-        "error" => engine_job.error
-      }
+      local_status(engine_job_or_id)
     end
 
     def events(api_job_id)
@@ -42,10 +38,26 @@ module EngineClients
     end
 
     private
+      def local_status(engine_job)
+        return { "id" => nil, "state" => nil } unless engine_job.respond_to?(:id)
+
+      {
+        "id" => engine_job.api_job_id || engine_job.id,
+        "state" => engine_job.state,
+        "kind" => engine_job.kind,
+        "processed" => engine_job.processed,
+        "total" => engine_job.total,
+        "failed" => engine_job.failed,
+        "result" => engine_job.result,
+        "error" => engine_job.error,
+        "stage" => engine_job.stage,
+        "status_url" => engine_job.status_url,
+        "result_url" => engine_job.result_url
+      }
+      end
+
       def result_items(api_job_id)
         transport.get_jsonl("/jobs/#{api_job_id}/results")
-      rescue BaseClient::Error
-        []
       end
   end
 end

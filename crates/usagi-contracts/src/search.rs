@@ -36,12 +36,18 @@ pub struct SearchBatchRequest {
     pub mode: String,
     #[serde(default = "default_limit")]
     pub limit_per_item: usize,
+    #[serde(default)]
+    pub filters: serde_json::Value,
+    #[serde(default)]
+    pub hybrid: serde_json::Value,
     pub items: Vec<SearchBatchItemRequest>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SearchBatchItemRequest {
     pub id: String,
+    #[serde(default)]
+    pub source_code: Option<String>,
     pub q: String,
     #[serde(default)]
     pub filters: serde_json::Value,

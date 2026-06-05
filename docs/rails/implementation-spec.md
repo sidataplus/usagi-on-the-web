@@ -614,6 +614,18 @@ structured logging
 idempotency keys for job creation
 ```
 
+HTTP transport rules:
+
+```text
+GET and JSONL result fetches may retry transient connection failures
+POST requests are not retried by transport
+structured logs include request_id, method, path, status, attempt, duration
+retry logs include request_id, method, path, attempt, next_attempt, error class
+```
+
+Job creation retry safety belongs to API idempotency keys plus Rails
+`engine_jobs` mirror reuse. Do not add blind transport-level POST retries.
+
 Expected clients:
 
 ```text
@@ -704,6 +716,7 @@ Engine offline state does not crash Rails pages.
 Browser cannot call usagi-api directly in production.
 usagi-api rejects unsigned or invalid Rails service requests.
 Contract tests pass.
+Live Rails workflow E2E passes against usagi-api before claiming engine readiness.
 System tests cover import-review-export.
 ```
 
