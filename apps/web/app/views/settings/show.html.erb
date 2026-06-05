@@ -8,18 +8,7 @@
 </div>
 
 <%= form_with url: settings_path, method: :patch, local: true, class: "prose stack" do %>
-  <section class="next-action-panel" aria-label="Next settings action">
-    <div class="next-action-panel__body">
-      <div class="eyebrow">Next step</div>
-      <h2 class="next-action-panel__title">Save review defaults</h2>
-      <p class="next-action-panel__copy">Keep the review table density and personal notifications aligned with how you work.</p>
-    </div>
-    <div class="next-action-panel__actions">
-      <%= submit_tag "Save preferences", class: "btn btn--primary" %>
-    </div>
-  </section>
-
-  <section class="quiet-section" aria-label="Preference details">
+  <section class="quiet-section" aria-label="Preferences">
     <details class="details-panel" open>
       <summary>Display</summary>
       <div class="stack">
@@ -35,6 +24,17 @@
             <% end %>
           </select>
         </div>
+        <div class="row-between">
+          <div>
+            <strong>Review cockpit layout</strong>
+            <p class="subtle small">Decision bar keeps controls on top; Best match leads with the top candidate. You can also toggle this inside the cockpit.</p>
+          </div>
+          <select name="preferences[cockpit_layout]" class="select" style="inline-size: auto">
+            <% [ [ "Decision bar", "bar" ], [ "Best match", "hero" ] ].each do |label, value| %>
+              <option value="<%= value %>" <%= "selected" if (@prefs["cockpit_layout"].presence || "bar") == value %>><%= label %></option>
+            <% end %>
+          </select>
+        </div>
       </div>
     </details>
 
@@ -43,7 +43,7 @@
       <div class="stack">
         <p class="subtle small">Available while reviewing mappings.</p>
         <dl class="facts">
-          <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Mark invalid" ], [ "N", "Next" ], [ "E", "Edit / open details" ], [ "← →", "Previous / next in detail view" ] ].each do |key, desc| %>
+          <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Mark invalid" ], [ "N", "Next" ], [ "← →", "Previous / next in detail view" ] ].each do |key, desc| %>
             <div><dt><%= desc %></dt><dd><kbd><%= key %></kbd></dd></div>
           <% end %>
         </dl>
@@ -72,4 +72,8 @@
       </div>
     </details>
   </section>
+
+  <div class="row" style="justify-content: flex-end">
+    <%= submit_tag "Save preferences", class: "btn btn--primary" %>
+  </div>
 <% end %>

@@ -1,5 +1,7 @@
 <% content_for :title, "Exports" %>
 
+<%= render "shared/project_nav", project: @project, active: :exports %>
+
 <div class="page-head">
   <div>
     <h1 class="page-head__title">Export reviewed mappings</h1>
@@ -25,7 +27,10 @@
   </div>
 
   <%= form_with url: project_exports_path(@project), class: "next-action-panel__actions" do |f| %>
-    <%= select_tag :format_option, options_for_select(Export::FORMATS.map { |format| [format.humanize, format] }, "review_csv"), class: "input" %>
+    <div class="field" style="margin: 0">
+      <%= label_tag :format_option, "Export format", class: "field__label sr-only" %>
+      <%= select_tag :format_option, options_for_select(Export.selectable_formats, "review_csv"), class: "select" %>
+    </div>
     <%= f.submit "Create export", class: "btn btn--primary" %>
   <% end %>
 </section>
@@ -60,10 +65,13 @@
       <% @exports.each do |export| %>
         <div class="row-between">
           <div>
-            <strong><%= export.format.humanize %></strong>
-            <div class="small subtle"><%= export.state.humanize %> · <%= export.row_count %> rows</div>
+            <strong><%= export.format_label %></strong>
+            <div class="small subtle"><%= number_with_delimiter(export.row_count) %> rows · <%= time_ago_in_words(export.created_at) %> ago</div>
           </div>
-          <%= link_to "Open", project_export_path(@project, export), class: "btn btn--sm" %>
+          <div class="row" style="gap: var(--space-sm)">
+            <span class="badge badge--<%= job_state_tone(export.state) %>"><%= export.state.humanize %></span>
+            <%= link_to "Open", project_export_path(@project, export), class: "btn btn--sm" %>
+          </div>
         </div>
       <% end %>
       <% if @exports.empty? %>

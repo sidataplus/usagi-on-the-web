@@ -377,6 +377,18 @@ status
 engine_request_id
 error_code
 elapsed_ms
+attempt
+```
+
+Rails logs safe transport retries as `engine.request.retry` with:
+
+```text
+request_id
+method
+path
+attempt
+next_attempt
+error_class
 ```
 
 Do not log:

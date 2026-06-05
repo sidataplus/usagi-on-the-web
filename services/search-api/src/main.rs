@@ -10,7 +10,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{json, Map, Value};
 use usagi_artifacts::job_results::{job_results_download_response, job_results_response};
 use usagi_common::error::{ErrorCode, ErrorEnvelope, UsagiError};
 use usagi_common::http::{
@@ -460,13 +460,14 @@ async fn search_batch(
     let mut items = Vec::with_capacity(payload.items.len());
     let mut response_provenance = None;
     for item in payload.items {
+        let filters = merged_json_object(&payload.filters, &item.filters);
         let (results, provenance) = search_results(
             &state,
             &payload.mode,
             &item.q,
             payload.limit_per_item,
-            &item.filters,
-            &serde_json::Value::Null,
+            &filters,
+            &payload.hybrid,
         )?;
         response_provenance.get_or_insert(provenance);
         items.push(SearchBatchItemResponse {
@@ -562,6 +563,17 @@ fn search_results(
         )),
         _ => Err(ApiError(UsagiError::bad_request("unsupported search mode"))),
     }
+}
+
+fn merged_json_object(base: &Value, overlay: &Value) -> Value {
+    let mut merged = match base.as_object() {
+        Some(object) => object.clone(),
+        None => Map::new(),
+    };
+    if let Some(object) = overlay.as_object() {
+        merged.extend(object.clone());
+    }
+    Value::Object(merged)
 }
 
 async fn search_explain(

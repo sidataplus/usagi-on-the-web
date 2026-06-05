@@ -388,6 +388,7 @@ User clicks Suggest candidates
   -> EngineJob mirror row created
   -> RunHybridSearchJob chunks source terms
   -> POST /search/batch
+  -> response items matched by source term id
   -> candidates persisted
   -> job progress broadcast
 ```
@@ -400,6 +401,8 @@ Measurement project runs hybrid search suggestions
 Mixed project uses row/domain filters when present
 100k candidate insert path tested
 partial batch failure records failed count
+partial batch failure records item id/source_code/query/error detail
+local hybrid job details render without a jobs API mirror
 engine offline does not break review page
 ```
 
@@ -432,6 +435,7 @@ User clicks Suggest drug mappings
   -> PollEngineJobJob polls /jobs/:id
   -> on success fetch /jobs/:id/results
   -> persist mapping_candidates
+  -> failed and partial mirrors can be retried safely
 ```
 
 ### Acceptance criteria
@@ -444,6 +448,9 @@ succeeded results persist candidates
 succeeded_with_errors persists successes and failed count
 failed job renders retry path
 partial failures render source-code/error/request-id detail with retry path
+mapper JSONL item errors render even when the row has no failed state
+job creation failure records a failed mirror with code/message/request_id
+clean succeeded mirror is reusable; succeeded_with_errors is not clean success
 reviewed mappings are not overwritten
 ```
 
@@ -562,6 +569,7 @@ bin/rails test:system for relevant workflows
 rubocop or equivalent style gate if configured
 security signing tests once M4 exists
 contract fixture tests once M4 exists
+live workflow E2E before claiming end-to-end engine readiness
 ```
 
 ---

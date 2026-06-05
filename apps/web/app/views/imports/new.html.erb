@@ -1,5 +1,7 @@
 <% content_for :title, "New import" %>
 
+<%= render "shared/project_nav", project: @project, active: :imports %>
+
 <div class="page-head">
   <div>
     <h1 class="page-head__title">New import</h1>
@@ -7,32 +9,36 @@
   </div>
 </div>
 
-<div class="box">
+<div class="box prose">
   <%= form_with model: [@project, @import_batch], url: preview_project_import_sessions_path(@project), class: "stack", data: { turbo: false } do |f| %>
     <% if @import_batch.errors.any? %>
-      <div class="badge badge--bad"><%= @import_batch.errors.full_messages.to_sentence %></div>
+      <div class="callout callout--warn"><%= @import_batch.errors.full_messages.to_sentence %></div>
     <% end %>
+
+    <p class="subtle small">Imported terms use this project's source vocabulary (<strong><%= @project.source_vocabulary.presence || "unset" %></strong>).</p>
+
     <div class="field">
-      <%= f.label :filename, class: "field__label" %>
-      <%= f.text_field :filename, class: "input", placeholder: "source_terms.csv" %>
+      <span class="field__label">Source file</span>
+      <label class="dropzone">
+        <%= lucide_icon "upload", class: "icon icon--lg" %>
+        <strong>Drop a file or click to browse</strong>
+        <span class="small">CSV, TSV, or XLSX — header row required</span>
+        <%= f.file_field :source_file, accept: ".csv,.tsv,.xlsx,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" %>
+      </label>
     </div>
-    <div class="field">
-      <%= f.label :source_vocabulary, class: "field__label" %>
-      <%= f.text_field :source_vocabulary, class: "input" %>
-    </div>
-    <div class="field">
-      <%= f.label :source_file, "Spreadsheet or delimited file", class: "field__label" %>
-      <%= f.file_field :source_file, class: "input", accept: ".csv,.tsv,.xlsx,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" %>
-    </div>
-    <div class="field">
-      <%= f.label :rows_text, "CSV rows", class: "field__label" %>
-      <%= f.text_area :rows_text, rows: 10, class: "textarea", value: "source_code,source_name,source_frequency
-NDC-0406-0512,tramadol hcl 50mg cap,12
-" %>
-    </div>
-    <div class="row">
+
+    <details class="details-panel">
+      <summary>Or paste rows directly</summary>
+      <div class="field" style="margin-block-start: var(--space-sm)">
+        <%= f.label :rows_text, "CSV rows", class: "field__label" %>
+        <%= f.text_area :rows_text, rows: 8, class: "textarea", placeholder: "source_code,source_name,source_frequency&#10;NDC-0406-0512,tramadol hcl 50mg cap,12" %>
+        <p class="field__hint">Paste comma-separated rows with a header line. Used only when no file is attached.</p>
+      </div>
+    </details>
+
+    <div class="row" style="gap: var(--space-sm)">
       <%= f.submit "Preview import", class: "btn btn--primary" %>
-      <%= link_to "Cancel", project_path(@project), class: "btn" %>
+      <%= link_to "Cancel", project_path(@project), class: "btn btn--plain" %>
     </div>
   <% end %>
 </div>

@@ -1,0 +1,24 @@
+<%# locals: mapping, siblings — the decision strip (target + status + equivalence + actions). %>
+<section class="cockpit-bar" aria-label="Current decision">
+  <div class="cockpit-bar__target truncate">
+    <span class="eyebrow">Target</span>
+    <% if mapping.mapped? %>
+      <strong class="truncate"><%= mapping.concept_name %></strong>
+      <span class="small subtle"><%= mapping.vocabulary_id %> · #<%= mapping.concept_id %></span>
+    <% else %>
+      <span class="subtle">No target yet — pick a candidate below.</span>
+    <% end %>
+  </div>
+
+  <%= status_badge(mapping) %>
+
+  <%= form_with model: mapping, url: mapping_path(mapping), method: :patch, data: { turbo_frame: "_top" }, class: "cockpit-bar__equivalence" do |f| %>
+    <%= f.label :equivalence, "Equivalence", class: "sr-only" %>
+    <%= f.select :equivalence, Mapping::EQUIVALENCE_LABELS.map { |k, v| [ v, k ] }, { include_blank: "Equivalence" }, class: "select", style: "inline-size: auto" %>
+    <%= f.submit "Save", class: "btn btn--sm" %>
+  <% end %>
+
+  <div class="cockpit-bar__actions">
+    <%= render "mappings/decision_actions", mapping: mapping, siblings: siblings %>
+  </div>
+</section>

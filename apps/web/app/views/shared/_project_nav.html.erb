@@ -1,0 +1,15 @@
+<%# locals: project, active (one of :overview :review :imports :jobs :exports :manage) %>
+<nav class="project-nav" aria-label="Project sections">
+  <% [
+    [ :overview, "Overview", project_path(project) ],
+    [ :review, "Review", project_mappings_path(project) ],
+    [ :imports, "Imports", project_import_sessions_path(project) ],
+    [ :jobs, "Jobs", project_engine_jobs_path(project) ],
+    [ :exports, "Exports", project_exports_path(project) ],
+    [ :manage, "Settings", manage_project_path(project) ]
+  ].each do |key, label, path| %>
+    <%= link_to label, path,
+          class: "project-nav__tab #{"is-active" if active == key}",
+          aria: { current: (active == key ? "page" : nil) } %>
+  <% end %>
+</nav>

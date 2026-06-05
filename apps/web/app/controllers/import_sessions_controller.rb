@@ -27,6 +27,7 @@ class ImportSessionsController < ApplicationController
     @import_batch = @import_session
     @import_session.created_by = current_user
     attach_source_file
+    apply_pasted_rows_filename
 
     rows = parsed_rows(@import_session)
     detected_columns = rows.first&.fetch(:raw_row, {})&.keys || []
@@ -57,6 +58,7 @@ class ImportSessionsController < ApplicationController
     @import_batch = @import_session
     @import_session.created_by = current_user
     attach_source_file
+    apply_pasted_rows_filename
     rows = parsed_rows(@import_session)
     detected_columns = rows.first&.fetch(:raw_row, {})&.keys || []
     column_mapping = Imports::ColumnDetector.detect(detected_columns)
@@ -131,6 +133,13 @@ class ImportSessionsController < ApplicationController
       @import_session.file_content_type = file.content_type
       @import_session.file_size = file.size
       @import_session.source_file.attach(file)
+    end
+
+    def apply_pasted_rows_filename
+      return if @import_session.file_name.present?
+      return unless @import_session.rows_text.present?
+
+      @import_session.file_name = "pasted-source-terms.csv"
     end
 
     def parsed_rows(import_session, column_mapping: {})

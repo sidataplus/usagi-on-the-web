@@ -5,7 +5,7 @@
 %>
 <tr id="<%= dom_id(mapping, :row) %>" class="<%= "is-justchanged" if local_assigns[:highlight] %>">
   <td>
-    <input type="checkbox" value="<%= mapping.id %>" data-bulk_select-target="checkbox" data-action="bulk_select#refresh" aria-label="Select row">
+    <input type="checkbox" value="<%= mapping.id %>" data-bulk-select-target="checkbox" data-action="bulk-select#refresh" aria-label="Select row">
   </td>
   <td class="mono"><%= mapping.source_code %></td>
   <td>
@@ -28,7 +28,7 @@
   <td><%= status_badge(mapping) %></td>
   <td class="num">
     <div class="menu" data-controller="dropdown">
-      <button type="button" class="btn btn--icon" data-action="dropdown#toggle" aria-label="Row actions">
+      <button type="button" class="btn btn--icon" data-action="dropdown#toggle" aria-haspopup="true" aria-label="Row actions">
         <%= lucide_icon "ellipsis", class: "icon" %>
       </button>
       <div class="menu__panel" data-dropdown-target="menu" hidden>

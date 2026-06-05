@@ -6,7 +6,9 @@ use usagi_contracts::jobs::{JobCreateResponse, JobState};
 use usagi_contracts::mapper::{
     MapperDrugBatchJobRequest, MapperDrugQueryRequest, MapperDrugQueryResponse,
 };
-use usagi_contracts::search::{SearchConceptsRequest, SearchConceptsResponse};
+use usagi_contracts::search::{
+    SearchBatchRequest, SearchBatchResponse, SearchConceptsRequest, SearchConceptsResponse,
+};
 
 #[test]
 fn job_create_response_exposes_status_and_result_urls_for_rails_mirrors() {
@@ -41,6 +43,29 @@ fn rails_contract_fixtures_cover_minimum_api_checkpoint() {
     assert_eq!(
         search_response.provenance.catalog_artifact_id.as_deref(),
         Some("local-catalog-standard-v1")
+    );
+
+    let search_batch_request: SearchBatchRequest =
+        read_json(root.join("search_batch.hybrid_rrf.request.json"));
+    assert_eq!(search_batch_request.mode, "hybrid_rrf");
+    assert_eq!(search_batch_request.limit_per_item, 20);
+    assert_eq!(search_batch_request.filters["domain_id"][0], "Condition");
+    assert_eq!(search_batch_request.hybrid["rrf_k"], 60);
+    assert_eq!(search_batch_request.items[0].id, "src_001");
+    assert_eq!(
+        search_batch_request.items[0].source_code.as_deref(),
+        Some("DX001")
+    );
+
+    let search_batch_response: SearchBatchResponse =
+        read_json(root.join("search_batch.hybrid_rrf.response.json"));
+    assert_eq!(search_batch_response.items[0].id, "src_001");
+    assert_eq!(
+        search_batch_response
+            .provenance
+            .index_artifact_id
+            .as_deref(),
+        Some("local-hybrid-rrf-v1")
     );
 
     let mapper_query: MapperDrugQueryRequest =

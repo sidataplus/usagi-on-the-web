@@ -1,5 +1,6 @@
 class MappingsController < ApplicationController
   include ProjectAuthorization
+  include MappingCockpit
 
   before_action :set_project, only: :index
   before_action :set_mapping, except: %i[index bulk_update]
@@ -7,17 +8,32 @@ class MappingsController < ApplicationController
   PER_PAGE = 50
   STATUS_FILTERS = %w[unchecked approved flagged invalid_status invalid].freeze
 
+  # UI sort key -> SQL ordering. source_* columns live on source_terms, so they
+  # need the join; match_score/status are on mappings. Keys match the column
+  # headers rendered in mappings/_table so the sort indicator lines up.
+  SORTS = {
+    "source_frequency" => { join: :source_term, column: "source_terms.source_frequency" },
+    "source_code"      => { join: :source_term, column: "source_terms.source_code" },
+    "source_name"      => { join: :source_term, column: "source_terms.source_name" },
+    "match_score"      => { column: "mappings.match_score" },
+    "status"           => { column: "mappings.mapping_status" }
+  }.freeze
+
   def index
     authorize_project!(@project, :view)
     @status = params[:status].presence_in(STATUS_FILTERS)
     @query = params[:q].to_s
     @sort, @direction = sort_params
-    scope = @project.mappings.search(@query).by_status(@status).order(@sort => @direction, id: :asc)
+    config = SORTS.fetch(@sort)
+    scope = @project.mappings.search(@query).by_status(@status)
+    scope = scope.joins(config[:join]) if config[:join]
+    scope = scope.order(Arel.sql("#{config[:column]} #{@direction == :asc ? "ASC" : "DESC"}")).order(id: :asc)
     @counts = status_counts(@project)
+    @per_page = per_page
     @total = scope.count
     @page = [params[:page].to_i, 1].max
-    @total_pages = [(@total.to_f / PER_PAGE).ceil, 1].max
-    @mappings = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
+    @total_pages = [(@total.to_f / @per_page).ceil, 1].max
+    @mappings = scope.offset((@page - 1) * @per_page).limit(@per_page)
     @latest_engine_job = latest_suggestion_job(@project)
     @next_review_mapping = next_review_mapping(@project)
     @next_review_candidate = @next_review_mapping&.persisted_candidates&.first
@@ -31,6 +47,7 @@ class MappingsController < ApplicationController
   def show
     authorize_project!(@mapping.project, :view)
     @project = @mapping.project
+    @cockpit_layout = resolve_cockpit_layout
     @siblings = navigation_for(@mapping)
     @candidates = @mapping.persisted_candidates
     @events = @mapping.project.audit_events.where(subject: @mapping).recent_first
@@ -45,7 +62,14 @@ class MappingsController < ApplicationController
       end
       audit_mapping("mapping_updated", to: @mapping.mapping_status)
       respond_to do |format|
-        format.turbo_stream { render :update }
+        format.turbo_stream do
+          advance = Mapping.find_by(id: navigation_for(@mapping)[:next_id]) if params[:next].present?
+          if advance
+            render turbo_stream: cockpit_decision_streams(@mapping, advance_to: advance)
+          else
+            render :update
+          end
+        end
         format.html { redirect_to after_mapping_path(@mapping), notice: "Mapping saved." }
       end
     else
@@ -102,10 +126,13 @@ class MappingsController < ApplicationController
   end
 
   def bulk_update
-    mappings = Mapping.where(id: params[:mapping_ids].to_s.split(","))
-    @project = mappings.first&.project
+    ids = params[:mapping_ids].to_s.split(",")
+    @project = Mapping.find_by(id: ids.first)&.project
     authorize_project!(@project, :review) if @project
-    mappings.find_each do |mapping|
+    # Scope to the authorized project so a crafted id list can't touch mappings
+    # in other projects (the request is only authorized for this one).
+    @mappings = @project ? @project.mappings.where(id: ids) : Mapping.none
+    @mappings.find_each do |mapping|
       from = mapping.mapping_status
       mapping.update!(status: params[:status], reviewed_by: current_user, reviewed_at: Time.current)
       mapping.project.audit_events.create!(
@@ -178,9 +205,15 @@ class MappingsController < ApplicationController
     end
 
     def sort_params
-      column = params[:sort].presence_in(%w[updated_at mapping_status match_score]) || "updated_at"
+      key = params[:sort].presence_in(SORTS.keys) || "source_frequency"
       direction = params[:direction] == "asc" ? :asc : :desc
-      [column, direction]
+      [key, direction]
+    end
+
+    # Honour the reviewer's saved rows-per-page preference (Settings), default 50.
+    def per_page
+      value = current_user.prefs["rows_per_page"].to_i
+      [ 25, 50, 100, 250 ].include?(value) ? value : PER_PAGE
     end
 
     def status_counts(project)
@@ -210,13 +243,13 @@ class MappingsController < ApplicationController
         project.engine_jobs.where(kind: kinds, state: "succeeded_with_errors").recent_first.first
     end
 
-    def navigation_for(mapping)
-      ordered = mapping.project.mappings.ordered.pluck(:id)
-      index = ordered.index(mapping.id)
-      return { position: nil, total: ordered.size, prev_id: nil, next_id: nil } unless index
-
-      { position: index + 1, total: ordered.size, prev_id: index.positive? ? ordered[index - 1] : nil,
-        next_id: index < ordered.size - 1 ? ordered[index + 1] : nil }
+    # Persist a toggled cockpit layout so it sticks across mappings/sessions.
+    def resolve_cockpit_layout
+      requested = params[:layout].presence_in(COCKPIT_LAYOUTS)
+      if requested && requested != current_user.prefs["cockpit_layout"]
+        current_user.update(preferences: current_user.prefs.merge("cockpit_layout" => requested))
+      end
+      cockpit_layout
     end
 
     def after_mapping_path(mapping)
@@ -226,6 +259,7 @@ class MappingsController < ApplicationController
 
     def table_locals
       { project: @project, mappings: @mappings, counts: @counts, status: @status, query: @query,
-        sort: @sort, direction: @direction, page: @page, total: @total, total_pages: @total_pages }
+        sort: @sort, direction: @direction, page: @page, total: @total, total_pages: @total_pages,
+        per_page: @per_page }
     end
 end

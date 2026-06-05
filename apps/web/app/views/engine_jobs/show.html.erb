@@ -1,5 +1,7 @@
 <% content_for :title, "Engine job" %>
 
+<%= render "shared/project_nav", project: @project, active: :jobs %>
+
 <div class="page-head">
   <div>
     <h1 class="page-head__title"><%= @engine_job.job_type.humanize %></h1>
@@ -23,34 +25,40 @@
   <%= link_to "Review mappings", project_mappings_path(@project), class: "btn btn--sm" %>
 </div>
 
-<div class="box">
+<div class="box stack">
   <dl class="facts">
-    <div><dt>Status</dt><dd><%= @engine_job.status.humanize %></dd></div>
-    <div><dt>Engine job ID</dt><dd><%= @engine_status["id"] || @engine_job.api_job_id || @engine_job.id %></dd></div>
-    <div><dt>Stage</dt><dd><%= @engine_job.stage.presence || @engine_status["stage"].presence || "Not reported" %></dd></div>
+    <div><dt>Status</dt><dd><span class="badge badge--<%= job_state_tone(@engine_job.state) %>"><%= @engine_job.status.humanize %></span></dd></div>
     <div>
       <dt>Progress</dt>
       <dd>
         <% if @engine_job.total.to_i.positive? %>
           <%= @engine_job.processed.to_i %>/<%= @engine_job.total.to_i %>
         <% else %>
-          Not reported
+          <span class="subtle">Not reported</span>
         <% end %>
       </dd>
     </div>
     <div><dt>Failed rows</dt><dd><%= @engine_job.failed.to_i %></dd></div>
-    <div><dt>Status URL</dt><dd class="mono"><%= @engine_job.status_url.presence || @engine_status["status_url"].presence || "Not reported" %></dd></div>
-    <div><dt>Result URL</dt><dd class="mono"><%= @engine_job.result_url.presence || @engine_status["result_url"].presence || "Not reported" %></dd></div>
-    <div><dt>Idempotency key</dt><dd><%= @engine_job.idempotency_key %></dd></div>
     <div><dt>Requested by</dt><dd><%= @engine_job.requested_by&.display_name || "System" %></dd></div>
   </dl>
+
+  <details class="details-panel">
+    <summary>Technical details</summary>
+    <dl class="facts" style="margin-block-start: var(--space-sm)">
+      <div><dt>Engine job ID</dt><dd class="mono"><%= @engine_status["id"] || @engine_job.api_job_id || @engine_job.id %></dd></div>
+      <div><dt>Stage</dt><dd><%= @engine_job.stage.presence || @engine_status["stage"].presence || "—" %></dd></div>
+      <div><dt>Status URL</dt><dd class="mono"><%= @engine_job.status_url.presence || @engine_status["status_url"].presence || "—" %></dd></div>
+      <div><dt>Result URL</dt><dd class="mono"><%= @engine_job.result_url.presence || @engine_status["result_url"].presence || "—" %></dd></div>
+      <div><dt>Idempotency key</dt><dd class="mono"><%= @engine_job.idempotency_key.presence || "—" %></dd></div>
+    </dl>
+  </details>
 </div>
 
 <% failed_items = Array(@engine_job.error["items"]) %>
 
 <% if failed_items.any? %>
   <div class="box box--flush" style="margin-block-start: var(--space)">
-    <div class="pad">
+    <div style="padding: var(--space)">
       <strong>Partial failures</strong>
       <p class="small subtle">Successful rows were persisted. Retry after resolving the failed rows or engine issue.</p>
     </div>

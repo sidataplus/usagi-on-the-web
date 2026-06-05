@@ -35,6 +35,8 @@ fixtures/contracts/
   catalog_status.ready.json
   search_concepts.hybrid_rrf.request.json
   search_concepts.hybrid_rrf.response.json
+  search_batch.hybrid_rrf.request.json
+  search_batch.hybrid_rrf.response.json
   mapper_drugs_query.request.json
   mapper_drugs_query.response.json
   mapper_drugs_batch_job.request.json
@@ -385,8 +387,9 @@ source term.
       "candidates": []
     },
     {
-      "source_id": "src_bad",
-      "state": "failed",
+      "id": "src_bad",
+      "source_code": "SRC_BAD",
+      "q": "query with no precomputed embedding",
       "error": {
         "code": "EMBEDDING_FAILED",
         "message": "Unable to encode source term",
@@ -398,6 +401,11 @@ source term.
   ]
 }
 ```
+
+Live mapper JSONL may identify a failed item by `error` without an explicit
+failed `state`. Rails should preserve `id`, `source_code`, `q`, and `error` in
+`engine_jobs.error.items` while still persisting successful rows from the same
+job.
 
 ---
 
@@ -449,6 +457,8 @@ raises EngineClients::BaseClient::Error
 preserves error code/message/details/request_id
 handles invalid JSON
 handles connection timeout
+retries transient GET failures only
+logs engine.request and engine.request.retry with request_id and attempt
 ```
 
 ### 8.2 EngineClients::SearchClient
@@ -460,7 +470,9 @@ builds /search/concepts request
 builds /search/batch request
 passes hybrid defaults
 supports domain/vocabulary filters
+uses item id as the batch response join key
 parses hybrid search results
+uses source term domain hints for mixed project batch filters
 ```
 
 ### 8.3 EngineClients::MapperClient
@@ -473,6 +485,11 @@ builds /mapper/drugs/batch-job request
 uses idempotency key
 uses THIRAWAT defaults
 parses queued job response
+records job creation failures as failed engine job mirrors
+retries failed and partial mapper mirrors with the same idempotency key
+does not treat succeeded_with_errors as clean reusable success
+propagates artifact JSONL stream failures instead of returning empty items
+copies item-level JSONL failures into engine_jobs.error.items
 ```
 
 ### 8.4 CandidatePersister
@@ -487,9 +504,21 @@ stores features/provenance JSON
 upserts duplicates
 links candidates to mapping and source term
 handles failed items without aborting all successes
+marks the engine job mirror failed when result streaming fails
 ```
 
-### 8.5 PollEngineJobJob
+### 8.5 ManualSearchesController
+
+Test:
+
+```text
+creates a short-lived engine job mirror
+marks the mirror succeeded with processed count and candidate count
+marks the mirror failed with code/message/details/request_id on engine errors
+does not crash the review page when the engine is unavailable
+```
+
+### 8.6 PollEngineJobJob
 
 Test:
 
@@ -500,6 +529,33 @@ calls result persistence when succeeded
 calls result persistence when succeeded_with_errors
 stores failed error state
 stops on cancelled
+```
+
+### 8.7 LiveEngineSmokeTest
+
+Run only with `USAGI_LIVE_ENGINE=1` and live API URLs.
+
+```text
+status clients reach catalog/search/mapper
+search concept query returns DTOs
+search batch preserves returned item id and provenance
+mapper query returns DTOs
+mapper batch job can be created, polled, and streamed as JSONL
+```
+
+### 8.8 LiveWorkflowE2ETest
+
+Run only with `USAGI_LIVE_ENGINE=1` and live API URLs.
+
+```text
+creates Drug and Mixed projects through Rails
+imports source terms through Rails controllers
+runs manual search and persists candidates
+starts mapper batch auto-map, polls jobs API, and persists JSONL results
+renders mapper partial-failure job details with retry
+runs mixed-project hybrid auto-suggest through search batch
+renders local hybrid job details without a jobs API mirror
+shows persisted candidates on the review page
 ```
 
 ---

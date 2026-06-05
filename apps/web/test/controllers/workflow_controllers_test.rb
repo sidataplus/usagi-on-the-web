@@ -11,6 +11,15 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     end
   end
 
+  class ExplodingJobsTransport
+    def get_json(path)
+      raise EngineClients::BaseClient::Error.new(
+        code: "UNEXPECTED_JOBS_API_CALL",
+        message: "Unexpected jobs API call to #{path}"
+      )
+    end
+  end
+
   setup do
     @user = create_user!(email: "demo@usagi.test", admin: true)
     @project = create_project!(user: @user)
@@ -21,6 +30,7 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     EngineClients::CatalogClient.default_transport = nil
     EngineClients::SearchClient.default_transport = nil
     EngineClients::MapperClient.default_transport = nil
+    EngineClients::JobsClient.default_transport = nil
   end
 
   test "import creates source terms and review mappings" do
@@ -56,6 +66,22 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal 0, @project.source_terms.count
     assert_includes response.body, "Import preview"
     assert_includes response.body, "Confirm import"
+    assert_includes response.body, "SRC_TRAMADOL"
+  end
+
+  test "import preview accepts pasted rows without a submitted filename" do
+    post preview_project_import_sessions_path(@project), params: {
+      import_session: {
+        rows_text: "source_code,source_name,source_frequency\nSRC_TRAMADOL,tramadol hcl 50mg cap,12\n"
+      }
+    }
+
+    import = @project.import_sessions.last
+
+    assert_response :success
+    assert_equal "previewed", import.state
+    assert_equal "pasted-source-terms.csv", import.file_name
+    assert_equal 1, import.summary.fetch("rows_seen")
     assert_includes response.body, "SRC_TRAMADOL"
   end
 
@@ -290,7 +316,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     get project_export_path(@project, export)
 
     assert_response :success
-    assert_includes response.body, "Export mappings"
+    assert_includes response.body, "Review CSV"
+    assert_includes response.body, "Download CSV"
     assert_includes response.body, "Review mappings"
   end
 
@@ -463,15 +490,13 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Final 0.93"
     assert_includes response.body, "BiMaxSim 0.88"
     assert_includes response.body, "Tachiom 0.84"
-    assert_includes response.body, "ingredient_match"
+    assert_includes response.body, "Ingredient match"
     assert_includes response.body, "THIRAWAT-SapBERT"
     assert_includes response.body, "dose form differs"
     assert_includes response.body, "Use and next"
     assert_includes response.body, "Approve and next"
-    assert_includes response.body, "Keyboard"
-    assert_includes response.body, "A"
+    assert_select ".shortcuts__item kbd", minimum: 1
     assert_includes response.body, "Approve"
-    assert_includes response.body, "N"
     assert_includes response.body, "Next mapping"
   end
 
@@ -650,5 +675,147 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Cannot map source term"
     assert_includes response.body, "req_partial"
     assert_includes response.body, "Retry"
+  end
+
+  test "local hybrid engine job detail does not require jobs api mirror" do
+    EngineClients::JobsClient.default_transport = ExplodingJobsTransport.new
+    engine_job = @project.engine_jobs.create!(
+      kind: "hybrid_search_batch",
+      state: "succeeded",
+      processed: 1,
+      total: 1,
+      failed: 0,
+      stage: "persist_results",
+      result: { "items" => [{ "id" => "SRC_OK", "candidate_count" => 2 }] }
+    )
+
+    get project_engine_job_path(@project, engine_job)
+
+    assert_response :success
+    assert_includes response.body, "Succeeded"
+    assert_includes response.body, "persist_results"
+    assert_includes response.body, "Review mappings"
+  end
+
+  test "project owner adds, re-roles, and removes a member" do
+    member_user = create_user!(email: "reviewer2@usagi.test")
+
+    assert_difference -> { @project.project_members.count }, 1 do
+      post project_members_path(@project), params: { email: "Reviewer2@Usagi.test", role: "reviewer" }
+    end
+    assert_redirected_to manage_project_path(@project)
+    membership = @project.project_members.find_by(user: member_user)
+    assert_equal "reviewer", membership.role
+    assert_equal "member_added", @project.audit_events.last.action
+
+    patch project_member_path(@project, membership), params: { role: "admin" }
+    assert_equal "admin", membership.reload.role
+
+    assert_difference -> { @project.project_members.count }, -1 do
+      delete project_member_path(@project, membership)
+    end
+  end
+
+  test "use and approve applies the candidate and approves the mapping" do
+    mapping = create_mapping!(project: @project, source_code: "SRC_A")
+    candidate = mapping.mapping_candidates.create!(
+      project: @project, source_term: mapping.source_term, rank: 1,
+      concept_id: 40162522, concept_name: "Tramadol Hydrochloride 50 MG Oral Capsule", method: "thirawat_tachiom"
+    )
+
+    patch mapping_candidate_path(candidate, approve: "1")
+
+    assert candidate.reload.selected?
+    assert_equal 40162522, mapping.reload.target_concept_id
+    assert_equal "APPROVED", mapping.mapping_status
+    assert_equal @user, mapping.reviewed_by
+  end
+
+  test "cockpit layout toggle persists per user" do
+    mapping = create_mapping!(project: @project)
+
+    get mapping_path(mapping, layout: "hero")
+
+    assert_response :success
+    assert_equal "hero", @user.reload.prefs["cockpit_layout"]
+    assert_includes response.body, "Best match"
+  end
+
+  test "member management rejects unknown emails and protects the owner" do
+    post project_members_path(@project), params: { email: "nobody@usagi.test" }
+    assert_equal "No user found with that email.", flash[:alert]
+
+    owner_membership = @project.project_members.find_by(role: "owner")
+    assert_no_difference -> { @project.project_members.count } do
+      delete project_member_path(@project, owner_membership)
+    end
+    assert_match "owner can't be removed", flash[:alert]
+  end
+
+  test "member role cannot be escalated to owner via crafted params" do
+    member_user = create_user!(email: "ru2@usagi.test")
+
+    post project_members_path(@project), params: { email: member_user.email, role: "owner" }
+
+    assert_equal "reviewer", @project.project_members.find_by(user: member_user).role
+    assert_equal 1, @project.project_members.where(role: "owner").count
+  end
+
+  test "bulk update approves selected mappings and ignores ids from other projects" do
+    m1 = create_mapping!(project: @project, source_code: "SRC_A")
+    m2 = create_mapping!(project: @project, source_code: "SRC_B", source_name: "metformin hcl 500 mg tab")
+    foreign = create_mapping!(project: create_project!(user: @user), source_code: "SRC_X")
+
+    post bulk_update_mappings_path,
+      params: { mapping_ids: "#{m1.id},#{m2.id},#{foreign.id}", status: "approved" },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :success
+    assert_equal "APPROVED", m1.reload.mapping_status
+    assert_equal "APPROVED", m2.reload.mapping_status
+    assert_equal "UNCHECKED", foreign.reload.mapping_status
+  end
+
+  test "review table sorts by source code" do
+    create_mapping!(project: @project, source_code: "SRC_ZZZ", source_name: "zeta")
+    create_mapping!(project: @project, source_code: "SRC_AAA", source_name: "alpha")
+
+    get project_mappings_path(@project, sort: "source_code", direction: "asc"),
+      headers: { "Turbo-Frame" => "mappings_table" }
+
+    assert_response :success
+    assert response.body.index("SRC_AAA") < response.body.index("SRC_ZZZ"), "expected SRC_AAA before SRC_ZZZ"
+  end
+
+  test "approve and next advances the cockpit via turbo stream" do
+    mapping = create_mapping!(project: @project, source_code: "SRC_A")
+    create_mapping!(project: @project, source_code: "SRC_B", source_name: "metformin hcl 500 mg tab")
+
+    patch mapping_path(mapping, next: "1"), params: { mapping: { status: "approved" } },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :success
+    assert_equal "text/vnd.turbo-stream.html", response.media_type
+    assert_includes response.body, "turbo-stream"
+    assert_includes response.body, "metformin hcl 500 mg tab"
+    assert_equal "APPROVED", mapping.reload.mapping_status
+  end
+
+  test "manual search returns a 503 when the engine is unavailable" do
+    EngineClients::MapperClient.default_transport = Class.new do
+      def post_json(*)
+        raise EngineClients::BaseClient::Error.new(code: "ENGINE_UNAVAILABLE", message: "engine down", request_id: "req_manual_fail", status: 503)
+      end
+    end.new
+    mapping = create_mapping!(project: @project)
+
+    post mapping_manual_search_path(mapping), params: { q: "tramadol hcl 50mg cap" },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :service_unavailable
+    engine_job = @project.engine_jobs.mapper_drugs_batch.last
+    assert_equal "failed", engine_job.state
+    assert_equal "ENGINE_UNAVAILABLE", engine_job.error.fetch("code")
+    assert_equal "req_manual_fail", engine_job.error.fetch("request_id")
   end
 end

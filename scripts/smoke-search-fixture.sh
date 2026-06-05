@@ -106,7 +106,7 @@ python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0][
 
 auth_curl \
   -H 'Content-Type: application/json' \
-  -d '{"mode":"hybrid_rrf","limit_per_item":1,"items":[{"id":"q1","q":"tramadol 50 mg capsule"}]}' \
+  -d '{"mode":"hybrid_rrf","limit_per_item":1,"filters":{"domain_id":["Drug"]},"hybrid":{"rrf_k":60,"lexical_top_k":10,"sapbert_top_k":10},"items":[{"id":"q1","source_code":"SRC_TRAMADOL_50_CAP","q":"tramadol 50 mg capsule","filters":{"vocabulary_id":["RxNorm"]}}]}' \
   "${SEARCH_BASE_URL}/search/batch" |
 python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["items"][0]["results"][0]["concept"]["concept_id"] == 100; assert data["provenance"]["index_artifact_id"] == "local-hybrid-rrf-v1"; print(json.dumps({"hybrid_batch_top_concept_id": data["items"][0]["results"][0]["concept"]["concept_id"]}))'
 

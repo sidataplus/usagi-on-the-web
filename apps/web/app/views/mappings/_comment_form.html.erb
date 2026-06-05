@@ -1,6 +1,11 @@
 <%# locals: mapping, comment %>
 <%= form_with model: [ mapping, (comment || mapping.mapping_comments.build) ],
-      url: mapping_comments_path(mapping), id: dom_id(mapping, :comment_form), class: "comment-form" do |f| %>
-  <%= f.text_area :content, rows: 2, class: "textarea", placeholder: "Add a comment…" %>
-  <%= f.submit "Post", class: "btn btn--primary" %>
+      url: mapping_comments_path(mapping), id: dom_id(mapping, :comment_form), class: "stack-sm" do |f| %>
+  <% if comment&.errors&.any? %>
+    <p class="small" style="color: var(--color-bad)"><%= comment.errors.full_messages.to_sentence %></p>
+  <% end %>
+  <div class="comment-form">
+    <%= f.text_area :content, rows: 2, class: "textarea", placeholder: "Add a comment…" %>
+    <%= f.submit "Post", class: "btn btn--primary" %>
+  </div>
 <% end %>

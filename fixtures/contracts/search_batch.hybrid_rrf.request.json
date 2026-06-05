@@ -1,0 +1,26 @@
+{
+  "mode": "hybrid_rrf",
+  "limit_per_item": 20,
+  "filters": {
+    "domain_id": [
+      "Condition"
+    ]
+  },
+  "hybrid": {
+    "rrf_k": 60,
+    "lexical_top_k": 100,
+    "sapbert_top_k": 100
+  },
+  "items": [
+    {
+      "id": "src_001",
+      "source_code": "DX001",
+      "q": "type 2 diabetes mellitus",
+      "filters": {
+        "vocabulary_id": [
+          "SNOMED"
+        ]
+      }
+    }
+  ]
+}

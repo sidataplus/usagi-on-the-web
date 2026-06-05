@@ -4,7 +4,7 @@ class SettingsController < ApplicationController
   end
 
   # Known preference keys; keeps mass-assignment explicit (no permit!).
-  PREFERENCE_KEYS = %i[rows_per_page email_notifications assignment_alerts weekly_digest].freeze
+  PREFERENCE_KEYS = %i[rows_per_page cockpit_layout email_notifications assignment_alerts weekly_digest].freeze
 
   def update
     submitted = params.fetch(:preferences, {})

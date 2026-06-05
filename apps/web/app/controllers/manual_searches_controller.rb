@@ -1,5 +1,6 @@
 class ManualSearchesController < ApplicationController
   include ProjectAuthorization
+  include MappingCockpit
 
   before_action :set_mapping
 
@@ -8,13 +9,20 @@ class ManualSearchesController < ApplicationController
     query = params[:q].presence || @mapping.source_name
     @engine_job = @mapping.project.engine_jobs.create!(
       kind: @mapping.project.drug_domain? ? "mapper_drugs_batch" : "hybrid_search_batch",
-      state: "succeeded",
+      state: "running",
       mode: @mapping.project.drug_domain? ? "thirawat_tachiom" : "hybrid_rrf",
-      input: { q: query, source_term_id: @mapping.source_term_id }
+      input: { q: query, source_term_id: @mapping.source_term_id },
+      total: 1
     )
     results = engine_results(query)
     @candidates = Mappings::CandidatePersister.new(mapping: @mapping, engine_job: @engine_job).persist_results(results)
     @mapping.update!(candidate_count: @mapping.mapping_candidates.count)
+    @engine_job.update!(
+      state: "succeeded",
+      processed: 1,
+      result: { candidate_count: @candidates.size },
+      finished_at: Time.current
+    )
     @mapping.project.audit_events.create!(
       user: current_user,
       subject: @mapping,
@@ -28,11 +36,18 @@ class ManualSearchesController < ApplicationController
         render turbo_stream: turbo_stream.replace(
           helpers.dom_id(@mapping, :candidate_panel),
           partial: "mappings/candidate_panel",
-          locals: { mapping: @mapping, candidates: @candidates, next_id: next_mapping_id(@mapping) }
+          locals: { mapping: @mapping, candidates: @candidates, next_id: next_mapping_id(@mapping), hero: cockpit_layout == "hero" }
         )
       end
       format.html { redirect_to mapping_path(@mapping), notice: "Search finished." }
     end
+  rescue EngineClients::BaseClient::Error => e
+    @engine_job&.update!(
+      state: "failed",
+      error: { code: e.code, message: e.message, details: e.details, request_id: e.request_id }.compact,
+      finished_at: Time.current
+    )
+    raise
   end
 
   private
@@ -54,13 +69,5 @@ class ManualSearchesController < ApplicationController
 
     def candidate_limit
       @mapping.project.settings.fetch("candidate_limit", 20)
-    end
-
-    def next_mapping_id(mapping)
-      ordered = mapping.project.mappings.ordered.pluck(:id)
-      index = ordered.index(mapping.id)
-      return nil unless index && index < ordered.size - 1
-
-      ordered[index + 1]
     end
 end

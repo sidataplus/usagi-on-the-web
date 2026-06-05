@@ -1,5 +1,7 @@
 <% content_for :title, "Manage — #{@project.name}" %>
 
+<%= render "shared/project_nav", project: @project, active: :manage %>
+
 <div class="page-head">
   <div>
     <h1 class="page-head__title">Manage project</h1>
@@ -24,12 +26,24 @@
       </div>
       <div class="grid grid--halves" style="gap: var(--space)">
         <div class="field">
-          <%= f.label :source_vocabulary, "Source vocabulary", class: "field__label" %>
-          <%= f.text_field :source_vocabulary, class: "input" %>
+          <%= f.label :mapping_domain, "Mapping domain", class: "field__label" %>
+          <%= f.select :mapping_domain, Project::MAPPING_DOMAINS.map { |domain| [ domain, domain ] }, {}, class: "select" %>
+          <p class="field__hint">Drug uses the THIRAWAT drug mapper; other domains use hybrid search.</p>
         </div>
         <div class="field">
           <%= f.label :status, class: "field__label" %>
           <%= f.select :status, Project.statuses.keys.map { |s| [ s.humanize, s ] }, {}, class: "select" %>
+        </div>
+      </div>
+      <div class="grid grid--halves" style="gap: var(--space)">
+        <div class="field">
+          <%= f.label :source_vocabulary, "Source vocabulary", class: "field__label" %>
+          <%= f.text_field :source_vocabulary, class: "input" %>
+        </div>
+        <div class="field">
+          <%= f.label :target_vocabularies, "Target vocabularies", class: "field__label" %>
+          <%= f.text_field :target_vocabularies, value: @project.target_vocabularies.join(", "), class: "input", placeholder: "e.g. RxNorm, SNOMED" %>
+          <p class="field__hint">Comma-separated.</p>
         </div>
       </div>
       <div class="row" style="justify-content: flex-end">
@@ -58,20 +72,37 @@
                   </div>
                 </div>
               </td>
-              <td><span class="badge badge--neutral"><%= membership.role_label %></span></td>
+              <td>
+                <% if membership.owner? %>
+                  <span class="badge badge--accent"><%= membership.role_label %></span>
+                <% else %>
+                  <%= form_with url: project_member_path(@project, membership), method: :patch, class: "row", style: "gap: var(--space-sm)" do %>
+                    <%= select_tag :role, options_for_select(assignable_roles, membership.role),
+                          class: "select", style: "inline-size: auto", aria: { label: "Role for #{membership.user.display_name}" } %>
+                    <%= submit_tag "Update", class: "btn btn--sm" %>
+                  <% end %>
+                <% end %>
+              </td>
               <td class="num">
-                <button type="button" class="btn btn--icon btn--danger" title="Remove (coming soon)" disabled>
-                  <%= lucide_icon "trash-2", class: "icon" %>
-                </button>
+                <% unless membership.owner? %>
+                  <%= button_to project_member_path(@project, membership), method: :delete,
+                        class: "btn btn--icon btn--danger",
+                        form: { data: { turbo_confirm: "Remove #{membership.user.display_name} from this project?" } },
+                        aria: { label: "Remove #{membership.user.display_name}" } do %>
+                    <%= lucide_icon "trash-2", class: "icon" %>
+                  <% end %>
+                <% end %>
               </td>
             </tr>
           <% end %>
         </tbody>
       </table>
     </div>
-    <div class="row" style="gap: var(--space-sm)">
-      <input type="email" class="input" placeholder="Add member by email…" disabled>
-      <button type="button" class="btn" disabled>Invite</button>
-    </div>
+    <%= form_with url: project_members_path(@project), method: :post, class: "row wrap", style: "gap: var(--space-sm)" do %>
+      <input type="email" name="email" class="input" placeholder="Add member by email…" style="flex: 1; min-inline-size: 14rem" required>
+      <%= select_tag :role, options_for_select(assignable_roles, "reviewer"), class: "select", style: "inline-size: auto", aria: { label: "Role for new member" } %>
+      <%= submit_tag "Invite", class: "btn" %>
+    <% end %>
+    <p class="subtle small">Members must already have an account. Inviting adds an existing user by email.</p>
   </div>
 </div>

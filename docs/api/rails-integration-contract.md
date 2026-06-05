@@ -77,6 +77,7 @@ POST /mapper/drugs/explain
 ### 3.3 Bulk auto-map
 
 ```text
+POST /search/batch
 POST /mapper/drugs/batch-job
 GET  /jobs/:id
 GET  /jobs/:id/events
@@ -128,11 +129,14 @@ audit_events
 ## 5. `engine_jobs` mirror table
 
 Rails mirrors API jobs so the UI can render history, progress, and project-level state without directly reading `jobs.sqlite`.
+Some mirrors are API-backed, such as `mapper_drugs_batch`. Some are Rails-local
+progress records around synchronous API calls, such as `manual_search` and
+`hybrid_search_batch`. Rails-local mirrors may have no `api_job_id`.
 
 ```ruby
 create_table :engine_jobs, id: :string do |t|
   t.string  :project_id
-  t.string  :api_job_id, null: false
+  t.string  :api_job_id
   t.string  :kind, null: false
   t.string  :state, null: false
   t.string  :stage
@@ -151,7 +155,7 @@ create_table :engine_jobs, id: :string do |t|
 end
 
 add_index :engine_jobs, :project_id
-add_index :engine_jobs, :api_job_id, unique: true
+add_index :engine_jobs, :api_job_id, unique: true, where: "api_job_id IS NOT NULL"
 add_index :engine_jobs, [:project_id, :kind]
 ```
 
@@ -193,6 +197,9 @@ add_index :mapping_candidates, [:mapping_id, :rank]
 ```
 
 Rails stores candidate provenance because the reviewer needs traceability.
+For mixed projects, hybrid batch search should use each source term's
+domain hint as the request filter. Do not send `"Mixed"` as an engine
+`domain_id` filter.
 
 Example provenance:
 
@@ -335,6 +342,10 @@ Request:
 ```
 
 Rails may persist manually searched candidates if useful, but mapping approval remains Rails state.
+Manual searches should create a short-lived `engine_jobs` mirror. On success,
+store `processed = 1`, candidate count, and `finished_at`. On engine failure,
+store a failed mirror with the parsed error envelope so the review page can
+show a stable error state and request ID.
 
 ## 8.3 Single-row mapper workflow
 
@@ -452,6 +463,35 @@ Rails calls GET /jobs/:id/results
 ```
 
 Rails should preserve all candidate provenance.
+If the JSONL result stream fails, Rails should mark the `engine_jobs` mirror
+`failed`, preserve the engine error envelope, and re-raise the client error. It
+must not treat a failed stream as an empty successful candidate set.
+
+Mapper batch mirror reuse rules:
+
+```text
+succeeded                  -> reuse existing clean result
+queued/starting/running    -> reuse mirror and keep polling when api_job_id exists
+failed                     -> reset mirror and retry with same idempotency key
+succeeded_with_errors      -> retry failed/partial work instead of treating as clean success
+```
+
+If `POST /mapper/drugs/batch-job` fails before an API job ID is returned, Rails
+must still mark the mirror `failed` and store `code`, `message`, `details`, and
+`request_id` when the engine error envelope includes them.
+
+Hybrid search batch workflow:
+
+```text
+Rails creates a Rails-side hybrid_search_batch mirror
+Rails calls POST /search/batch with item.id = source_terms.id
+Rails keys response items by returned id
+Rails persists successful candidates with response or result provenance
+Rails records missing/failed item payloads in engine_jobs.error.items
+```
+
+`source_code` is trace metadata; it must not be the join key for attaching
+batch results to mappings.
 
 ## 9. Rails 8 features expected
 
@@ -693,6 +733,8 @@ fixtures/contracts/
   catalog_status.ready.json
   search_concepts.hybrid_rrf.request.json
   search_concepts.hybrid_rrf.response.json
+  search_batch.hybrid_rrf.request.json
+  search_batch.hybrid_rrf.response.json
   mapper_drugs_query.request.json
   mapper_drugs_query.response.json
   mapper_drugs_batch_job.request.json

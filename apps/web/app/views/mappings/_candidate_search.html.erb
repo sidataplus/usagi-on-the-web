@@ -1,0 +1,9 @@
+<%# locals: mapping — manual OMOP lookup; results replace the candidate panel. %>
+<%= form_with url: mapping_manual_search_path(mapping), method: :post,
+      data: { turbo_frame: dom_id(mapping, :candidate_panel) }, class: "cockpit-search" do %>
+  <label class="search">
+    <%= lucide_icon "search", class: "icon" %>
+    <input type="search" name="q" value="<%= mapping.source_name %>" class="input" placeholder="Search OMOP concepts…">
+  </label>
+  <button type="submit" class="btn btn--primary"><%= lucide_icon "search", class: "icon" %> Search</button>
+<% end %>

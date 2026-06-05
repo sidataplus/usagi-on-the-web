@@ -30,7 +30,7 @@
   font-weight: 600;
 }
 .chip:hover { background: var(--color-border); color: var(--color-text); text-decoration: none; }
-.chip.is-active { background: var(--color-accent); color: var(--color-on-accent); }
+.chip.is-active { background: var(--color-accent-fill); color: var(--color-on-accent); }
 .chip__count { opacity: 0.7; }
 
 /* ---- Bulk toolbar ------------------------------------------------------- */
@@ -166,27 +166,69 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
-.modal__dialog--review { max-inline-size: 76rem; }
+.modal__dialog--review { max-inline-size: 64rem; }
 .modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space); padding: var(--space-md); border-block-end: 1px solid var(--color-border); }
 .modal__body { padding: var(--space-md); max-block-size: 72dvh; overflow-y: auto; }
 .modal__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space); padding: var(--space-md); border-block-start: 1px solid var(--color-border); }
 .modal__nav { display: flex; align-items: center; gap: var(--space-xs); }
 
-.review-cockpit {
-  display: grid;
-  grid-template-columns: 16rem minmax(30rem, 1fr) 18rem;
-  gap: var(--space);
-  align-items: start;
+/* ---- Review cockpit (bar / hero layouts) ------------------------------- */
+.cockpit { display: grid; gap: var(--space); }
+
+.cockpit-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-sunken);
 }
-.review-cockpit__source,
-.review-cockpit__decision {
-  position: sticky;
-  inset-block-start: 0;
+.cockpit-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-subtle);
 }
-.review-cockpit__source h3 {
-  font-size: 1.05rem;
-  line-height: 1.25;
+.cockpit-toggle__btn:hover { color: var(--color-text); text-decoration: none; }
+.cockpit-toggle__btn.is-active { background: var(--color-surface); color: var(--color-accent-ink); box-shadow: var(--shadow); }
+
+/* Decision strip: target + status + equivalence + actions on one line. */
+.cockpit-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space) var(--space-md);
+  padding: var(--space) var(--space-md);
+  border: 1px solid color-mix(in oklch, var(--color-accent) 30%, var(--color-border));
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, color-mix(in oklch, var(--color-accent) 7%, var(--color-surface)), var(--color-surface) 60%);
 }
+.cockpit-bar__target { display: grid; gap: 0.1rem; min-inline-size: 13rem; flex: 1; }
+.cockpit-bar__equivalence { display: flex; align-items: center; gap: var(--space-xs); }
+.cockpit-bar__equivalence .field__label { margin: 0; }
+.cockpit-bar__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+.cockpit-bar form { margin: 0; }
+
+/* In the hero layout the strip sits at the bottom as a quiet override. */
+.cockpit--hero .cockpit-bar {
+  border-color: var(--color-border);
+  background: var(--color-sunken);
+}
+
+.cockpit-search { display: flex; gap: var(--space-sm); }
+
+/* Featured best-match candidate. */
+.candidate-card--hero {
+  border-color: color-mix(in oklch, var(--color-accent) 45%, var(--color-border));
+  background: linear-gradient(135deg, color-mix(in oklch, var(--color-accent) 9%, var(--color-surface)), var(--color-surface) 55%);
+  box-shadow: var(--shadow);
+}
+.candidate-card--hero h4 { font-size: 1.15rem; }
+.candidate-card--hero .candidate-card__rank { color: var(--color-accent-ink); letter-spacing: 0.04em; }
 .eyebrow {
   color: var(--color-text-subtle);
   font-size: 0.78rem;
@@ -288,6 +330,21 @@
   margin-block-start: var(--space-xs);
 }
 .candidate-warning { color: color-mix(in oklch, var(--color-warn) 80%, var(--color-text)); }
+.candidate-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-block-start: var(--space-xs);
+}
+.candidate-facts__label { font-weight: 700; font-size: 0.82rem; }
+.candidate-facts__item {
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius);
+  background: var(--color-sunken);
+  font-size: 0.82rem;
+}
+.candidate-facts__item strong { color: var(--color-text-subtle); font-weight: 600; }
 .candidate-card__actions {
   display: grid;
   align-content: start;

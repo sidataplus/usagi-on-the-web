@@ -21,9 +21,15 @@
             </div>
           </td>
           <td class="num">
-            <%= form_with model: [ :admin, user ], method: :patch, local: true do |f| %>
-              <%= f.select :admin, [["User", false], ["Admin", true]], {},
-                    class: "select", style: "inline-size: auto", onchange: "this.form.requestSubmit()" %>
+            <% if user == current_user %>
+              <span class="badge badge--accent">Admin · you</span>
+            <% else %>
+              <%= form_with model: [ :admin, user ], method: :patch, local: true,
+                    class: "row", style: "justify-content: flex-end; gap: var(--space-sm)" do |f| %>
+                <%= f.select :admin, [ [ "Reviewer", false ], [ "Admin", true ] ], { selected: user.admin? },
+                      class: "select", style: "inline-size: auto", aria: { label: "Role for #{user.display_name}" } %>
+                <%= f.submit "Update", class: "btn btn--sm" %>
+              <% end %>
             <% end %>
           </td>
         </tr>

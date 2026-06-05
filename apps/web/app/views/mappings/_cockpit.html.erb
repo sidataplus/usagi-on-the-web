@@ -1,0 +1,75 @@
+<%# locals: mapping, siblings, candidates, events, comments, layout. Rendered inside
+    the top-level #modal turbo-frame, and re-rendered into it when advancing. %>
+<% domain_hint = mapping.source_term&.source_domain_hint.presence || mapping.project.mapping_domain %>
+<% source_vocab = mapping.source_term&.source_vocabulary.presence || mapping.project.source_vocabulary %>
+<div class="modal" data-controller="modal" data-action="click->modal#backdrop">
+  <div class="modal__dialog modal__dialog--review" data-keyboard-scope role="dialog" aria-modal="true" aria-label="Review <%= mapping.source_name %>">
+
+    <div class="modal__head">
+      <div class="truncate">
+        <div class="row" style="gap: var(--space-sm)">
+          <span class="small subtle">Review cockpit</span>
+          <%= render "mappings/cockpit_toggle", mapping: mapping, layout: layout %>
+        </div>
+        <h2 class="truncate" style="font-size: 1.15rem; margin-block-start: var(--space-xs)"><%= mapping.source_name %></h2>
+        <p class="small subtle"><span class="mono"><%= mapping.source_code %></span> · freq <%= number_with_delimiter(mapping.source_frequency) %> · <%= domain_hint %> · <%= source_vocab %></p>
+      </div>
+      <div class="modal__nav">
+        <% if siblings[:position] %><span class="small subtle"><%= siblings[:position] %> / <%= siblings[:total] %></span><% end %>
+        <% if siblings[:prev_id] %>
+          <%= link_to mapping_path(siblings[:prev_id]), data: { turbo_frame: "modal", shortcut: "prev" }, class: "btn btn--icon", aria: { label: "Previous" } do %>
+            <%= lucide_icon "chevron-left", class: "icon" %>
+          <% end %>
+        <% end %>
+        <% if siblings[:next_id] %>
+          <%= link_to mapping_path(siblings[:next_id]), data: { turbo_frame: "modal", shortcut: "next-record" }, class: "btn btn--icon", aria: { label: "Next" } do %>
+            <%= lucide_icon "chevron-right", class: "icon" %>
+          <% end %>
+        <% end %>
+        <button type="button" class="btn btn--icon" data-action="modal#close" aria-label="Close"><%= lucide_icon "x", class: "icon" %></button>
+      </div>
+    </div>
+
+    <div class="modal__body">
+      <div class="cockpit cockpit--<%= layout %>">
+        <% if layout == "hero" %>
+          <%= render "mappings/candidate_search", mapping: mapping %>
+          <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id], hero: true %>
+          <%= render "mappings/cockpit_bar", mapping: mapping, siblings: siblings %>
+        <% else %>
+          <%= render "mappings/cockpit_bar", mapping: mapping, siblings: siblings %>
+          <%= render "mappings/candidate_search", mapping: mapping %>
+          <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id], hero: false %>
+        <% end %>
+      </div>
+
+      <div class="grid grid--halves quiet-section">
+        <details class="details-panel">
+          <summary><%= lucide_icon "history", class: "icon" %> History</summary>
+          <%= render "mappings/history", events: events %>
+        </details>
+        <details class="details-panel">
+          <summary><%= lucide_icon "message-square", class: "icon" %> Comments</summary>
+          <%= render "mappings/comments", mapping: mapping, comments: comments %>
+          <%= render "mappings/comment_form", mapping: mapping, comment: nil %>
+        </details>
+      </div>
+    </div>
+
+    <div class="modal__foot">
+      <div class="row" style="gap: var(--space-md)">
+        <button type="button" class="btn btn--plain" data-action="modal#close">Close</button>
+        <div class="shortcuts" aria-hidden="true">
+          <% [ [ "A", "Approve" ], [ "F", "Flag" ], [ "I", "Invalid" ], [ "N", "Next" ], [ "← →", "Move" ] ].each do |key, label| %>
+            <span class="shortcuts__item"><kbd><%= key %></kbd> <%= label %></span>
+          <% end %>
+        </div>
+      </div>
+      <% if siblings[:next_id] %>
+        <%= link_to mapping_path(siblings[:next_id]), data: { turbo_frame: "modal", shortcut: "next" }, class: "btn btn--primary" do %>
+          Next mapping <%= lucide_icon "chevron-right", class: "icon" %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

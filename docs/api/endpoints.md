@@ -687,17 +687,31 @@ Request:
 {
   "mode": "hybrid_rrf",
   "limit_per_item": 20,
+  "filters": {
+    "domain_id": ["Drug"]
+  },
+  "hybrid": {
+    "rrf_k": 60,
+    "lexical_top_k": 100,
+    "sapbert_top_k": 100
+  },
   "items": [
     {
       "id": "src_001",
+      "source_code": "SRC_TRAMADOL_50_CAP",
       "q": "tramadol 50 mg capsule",
       "filters": {
-        "domain_id": ["Drug"]
+        "vocabulary_id": ["RxNorm"]
       }
     }
   ]
 }
 ```
+
+Batch-level `filters` and `hybrid` options apply to every item. Per-item
+`filters` are merged on top for one source term. `id` is the stable source-term
+identifier Rails uses to attach results back to a mapping; `source_code` is
+optional trace metadata.
 
 Response:
 
@@ -723,11 +737,21 @@ Response:
             "tantivy": 12.83,
             "sapbert": 0.832,
             "rrf": 0.0318
-          }
+          },
+          "component_ranks": {
+            "tantivy": 1,
+            "sapbert": 4
+          },
+          "method": "hybrid_rrf"
         }
       ]
     }
-  ]
+  ],
+  "provenance": {
+    "catalog_artifact_id": "athena-20250827-standard-v1",
+    "model_artifact_id": "sapbert-xlmr-merged-v1",
+    "index_artifact_id": "athena-20250827-hybrid-rrf-v1"
+  }
 }
 ```
 

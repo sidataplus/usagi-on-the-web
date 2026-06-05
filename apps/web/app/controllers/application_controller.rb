@@ -9,6 +9,7 @@ class ApplicationController < ActionController::Base
 
   rescue_from EngineClients::BaseClient::Error, with: :handle_engine_error
   rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
+  rescue_from ActiveRecord::StaleObjectError, with: :handle_stale_object
 
   private
     def set_current_request
@@ -41,7 +42,7 @@ class ApplicationController < ActionController::Base
       respond_to do |format|
         format.turbo_stream do
           flash.now[:alert] = message
-          render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash"), status: :service_unavailable
+          render turbo_stream: turbo_stream.update("flash", partial: "shared/flash"), status: :service_unavailable
         end
         format.html { redirect_back fallback_location: projects_path, alert: message }
       end
@@ -49,5 +50,16 @@ class ApplicationController < ActionController::Base
 
     def handle_not_found
       render "pages/not_found", status: :not_found
+    end
+
+    def handle_stale_object
+      message = "This mapping changed since you opened it. Reopen it and try again."
+      respond_to do |format|
+        format.turbo_stream do
+          flash.now[:alert] = message
+          render turbo_stream: turbo_stream.update("flash", partial: "shared/flash"), status: :conflict
+        end
+        format.html { redirect_back fallback_location: projects_path, alert: message }
+      end
     end
 end

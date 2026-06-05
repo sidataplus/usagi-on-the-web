@@ -465,6 +465,14 @@ final_limit = 20
 
 No raw BM25 + cosine score blending. That road leads to fake precision and hurt feelings.
 
+## `/search/batch` request rule
+
+`/search/batch` accepts the same `mode`, batch-level `filters`, and batch-level
+`hybrid` options as `/search/concepts`, plus an `items` array. Each item must
+include a stable `id` so Rails can attach results back to the source term. An
+optional `source_code` may be sent for traceability. Item-level `filters` are
+merged over batch-level filters for that one query.
+
 ---
 
 # 8. Embedding with Candle

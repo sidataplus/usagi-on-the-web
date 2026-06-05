@@ -17,6 +17,8 @@
     :review
   end %>
 
+<%= render "shared/project_nav", project: @project, active: :overview %>
+
 <div class="page-head">
   <div>
     <div class="row">
@@ -24,22 +26,16 @@
       <%= project_status_badge(@project) %>
     </div>
     <p class="page-head__subtitle"><%= @project.description %></p>
+    <p class="subtle small">
+      <%= @project.mapping_domain %> domain
+      <% if @project.source_vocabulary.present? %> · <%= @project.source_vocabulary %><% end %>
+      <% if @project.target_vocabularies.any? %> → <%= @project.target_vocabularies.join(", ") %><% end %>
+      <% if @project.vocabulary_version.present? %> · <%= @project.vocabulary_version %><% end %>
+    </p>
   </div>
   <div class="page-head__actions secondary-actions">
-    <%= link_to manage_project_path(@project), class: "btn" do %>
-      <%= lucide_icon "settings", class: "icon" %> Manage
-    <% end %>
-    <%= link_to new_project_import_path(@project), class: "btn" do %>
-      <%= lucide_icon "upload", class: "icon" %> Import
-    <% end %>
-    <%= link_to project_engine_jobs_path(@project), class: "btn" do %>
-      <%= lucide_icon "activity", class: "icon" %> Jobs
-    <% end %>
     <%= button_to project_auto_map_path(@project), method: :post, class: "btn" do %>
       <%= lucide_icon "sparkles", class: "icon" %> Suggest candidates
-    <% end %>
-    <%= link_to project_mappings_path(@project), class: "btn" do %>
-      <%= lucide_icon "table", class: "icon" %> Review mappings
     <% end %>
   </div>
 </div>

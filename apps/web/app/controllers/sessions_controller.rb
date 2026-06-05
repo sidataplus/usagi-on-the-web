@@ -2,6 +2,7 @@ class SessionsController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[new create]
 
   def new
+    redirect_to projects_path if signed_in?
   end
 
   def create

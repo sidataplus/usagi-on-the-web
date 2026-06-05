@@ -15,6 +15,20 @@ module UiHelper
     "archived" => "neutral"
   }.freeze
 
+  JOB_STATE_TONE = {
+    "queued" => "neutral",
+    "running" => "accent",
+    "succeeded" => "ok",
+    "succeeded_with_errors" => "warn",
+    "failed" => "bad",
+    "cancelled" => "neutral"
+  }.freeze
+
+  # Tone for an engine/export job state badge.
+  def job_state_tone(state)
+    JOB_STATE_TONE.fetch(state.to_s, "neutral")
+  end
+
   def status_badge(mapping)
     tone = STATUS_TONE.fetch(mapping.status, "neutral")
     tag.span mapping.status_label, class: "badge badge--#{tone}"
@@ -36,5 +50,24 @@ module UiHelper
   # Active state for a nav link.
   def nav_link_class(active)
     active ? "nav__link is-active" : "nav__link"
+  end
+
+  # [label, value] role options a manager can assign (every role except owner).
+  def assignable_roles
+    ProjectMember::ROLES.reject { |role| role == "owner" }.map { |role| [ role.humanize, role ] }
+  end
+
+  # Review stats for one project drawn from a preloaded grouped-count hash
+  # ({ [project_id, "APPROVED"] => n, ... }), avoiding per-card COUNT queries.
+  def project_review_stats(counts, project_id)
+    approved = counts.fetch([ project_id, "APPROVED" ], 0)
+    total = counts.select { |(pid, _status), _n| pid == project_id }.values.sum
+    {
+      total: total,
+      approved: approved,
+      flagged: counts.fetch([ project_id, "FLAGGED" ], 0),
+      unchecked: counts.fetch([ project_id, "UNCHECKED" ], 0),
+      completion: total.zero? ? 0 : ((approved.to_f / total) * 100).round
+    }
   end
 end

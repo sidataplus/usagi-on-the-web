@@ -24,10 +24,11 @@ class RunHybridSearchJob < ApplicationJob
         limit_per_item: project.settings.fetch("candidate_limit", 20)
       )
 
-      items_by_source_code = response_items(response).index_by { |item| item.fetch("source_code").to_s }
+      response_provenance = response.is_a?(Hash) ? (response["provenance"] || response[:provenance] || {}) : {}
+      items_by_id = response_items(response).index_by { |item| item.fetch("id").to_s }
 
       mapping_slice.each do |mapping|
-        item = items_by_source_code[mapping.source_code]
+        item = items_by_id[mapping.source_term_id]
         processed += 1
         unless item
           failed_items << {
@@ -41,11 +42,16 @@ class RunHybridSearchJob < ApplicationJob
         end
 
         if item["state"] == "failed" || item["error"].present?
-          failed_items << item.slice("source_code", "q", "error")
+          failed_items << {
+            "id" => item["id"],
+            "source_code" => mapping.source_code,
+            "q" => mapping.source_name,
+            "error" => item["error"]
+          }
           next
         end
 
-        results = Array(item["results"] || item["candidates"]).map { |result| result_from_payload(result) }
+        results = Array(item["results"] || item["candidates"]).map { |result| result_from_payload(result, provenance: response_provenance) }
         Mappings::CandidatePersister.new(mapping: mapping, engine_job: engine_job).persist_results(results)
         mapping.update!(candidate_count: mapping.mapping_candidates.count)
       end
@@ -60,16 +66,24 @@ class RunHybridSearchJob < ApplicationJob
       finished_at: Time.current
     )
   rescue EngineClients::BaseClient::Error => e
-    engine_job&.update!(state: "failed", error: { code: e.code, message: e.message, request_id: e.request_id })
+    failed_count = engine_job ? [engine_job.total.to_i - processed.to_i, 0].max : 0
+    engine_job&.update!(
+      state: "failed",
+      processed: processed.to_i,
+      failed: failed_count,
+      error: { code: e.code, message: e.message, request_id: e.request_id },
+      finished_at: Time.current
+    )
     raise
   end
 
   private
     def batch_item(mapping)
       {
+        id: mapping.source_term_id,
         source_code: mapping.source_code,
         q: mapping.source_name,
-        filters: { domain_id: [mapping.project.mapping_domain] }
+        filters: { domain_id: [mapping.domain_id] }
       }
     end
 
@@ -78,7 +92,7 @@ class RunHybridSearchJob < ApplicationJob
       items.map { |item| item.respond_to?(:with_indifferent_access) ? item.with_indifferent_access : item }
     end
 
-    def result_from_payload(result)
+    def result_from_payload(result, provenance: {})
       return result if result.is_a?(UsagiApi::ConceptResult)
 
       concept = result.fetch("concept")
@@ -99,7 +113,7 @@ class RunHybridSearchJob < ApplicationJob
       ).with(
         scores: scores,
         features: result["features"] || {},
-        provenance: result["provenance"] || {},
+        provenance: result["provenance"] || provenance,
         warnings: result["warnings"] || []
       )
     end

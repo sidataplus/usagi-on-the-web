@@ -136,12 +136,25 @@ curl -fsS \
   -H 'X-API-Key: local-secret' \
   -H 'Content-Type: application/json' \
   -d '{
-    "mode": "lexical_tantivy",
-    "limit_per_item": 5,
-    "items": [{"id": "src_001", "q": "tramadol 50 mg capsule"}]
+    "mode": "hybrid_rrf",
+    "limit_per_item": 20,
+    "filters": {"domain_id": ["Condition"]},
+    "hybrid": {"rrf_k": 60, "lexical_top_k": 100, "sapbert_top_k": 100},
+    "items": [
+      {
+        "id": "src_001",
+        "source_code": "DX001",
+        "q": "type 2 diabetes mellitus",
+        "filters": {"vocabulary_id": ["SNOMED"]}
+      }
+    ]
   }' \
   http://127.0.0.1:8789/search/batch
 ```
+
+Batch-level filters and hybrid options apply to every item; item filters can
+add or override constraints for a single source term. Rails should use the
+returned `id` to attach results back to the source term/mapping.
 
 Explain:
 

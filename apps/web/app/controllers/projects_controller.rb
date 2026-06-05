@@ -10,7 +10,8 @@ class ProjectsController < ApplicationController
     scope = current_user.admin? ? Project.all : current_user.projects
     scope = scope.order(updated_at: :desc)
     @total_pages = [(scope.count.to_f / PER_PAGE).ceil, 1].max
-    @projects = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
+    @projects = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE).to_a
+    @mapping_counts = Mapping.where(project_id: @projects.map(&:id)).group(:project_id, :mapping_status).count
   end
 
   def show
@@ -61,7 +62,7 @@ class ProjectsController < ApplicationController
     def project_params
       params.require(:project).permit(
         :name, :description, :source_vocabulary, :vocabulary_version, :status, :mapping_domain,
-        target_domain_ids: [], target_vocabulary_ids: [], target_vocabularies: []
+        :target_vocabularies, target_domain_ids: [], target_vocabulary_ids: []
       )
     end
 

@@ -13,22 +13,37 @@
 </div>
 
 <% if @projects.any? %>
-  <% next_project = @projects.first %>
+  <% resume_project = @projects.detect { |p| project_review_stats(@mapping_counts, p.id)[:unchecked].positive? } || @projects.first %>
+  <% resume_stats = project_review_stats(@mapping_counts, resume_project.id) %>
+  <% has_work = resume_stats[:unchecked].positive? %>
   <section class="next-action-panel" aria-label="Next project action">
     <div class="next-action-panel__body">
       <div class="eyebrow">Next step</div>
-      <h2 class="next-action-panel__title">Open your latest project</h2>
-      <p class="next-action-panel__copy">
-        Continue from <strong><%= next_project.name %></strong>, updated <%= time_ago_in_words(next_project.updated_at) %> ago.
-      </p>
+      <% if has_work %>
+        <h2 class="next-action-panel__title">Continue reviewing</h2>
+        <p class="next-action-panel__copy">
+          <strong><%= resume_project.name %></strong> has <%= pluralize(resume_stats[:unchecked], "mapping") %> still waiting on a decision.
+        </p>
+      <% else %>
+        <h2 class="next-action-panel__title">Open your latest project</h2>
+        <p class="next-action-panel__copy">
+          Continue from <strong><%= resume_project.name %></strong>, updated <%= time_ago_in_words(resume_project.updated_at) %> ago.
+        </p>
+      <% end %>
       <div class="next-action-panel__meta">
-        <span><%= next_project.approved_count %> of <%= next_project.total_mappings %> approved</span>
-        <span><%= next_project.unchecked_count %> unchecked</span>
+        <span><%= resume_stats[:approved] %> of <%= resume_stats[:total] %> approved</span>
+        <span><%= resume_stats[:unchecked] %> unchecked</span>
       </div>
     </div>
     <div class="next-action-panel__actions">
-      <%= link_to project_path(next_project), class: "btn btn--primary" do %>
-        <%= lucide_icon "folder-open", class: "icon" %> Open project
+      <% if has_work %>
+        <%= link_to project_mappings_path(resume_project, status: "unchecked"), class: "btn btn--primary" do %>
+          <%= lucide_icon "list-checks", class: "icon" %> Review mappings
+        <% end %>
+      <% else %>
+        <%= link_to project_path(resume_project), class: "btn btn--primary" do %>
+          <%= lucide_icon "folder-open", class: "icon" %> Open project
+        <% end %>
       <% end %>
       <%= link_to new_project_path, class: "btn" do %>
         <%= lucide_icon "plus", class: "icon" %> New project
@@ -42,6 +57,7 @@
     </div>
     <div class="grid grid--cards">
     <% @projects.each do |project| %>
+      <% stats = project_review_stats(@mapping_counts, project.id) %>
       <%= link_to project_path(project), class: "box box--link stack-sm" do %>
         <div class="row-between">
           <strong><%= project.name %></strong>
@@ -51,15 +67,15 @@
 
         <div>
           <div class="meter__label">
-            <span><%= project.approved_count %> of <%= project.total_mappings %> approved</span>
-            <span><%= project.completion_percentage %>%</span>
+            <span><%= stats[:approved] %> of <%= stats[:total] %> approved</span>
+            <span><%= stats[:completion] %>%</span>
           </div>
-          <div class="meter"><div class="meter__fill" style="inline-size: <%= project.completion_percentage %>%"></div></div>
+          <div class="meter"><div class="meter__fill" style="inline-size: <%= stats[:completion] %>%"></div></div>
         </div>
 
         <div class="row small subtle" style="gap: var(--space)">
-          <span class="row" style="gap: var(--space-xs)"><%= lucide_icon "flag", class: "icon" %> <%= project.flagged_count %></span>
-          <span class="row" style="gap: var(--space-xs)"><%= lucide_icon "building-2", class: "icon" %> <%= project.source_vocabulary %></span>
+          <span class="row" style="gap: var(--space-xs)" aria-label="<%= pluralize(stats[:flagged], "flagged mapping") %>"><%= lucide_icon "flag", class: "icon" %> <%= stats[:flagged] %></span>
+          <span class="row" style="gap: var(--space-xs)" aria-label="Source vocabulary <%= project.source_vocabulary %>"><%= lucide_icon "building-2", class: "icon" %> <%= project.source_vocabulary %></span>
           <span class="spacer"><%= time_ago_in_words(project.updated_at) %> ago</span>
         </div>
       <% end %>
