@@ -39,7 +39,76 @@ def seed_demo_project!(owner:, include_reviewer: true)
     end
   end
 
+  augmentin_mapping = project.mappings.joins(:source_term)
+                             .find_by!(source_terms: { source_code: "SRC_AUGMENTIN_875_125" })
+  seed_augmentin_candidates!(project: project, mapping: augmentin_mapping)
+
   project
+end
+
+def seed_augmentin_candidates!(project:, mapping:)
+  candidate_set_id = "candset_demo_augmentin_875_125"
+  provenance = {
+    model: "sidataplus/THIRAWAT-SapBERT",
+    index: "/data/mapper/thirawat-drug/tachiom/manifest.json",
+    fixture: "augmentin-875-125-demo"
+  }
+
+  [
+    {
+      rank: 1,
+      concept_id: 123456,
+      concept_name: "amoxicillin 875 MG / clavulanate 125 MG Oral Tablet",
+      concept_code: "fixture-augmentin-875-125",
+      final_score: 1.0,
+      bimaxsim_score: 1.0,
+      tachiom_maxsim_score: 0.99,
+      features: { strength_exact: true, ingredients_exact: true, dose_form_exact: true }
+    },
+    {
+      rank: 2,
+      concept_id: 123458,
+      concept_name: "amoxicillin 875 MG Oral Tablet",
+      concept_code: "fixture-amoxicillin-875",
+      final_score: 0.99,
+      bimaxsim_score: 0.76,
+      tachiom_maxsim_score: 0.94,
+      features: { strength_exact: true, ingredients_exact: false, dose_form_exact: true },
+      warnings: ["Missing clavulanate component"]
+    },
+    {
+      rank: 3,
+      concept_id: 123457,
+      concept_name: "amoxicillin 500 MG / clavulanate 125 MG Oral Tablet",
+      concept_code: "fixture-augmentin-500-125",
+      final_score: 0.85,
+      bimaxsim_score: 0.73,
+      tachiom_maxsim_score: 0.92,
+      features: { strength_exact: false, ingredients_exact: true, dose_form_exact: true },
+      warnings: ["Amoxicillin strength differs from source"]
+    }
+  ].each do |attributes|
+    candidate = mapping.mapping_candidates.find_or_initialize_by(
+      concept_id: attributes.fetch(:concept_id),
+      method: "thirawat_tachiom_bimaxsim_tiebreak"
+    )
+    candidate.assign_attributes(
+      attributes.merge(
+        project: project,
+        source_term: mapping.source_term,
+        candidate_set_id: candidate_set_id,
+        domain_id: "Drug",
+        vocabulary_id: "RxNorm",
+        concept_class_id: "Clinical Drug",
+        standard_concept: "S",
+        provenance: provenance.merge(rank: attributes.fetch(:rank)),
+        selected: false
+      )
+    )
+    candidate.save!
+  end
+
+  mapping.update!(candidate_count: mapping.mapping_candidates.count)
 end
 
 if LocalDeployAuth.enabled?

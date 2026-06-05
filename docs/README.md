@@ -19,6 +19,7 @@ docs/manual/api/00-deployment.md
 docs/manual/api/05-artifact-builds.md
 docs/manual/web/03-verification.md
 docs/manual/web/04-deployment.md
+docs/manual/web/05-demo-script.md
 infra/aws/README.md
 infra/modal/README.md
 ```
@@ -34,7 +35,8 @@ infra/modal/README.md
 7. `docs/security/rails-api-boundary.md`
 8. `docs/testing/contract-fixtures.md`
 9. `docs/manual/web/04-deployment.md`
-10. `docs/manual/api/05-artifact-builds.md`
+10. `docs/manual/web/05-demo-script.md`
+11. `docs/manual/api/05-artifact-builds.md`
 
 ## Core rule
 

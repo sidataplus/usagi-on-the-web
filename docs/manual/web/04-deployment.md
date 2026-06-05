@@ -61,6 +61,9 @@ single passwordless reviewer account (`local@usagi.test`) and seeds one demo
 project on first boot. Do not enable this flag on internet-facing production
 hosts.
 
+For the presenter walkthrough, expected candidate ranking, export checkpoint,
+and reset command, see `docs/manual/web/05-demo-script.md`.
+
 Stop the stack:
 
 ```bash
