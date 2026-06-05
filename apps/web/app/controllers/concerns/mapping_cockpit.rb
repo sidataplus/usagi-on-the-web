@@ -19,20 +19,13 @@ module MappingCockpit
       navigation_for(mapping)[:next_id]
     end
 
-    COCKPIT_LAYOUTS = %w[bar hero].freeze
-
-    def cockpit_layout
-      current_user.prefs["cockpit_layout"].presence_in(COCKPIT_LAYOUTS) || "bar"
-    end
-
     def cockpit_locals(mapping)
       {
         mapping: mapping,
         siblings: navigation_for(mapping),
         candidates: mapping.persisted_candidates,
         events: mapping.project.audit_events.where(subject: mapping).recent_first,
-        comments: mapping.comments.includes(:user).chronological,
-        layout: cockpit_layout
+        comments: mapping.comments.includes(:user).chronological
       }
     end
 

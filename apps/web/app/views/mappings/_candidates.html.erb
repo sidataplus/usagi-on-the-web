@@ -1,104 +1,120 @@
-<%# locals: mapping, candidates (Array<UsagiApi::ConceptResult>), next_id (optional), hero (optional) %>
-<% hero = local_assigns[:hero] %>
-<div class="candidate-list">
-  <% candidates.each_with_index do |candidate, index| %>
-    <% featured = hero && index.zero? %>
-    <% scores = {
-      "Final" => candidate.respond_to?(:final_score) ? candidate.final_score : candidate.score,
-      "BiMaxSim" => candidate.respond_to?(:bimaxsim_score) ? candidate.bimaxsim_score : nil,
-      "Tachiom" => candidate.respond_to?(:tachiom_maxsim_score) ? candidate.tachiom_maxsim_score : nil,
-      "SapBERT" => candidate.respond_to?(:sapbert_score) ? candidate.sapbert_score : nil,
-      "Tantivy" => candidate.respond_to?(:tantivy_score) ? candidate.tantivy_score : nil,
-      "RRF" => candidate.respond_to?(:rrf_score) ? candidate.rrf_score : nil
-    }.compact %>
-    <% features = candidate.respond_to?(:features) ? candidate.features : {} %>
-    <% provenance = candidate.respond_to?(:provenance) ? candidate.provenance : {} %>
-    <% warnings = candidate.respond_to?(:warnings) ? Array(candidate.warnings) : [] %>
-    <% persisted = candidate.respond_to?(:persisted?) && candidate.persisted? %>
+<%# locals: mapping, candidates (Array<MappingCandidate | UsagiApi::ConceptResult>),
+    next_id (optional). Renders the ranked candidate table. Persisted candidates
+    apply via the candidate endpoint; transient search results patch the mapping. %>
+<% next_id = local_assigns[:next_id] %>
+<% if candidates.empty? %>
+  <p class="suggest__empty subtle small">
+    <%= lucide_icon "scan-search", class: "icon" %>
+    No candidates yet. Search OMOP concepts above, or run suggestions from the review screen.
+  </p>
+<% else %>
+  <div class="cand-table-wrap">
+    <table class="cand-table">
+      <thead>
+        <tr>
+          <th class="cand-table__rank" scope="col">#</th>
+          <th scope="col">Concept</th>
+          <th class="cand-table__id" scope="col">Concept ID</th>
+          <th class="cand-table__match" scope="col">Match</th>
+          <th class="cand-table__act" scope="col"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% candidates.each_with_index do |candidate, index| %>
+          <% scores = {
+            "Final" => candidate.respond_to?(:final_score) ? candidate.final_score : candidate.score,
+            "BiMaxSim" => candidate.respond_to?(:bimaxsim_score) ? candidate.bimaxsim_score : nil,
+            "Tachiom" => candidate.respond_to?(:tachiom_maxsim_score) ? candidate.tachiom_maxsim_score : nil,
+            "SapBERT" => candidate.respond_to?(:sapbert_score) ? candidate.sapbert_score : nil,
+            "Tantivy" => candidate.respond_to?(:tantivy_score) ? candidate.tantivy_score : nil,
+            "RRF" => candidate.respond_to?(:rrf_score) ? candidate.rrf_score : nil
+          }.compact %>
+          <% features = candidate.respond_to?(:features) ? candidate.features : {} %>
+          <% provenance = candidate.respond_to?(:provenance) ? candidate.provenance : {} %>
+          <% warnings = candidate.respond_to?(:warnings) ? Array(candidate.warnings) : [] %>
+          <% persisted = candidate.respond_to?(:persisted?) && candidate.persisted? %>
+          <% selected = candidate.respond_to?(:selected?) && candidate.selected? %>
+          <% has_why = scores.any? || features.present? || provenance.present? || warnings.any? || candidate.method.present? %>
 
-    <article class="candidate-card <%= "candidate-card--hero" if featured %> <%= "is-selected" if candidate.respond_to?(:selected?) && candidate.selected? %>">
-      <div class="candidate-card__main">
-        <div class="row-between">
-          <div>
-            <div class="candidate-card__rank"><%= featured ? "Best match" : "Rank #{candidate.rank}" %></div>
-            <h4><%= candidate.concept_name %></h4>
-          </div>
-          <%= score_badge(candidate.score) %>
-        </div>
-        <div class="candidate-card__meta">
-          <span><%= candidate.vocabulary_id %></span>
-          <span><%= candidate.domain_id %></span>
-          <% if candidate.respond_to?(:concept_class_id) && candidate.concept_class_id.present? %><span><%= candidate.concept_class_id %></span><% end %>
-          <% if candidate.respond_to?(:standard_concept) && candidate.standard_concept.present? %><span>Standard <%= candidate.standard_concept %></span><% end %>
-          <span>#<%= candidate.concept_id %></span>
-          <% if candidate.respond_to?(:concept_code) && candidate.concept_code.present? %><span class="mono"><%= candidate.concept_code %></span><% end %>
-        </div>
+          <tr class="cand <%= "is-selected" if selected %>">
+            <td class="cand__rank" data-label="Rank"><span class="cand__ord"><%= candidate.rank || index + 1 %></span></td>
 
-        <details class="candidate-card__why" <%= "open" if featured && warnings.any? %>>
-          <summary>Why this candidate</summary>
-          <div class="candidate-evidence">
-            <% scores.each do |label, value| %>
-              <span><strong><%= label %> <%= format("%.2f", value.to_f) %></strong></span>
-            <% end %>
-            <% if candidate.method.present? %><span><strong>Method</strong> <%= candidate.method %></span><% end %>
-          </div>
-          <% if features.present? %>
-            <div class="candidate-facts">
-              <span class="candidate-facts__label">Features</span>
-              <% features.each do |key, value| %>
-                <span class="candidate-facts__item"><strong><%= key.to_s.humanize %></strong> <%= value %></span>
+            <td class="cand__concept" data-label="Concept">
+              <div class="cand__name">
+                <%= candidate.concept_name %>
+                <% if selected %><span class="cand__chosen"><%= lucide_icon "circle-check", class: "icon icon--sm" %> Chosen</span><% end %>
+              </div>
+              <div class="cand__meta">
+                <% if candidate.vocabulary_id.present? %><span class="tag"><%= candidate.vocabulary_id %></span><% end %>
+                <% if candidate.respond_to?(:concept_class_id) && candidate.concept_class_id.present? %><span><%= candidate.concept_class_id %></span><% end %>
+                <% if candidate.respond_to?(:standard_concept) && candidate.standard_concept.present? %><span>Standard <%= candidate.standard_concept %></span><% end %>
+                <% if candidate.domain_id.present? %><span><%= candidate.domain_id %></span><% end %>
+                <% if candidate.respond_to?(:concept_code) && candidate.concept_code.present? %><span class="mono"><%= candidate.concept_code %></span><% end %>
+              </div>
+              <% if warnings.any? %>
+                <p class="cand__warn"><%= lucide_icon "triangle-alert", class: "icon icon--sm" %> <%= warnings.to_sentence %></p>
               <% end %>
-            </div>
-          <% end %>
-          <% if provenance.present? %>
-            <div class="candidate-facts">
-              <span class="candidate-facts__label">Provenance</span>
-              <% provenance.each do |key, value| %>
-                <span class="candidate-facts__item"><strong><%= key.to_s.humanize %></strong> <%= value %></span>
+              <% if has_why %>
+                <details class="candidate-why">
+                  <summary><%= lucide_icon "lightbulb", class: "icon icon--sm" %> Why this candidate</summary>
+                  <div class="candidate-why__body">
+                    <div class="candidate-evidence">
+                      <% scores.each do |label, value| %>
+                        <span class="evi"><strong><%= label %> <%= format("%.2f", value.to_f) %></strong></span>
+                      <% end %>
+                      <% if candidate.method.present? %><span class="evi"><strong>Method</strong> <%= candidate.method %></span><% end %>
+                    </div>
+                    <% if features.present? %>
+                      <div class="candidate-facts">
+                        <span class="candidate-facts__label">Features</span>
+                        <% features.each do |key, value| %>
+                          <span class="candidate-facts__item"><strong><%= key.to_s.humanize %></strong> <%= value %></span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <% if provenance.present? %>
+                      <div class="candidate-facts">
+                        <span class="candidate-facts__label">Provenance</span>
+                        <% provenance.each do |key, value| %>
+                          <span class="candidate-facts__item"><strong><%= key.to_s.humanize %></strong> <%= value %></span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                </details>
               <% end %>
-            </div>
-          <% end %>
-          <% if warnings.any? %>
-            <div class="candidate-warning">
-              <%= lucide_icon "triangle-alert", class: "icon icon--sm" %>
-              <span><%= warnings.join(", ") %></span>
-            </div>
-          <% end %>
-        </details>
-      </div>
+            </td>
 
-      <div class="candidate-card__actions">
-        <% if persisted %>
-          <% if featured %>
-            <%= button_to mapping_candidate_path(candidate, **{ approve: 1 }.merge(local_assigns[:next_id].present? ? { next: 1 } : {})),
-                  method: :patch, class: "btn btn--primary btn--sm" do %>
-              <%= lucide_icon "circle-check", class: "icon" %> Use and approve
-            <% end %>
-          <% end %>
-          <%= button_to mapping_candidate_path(candidate), method: :patch, class: "btn btn--sm" do %>
-            <%= lucide_icon "target", class: "icon" %> Use
-          <% end %>
-          <% if local_assigns[:next_id].present? && !featured %>
-            <%= button_to mapping_candidate_path(candidate, next: 1), method: :patch, class: "btn btn--sm" do %>
-              Use and next <%= lucide_icon "chevron-right", class: "icon" %>
-            <% end %>
-          <% end %>
-        <% else %>
-          <%= button_to mapping_path(mapping), method: :patch,
-                params: { mapping: {
-                  equivalence: "Equivalent",
-                  concept_id: candidate.concept_id, concept_name: candidate.concept_name,
-                  domain_id: candidate.domain_id, vocabulary_id: candidate.vocabulary_id,
-                  concept_class_id: candidate.concept_class_id, standard_concept: candidate.standard_concept,
-                  concept_code: candidate.concept_code } },
-                class: "btn btn--sm" do %>
-            <%= lucide_icon "target", class: "icon" %> Use
-          <% end %>
+            <td class="cand__id" data-label="Concept ID"><span class="mono">#<%= candidate.concept_id %></span></td>
+            <td class="cand__match" data-label="Match"><%= score_bar(candidate.score) %></td>
+
+            <td class="cand__act" data-label="Action">
+              <% if persisted %>
+                <%= button_to mapping_candidate_path(candidate), method: :patch,
+                      class: "btn btn--sm #{"btn--primary" if index.zero?}" do %>
+                  <%= lucide_icon "target", class: "icon" %> Use
+                <% end %>
+                <% if next_id.present? %>
+                  <%= button_to mapping_candidate_path(candidate, next: 1), method: :patch, class: "btn btn--sm btn--ghost" do %>
+                    Use and next <%= lucide_icon "chevron-right", class: "icon" %>
+                  <% end %>
+                <% end %>
+              <% else %>
+                <%= button_to mapping_path(mapping), method: :patch,
+                      params: { mapping: {
+                        equivalence: "Equivalent",
+                        concept_id: candidate.concept_id, concept_name: candidate.concept_name,
+                        domain_id: candidate.domain_id, vocabulary_id: candidate.vocabulary_id,
+                        concept_class_id: candidate.concept_class_id, standard_concept: candidate.standard_concept,
+                        concept_code: candidate.concept_code } },
+                      class: "btn btn--sm #{"btn--primary" if index.zero?}" do %>
+                  <%= lucide_icon "target", class: "icon" %> Use
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
         <% end %>
-      </div>
-    </article>
-  <% end %>
-  <% if candidates.empty? %>
-    <p class="subtle small">No candidates yet. Run suggestions or search manually above.</p>
-  <% end %>
-</div>
+      </tbody>
+    </table>
+  </div>
+<% end %>

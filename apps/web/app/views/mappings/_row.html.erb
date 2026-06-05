@@ -24,7 +24,7 @@
     </div>
   </td>
   <td class="num subtle" data-label="Freq"><%= number_with_delimiter(mapping.source_frequency) %></td>
-  <td data-label="Score"><%= score_badge(mapping.match_score) %></td>
+  <td data-label="Score"><%= score_bar(mapping.match_score) %></td>
   <td data-label="Status"><%= status_badge(mapping) %></td>
   <td class="num" data-label="Actions">
     <div class="menu" data-controller="dropdown">

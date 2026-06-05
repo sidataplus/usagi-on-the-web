@@ -31,20 +31,48 @@ module UiHelper
 
   def status_badge(mapping)
     tone = STATUS_TONE.fetch(mapping.status, "neutral")
-    tag.span mapping.status_label, class: "badge badge--#{tone}"
+    dot_badge(mapping.status_label, tone)
   end
 
   def project_status_badge(project)
     tone = PROJECT_TONE.fetch(project.status, "neutral")
-    tag.span project.status_label, class: "badge badge--#{tone}"
+    dot_badge(project.status_label, tone)
+  end
+
+  # Confidence band (high/medium/low) for a 0..1 match score.
+  def score_tone(score)
+    return "neutral" if score.nil?
+
+    score >= 0.8 ? "ok" : (score >= 0.5 ? "warn" : "bad")
   end
 
   # Match score as a percentage chip, coloured by confidence band.
   def score_badge(score)
     return tag.span("—", class: "subtle small") if score.nil?
 
-    tone = if score >= 0.8 then "ok" elsif score >= 0.5 then "warn" else "bad" end
-    tag.span "#{(score * 100).round}%", class: "badge badge--#{tone}"
+    tag.span "#{(score * 100).round}%", class: "badge badge--#{score_tone(score)}"
+  end
+
+  # The "Bar" readout: a number paired with a confidence meter that fills to the
+  # score and is tinted by band. The single visualisation used everywhere a
+  # match score appears (review table, cockpit candidate table, command lane).
+  def score_bar(score)
+    return tag.span("—", class: "subtle small") if score.nil?
+
+    pct = (score.to_f * 100).round.clamp(0, 100)
+    tag.div class: "scorebar scorebar--#{score_tone(score)}", role: "img", aria: { label: "Match score #{pct}%" } do
+      safe_join([
+        tag.span(safe_join([ pct.to_s, tag.span("%", class: "scorebar__pct") ]), class: "scorebar__num"),
+        tag.span(tag.span("", class: "scorebar__fill", style: "inline-size: #{pct}%"), class: "scorebar__track")
+      ])
+    end
+  end
+
+  # A status pill with a leading semaphore dot (currentColor).
+  def dot_badge(label, tone)
+    tag.span class: "badge badge--#{tone}" do
+      safe_join([ tag.span("", class: "badge__dot", aria: { hidden: "true" }), label ])
+    end
   end
 
   # Active state for a nav link.

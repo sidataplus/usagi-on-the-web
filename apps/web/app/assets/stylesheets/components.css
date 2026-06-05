@@ -142,6 +142,10 @@ summary:focus-visible {
 .btn--plain { border-color: transparent; background: transparent; }
 .btn--plain:hover { background: var(--color-sunken); }
 
+/* Quiet secondary action — reads as a link until hovered. */
+.btn--ghost { border-color: transparent; background: transparent; color: var(--color-text-subtle); font-weight: 600; }
+.btn--ghost:hover { background: var(--color-sunken); color: var(--color-text); }
+
 .btn--danger { color: var(--color-bad); }
 
 .btn--icon {
@@ -300,8 +304,22 @@ summary:focus-visible {
   margin-block-start: var(--space);
 }
 .details-panel > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
   cursor: pointer;
   font-weight: 700;
+}
+.details-panel__count {
+  margin-inline-start: auto;
+  min-inline-size: 1.4rem;
+  padding: 0 0.4em;
+  border-radius: var(--radius-pill);
+  background: var(--color-sunken);
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
 }
 .details-panel > summary::marker {
   color: var(--color-text-subtle);
@@ -327,6 +345,8 @@ summary:focus-visible {
 .badge--warn { background: color-mix(in oklch, var(--color-warn) 18%, var(--color-bg)); color: color-mix(in oklch, var(--color-warn) 58%, var(--color-text)); }
 .badge--bad  { background: color-mix(in oklch, var(--color-bad) 15%, var(--color-bg));  color: color-mix(in oklch, var(--color-bad) 66%, var(--color-text)); }
 .badge--accent { background: color-mix(in oklch, var(--color-accent) 16%, var(--color-bg)); color: var(--color-accent-ink); }
+/* Semaphore dot for status pills — inherits the badge's text colour. */
+.badge__dot { inline-size: 0.5em; block-size: 0.5em; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
 /* ---- Fields ------------------------------------------------------------- */
 .field { display: block; }
@@ -348,6 +368,9 @@ summary:focus-visible {
   box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-accent) 25%, transparent);
 }
 .textarea { resize: vertical; }
+
+/* Compact select for inline console controls. */
+.select--sm { inline-size: auto; padding: 0.35em 1.8em 0.35em 0.55em; font-size: 0.85rem; }
 
 .search {
   position: relative;
@@ -385,7 +408,7 @@ summary:focus-visible {
 .table tbody tr:hover { background: color-mix(in oklch, var(--color-accent) 5%, transparent); }
 .table a:hover th, .table th a:hover { color: var(--color-text); }
 .num { text-align: end; font-variant-numeric: tabular-nums; }
-.mono { font-family: var(--font-mono); font-size: 0.85em; color: var(--color-text-subtle); }
+.mono { font-family: var(--font-mono); font-size: 0.82em; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: var(--color-text-subtle); }
 
 @media (max-width: 48rem) {
   .table,

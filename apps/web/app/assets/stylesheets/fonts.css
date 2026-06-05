@@ -1,0 +1,22 @@
+/*
+ * Self-hosted variable fonts (no external CDN, works offline / air-gapped).
+ * Both are SIL Open Font Licensed — see app/assets/fonts/LICENSE-*.txt.
+ *   Hanken Grotesk — humanist grotesque, the product UI face.
+ *   Geist Mono     — tabular monospace for data: codes, ids, scores.
+ * Propshaft fingerprints the woff2 and rewrites these url()s at compile time.
+ */
+@font-face {
+  font-family: "Hanken Grotesk";
+  src: url("HankenGrotesk-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

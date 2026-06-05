@@ -1,62 +1,70 @@
-<%# locals: mapping, siblings, candidates, events, comments, layout. Rendered inside
-    the top-level #modal turbo-frame, and re-rendered into it when advancing. %>
+<%# locals: mapping, siblings, candidates, events, comments. Rendered inside the
+    top-level #modal turbo-frame, and re-rendered into it when advancing. The
+    cockpit has a single layout — a decision console over a candidate table. %>
 <% domain_hint = mapping.source_term&.source_domain_hint.presence || mapping.project.mapping_domain %>
 <% source_vocab = mapping.source_term&.source_vocabulary.presence || mapping.project.source_vocabulary %>
+<% position = siblings[:position] %>
 <div class="modal" data-controller="modal" data-action="click->modal#backdrop">
-  <div class="modal__dialog modal__dialog--review" data-keyboard-scope role="dialog" aria-modal="true" aria-label="Review <%= mapping.source_name %>">
+  <div class="modal__dialog modal__dialog--review cockpit-dialog" data-keyboard-scope role="dialog" aria-modal="true" aria-label="Review <%= mapping.source_name %>">
 
-    <div class="modal__head">
-      <div class="truncate">
-        <div class="row" style="gap: var(--space-sm)">
-          <span class="small subtle">Review cockpit</span>
-          <%= render "mappings/cockpit_toggle", mapping: mapping, layout: layout %>
+    <header class="cockpit-head">
+      <div class="cockpit-head__main truncate">
+        <span class="cockpit-head__eyebrow"><%= lucide_icon "crosshair", class: "icon icon--sm" %> Review cockpit</span>
+        <h2 class="cockpit-head__title truncate"><%= mapping.source_name %></h2>
+        <div class="cockpit-head__meta">
+          <span class="mono"><%= mapping.source_code %></span>
+          <span class="cockpit-head__sep">freq <%= number_with_delimiter(mapping.source_frequency) %></span>
+          <span class="tag"><%= domain_hint %></span>
+          <span class="tag"><%= source_vocab %></span>
         </div>
-        <h2 class="truncate" style="font-size: 1.15rem; margin-block-start: var(--space-xs)"><%= mapping.source_name %></h2>
-        <p class="small subtle"><span class="mono"><%= mapping.source_code %></span> · freq <%= number_with_delimiter(mapping.source_frequency) %> · <%= domain_hint %> · <%= source_vocab %></p>
       </div>
-      <div class="modal__nav">
-        <% if siblings[:position] %><span class="small subtle"><%= siblings[:position] %> / <%= siblings[:total] %></span><% end %>
-        <% if siblings[:prev_id] %>
-          <%= link_to mapping_path(siblings[:prev_id]), data: { turbo_frame: "modal", shortcut: "prev" }, class: "btn btn--icon", aria: { label: "Previous" } do %>
-            <%= lucide_icon "chevron-left", class: "icon" %>
-          <% end %>
+      <div class="cockpit-head__nav">
+        <% if position %>
+          <span class="cockpit-head__counter"><span class="mono"><%= position %></span><span class="subtle">/ <%= siblings[:total] %></span></span>
         <% end %>
-        <% if siblings[:next_id] %>
-          <%= link_to mapping_path(siblings[:next_id]), data: { turbo_frame: "modal", shortcut: "next-record" }, class: "btn btn--icon", aria: { label: "Next" } do %>
-            <%= lucide_icon "chevron-right", class: "icon" %>
+        <div class="modal__nav">
+          <% if siblings[:prev_id] %>
+            <%= link_to mapping_path(siblings[:prev_id]), data: { turbo_frame: "modal", shortcut: "prev" }, class: "btn btn--icon", aria: { label: "Previous" } do %>
+              <%= lucide_icon "chevron-left", class: "icon" %>
+            <% end %>
           <% end %>
-        <% end %>
-        <button type="button" class="btn btn--icon" data-action="modal#close" aria-label="Close"><%= lucide_icon "x", class: "icon" %></button>
+          <% if siblings[:next_id] %>
+            <%= link_to mapping_path(siblings[:next_id]), data: { turbo_frame: "modal", shortcut: "next-record" }, class: "btn btn--icon", aria: { label: "Next" } do %>
+              <%= lucide_icon "chevron-right", class: "icon" %>
+            <% end %>
+          <% end %>
+          <button type="button" class="btn btn--icon" data-action="modal#close" aria-label="Close"><%= lucide_icon "x", class: "icon" %></button>
+        </div>
       </div>
-    </div>
+      <% if position && siblings[:total].to_i > 1 %>
+        <div class="cockpit-head__rail" role="presentation">
+          <span class="cockpit-head__rail-fill" style="inline-size: <%= (position.to_f / siblings[:total] * 100).round %>%"></span>
+        </div>
+      <% end %>
+    </header>
 
-    <div class="modal__body">
-      <div class="cockpit cockpit--<%= layout %>">
-        <% if layout == "hero" %>
-          <%= render "mappings/candidate_search", mapping: mapping %>
-          <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id], hero: true %>
-          <%= render "mappings/cockpit_bar", mapping: mapping, siblings: siblings %>
-        <% else %>
-          <%= render "mappings/cockpit_bar", mapping: mapping, siblings: siblings %>
-          <%= render "mappings/candidate_search", mapping: mapping %>
-          <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id], hero: false %>
-        <% end %>
-      </div>
+    <div class="modal__body cockpit-body">
+      <%= render "mappings/cockpit_bar", mapping: mapping, siblings: siblings %>
+
+      <section class="suggest" aria-label="Candidate suggestions">
+        <%= render "mappings/candidate_search", mapping: mapping %>
+        <%= render "mappings/candidate_panel", mapping: mapping, candidates: candidates, next_id: siblings[:next_id] %>
+      </section>
 
       <div class="grid grid--halves quiet-section">
         <details class="details-panel">
-          <summary><%= lucide_icon "history", class: "icon" %> History</summary>
+          <summary><%= lucide_icon "history", class: "icon" %> Activity <span class="details-panel__count"><%= events.size %></span></summary>
           <%= render "mappings/history", events: events %>
         </details>
         <details class="details-panel">
-          <summary><%= lucide_icon "message-square", class: "icon" %> Comments</summary>
+          <summary><%= lucide_icon "message-square", class: "icon" %> Discussion <span class="details-panel__count"><%= comments.size %></span></summary>
           <%= render "mappings/comments", mapping: mapping, comments: comments %>
           <%= render "mappings/comment_form", mapping: mapping, comment: nil %>
         </details>
       </div>
     </div>
 
-    <div class="modal__foot">
+    <footer class="modal__foot">
       <div class="row" style="gap: var(--space-md)">
         <button type="button" class="btn btn--plain" data-action="modal#close">Close</button>
         <div class="shortcuts" aria-hidden="true">
@@ -70,6 +78,6 @@
           Next mapping <%= lucide_icon "chevron-right", class: "icon" %>
         <% end %>
       <% end %>
-    </div>
+    </footer>
   </div>
 </div>

@@ -1,24 +1,33 @@
-<%# locals: mapping, siblings — the decision strip (target + status + equivalence + actions). %>
+<%# locals: mapping, siblings — the decision console: target readout on the left,
+    state + decision actions on the right. The "Bar" is the one cockpit layout. %>
 <section class="cockpit-bar" aria-label="Current decision">
   <div class="cockpit-bar__target truncate">
-    <span class="eyebrow">Target</span>
+    <span class="eyebrow"><%= lucide_icon "target", class: "icon icon--sm" %> Mapped target</span>
     <% if mapping.mapped? %>
-      <strong class="truncate"><%= mapping.concept_name %></strong>
-      <span class="small subtle"><%= mapping.vocabulary_id %> · #<%= mapping.concept_id %></span>
+      <strong class="cockpit-bar__concept truncate"><%= mapping.concept_name %></strong>
+      <span class="cockpit-bar__coords">
+        <% if mapping.vocabulary_id.present? %><span class="tag"><%= mapping.vocabulary_id %></span><% end %>
+        <% if mapping.concept_class_id.present? %><span class="tag tag--quiet"><%= mapping.concept_class_id %></span><% end %>
+        <span class="mono">#<%= mapping.concept_id %></span>
+        <% if mapping.concept_code.present? %><span class="mono"><%= mapping.concept_code %></span><% end %>
+      </span>
     <% else %>
-      <span class="subtle">No target yet — pick a candidate below.</span>
+      <span class="cockpit-bar__empty"><%= lucide_icon "scan-search", class: "icon icon--sm" %> No target yet — choose a candidate below.</span>
     <% end %>
   </div>
 
-  <%= status_badge(mapping) %>
+  <div class="cockpit-bar__controls">
+    <div class="cockpit-bar__state">
+      <%= status_badge(mapping) %>
+      <%= form_with model: mapping, url: mapping_path(mapping), method: :patch, class: "cockpit-bar__equivalence" do |f| %>
+        <%= f.label :equivalence, "Equivalence", class: "sr-only" %>
+        <%= f.select :equivalence, Mapping::EQUIVALENCE_LABELS.map { |k, v| [ v, k ] }, { include_blank: "Equivalence" }, class: "select select--sm" %>
+        <%= f.submit "Save", class: "btn btn--sm" %>
+      <% end %>
+    </div>
 
-  <%= form_with model: mapping, url: mapping_path(mapping), method: :patch, class: "cockpit-bar__equivalence" do |f| %>
-    <%= f.label :equivalence, "Equivalence", class: "sr-only" %>
-    <%= f.select :equivalence, Mapping::EQUIVALENCE_LABELS.map { |k, v| [ v, k ] }, { include_blank: "Equivalence" }, class: "select", style: "inline-size: auto" %>
-    <%= f.submit "Save", class: "btn btn--sm" %>
-  <% end %>
-
-  <div class="cockpit-bar__actions">
-    <%= render "mappings/decision_actions", mapping: mapping, siblings: siblings %>
+    <div class="cockpit-bar__actions">
+      <%= render "mappings/decision_actions", mapping: mapping, siblings: siblings %>
+    </div>
   </div>
 </section>

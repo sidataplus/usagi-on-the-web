@@ -1,19 +1,19 @@
-<%# locals: mapping, siblings — status decision buttons shared by both cockpit layouts. %>
+<%# locals: mapping, siblings — status decision buttons for the cockpit console. %>
 <%= button_to mapping_path(mapping), method: :patch, params: { mapping: { status: "approved" } },
       data: { shortcut: "approve" },
       disabled: !mapping.approvable?,
       title: ("Pick a target concept before approving" unless mapping.approvable?),
-      class: "btn btn--sm #{"is-active" if mapping.approved?}" do %>
+      class: "btn btn--sm decide decide--approve #{"is-active" if mapping.approved?}" do %>
   <%= lucide_icon "circle-check", class: "icon" %> Approve
 <% end %>
 <%= button_to mapping_path(mapping), method: :patch, params: { mapping: { status: "flagged" } },
       data: { shortcut: "flag" },
-      class: "btn btn--sm #{"is-active" if mapping.flagged?}" do %>
+      class: "btn btn--sm decide decide--flag #{"is-active" if mapping.flagged?}" do %>
   <%= lucide_icon "flag", class: "icon" %> Flag
 <% end %>
 <%= button_to mapping_path(mapping), method: :patch, params: { mapping: { status: "invalid_status" } },
       data: { shortcut: "invalid" },
-      class: "btn btn--sm #{"is-active" if mapping.invalid_status?}" do %>
+      class: "btn btn--sm decide decide--invalid #{"is-active" if mapping.invalid_status?}" do %>
   <%= lucide_icon "circle-x", class: "icon" %> Invalid
 <% end %>
 <% if siblings[:next_id] %>
@@ -21,7 +21,7 @@
         data: { shortcut: "approve-next" },
         disabled: !mapping.approvable?,
         title: ("Pick a target concept before approving" unless mapping.approvable?),
-        class: "btn btn--primary btn--sm" do %>
+        class: "btn btn--primary btn--sm decide decide--next" do %>
     <%= lucide_icon "circle-check", class: "icon" %> Approve and next
   <% end %>
 <% end %>

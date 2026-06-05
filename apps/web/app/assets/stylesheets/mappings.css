@@ -201,7 +201,9 @@
   padding: var(--space-lg) var(--space);
   background: oklch(0% 0 0 / 0.45);
   overflow-y: auto;
+  animation: modal-fade 200ms ease both;
 }
+@keyframes modal-fade { from { opacity: 0; } }
 .modal__dialog {
   inline-size: 100%;
   max-inline-size: 46rem;
@@ -237,75 +239,152 @@
   }
 }
 
-/* ---- Review cockpit (bar / hero layouts) ------------------------------- */
-.cockpit { display: grid; gap: var(--space); }
+/* ====================================================================== */
+/* Review cockpit — one layout: a decision console over a candidate table. */
+/* ====================================================================== */
 
-.cockpit-toggle {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-sunken);
+/* The dialog reads like a precision instrument: it arrives with a small lift,
+   clips its corners so the head/foot bands sit flush, and carries a warm
+   instrument glow in the header. */
+.cockpit-dialog {
+  overflow: hidden;
+  animation: cockpit-in 300ms var(--ease-out) both;
 }
-.cockpit-toggle__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: 0.15rem 0.5rem;
+@keyframes cockpit-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+}
+
+/* ---- Header: source readout + position + navigation -------------------- */
+.cockpit-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-sm) var(--space);
+  padding: var(--space-md) var(--space-md) var(--space);
+  border-block-end: 1px solid var(--color-border);
+  background:
+    radial-gradient(150% 130% at 0% -10%, color-mix(in oklch, var(--color-accent) 12%, transparent), transparent 58%),
+    var(--color-surface);
+}
+.cockpit-head__main { display: grid; gap: 0.25rem; min-inline-size: 0; }
+.cockpit-head__eyebrow {
+  display: inline-flex; align-items: center; gap: var(--space-xs);
+  inline-size: max-content;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--color-accent-ink);
+}
+.cockpit-head__title { font-size: 1.3rem; line-height: 1.18; }
+.cockpit-head__meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm);
+  color: var(--color-text-subtle); font-size: 0.85rem;
+}
+.cockpit-head__sep { position: relative; padding-inline-start: var(--space-sm); }
+.cockpit-head__sep::before {
+  content: ""; position: absolute; inset-inline-start: 0; inset-block: 0.15em;
+  inline-size: 1px; background: var(--color-border-strong);
+}
+.cockpit-head__nav { display: grid; justify-items: end; gap: var(--space-xs); }
+.cockpit-head__counter { font-size: 0.85rem; }
+.cockpit-head__counter .mono { font-size: 1rem; color: var(--color-text); }
+.cockpit-head__rail {
+  grid-column: 1 / -1;
+  block-size: 3px; border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--color-border) 70%, transparent);
+  overflow: hidden;
+}
+.cockpit-head__rail-fill {
+  display: block; block-size: 100%;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-fill));
+  border-radius: inherit;
+  animation: rail-grow 600ms var(--ease-out) both;
+}
+@keyframes rail-grow { from { transform: scaleX(0); transform-origin: left; } }
+
+/* Small metadata pills (vocabulary, domain, class). */
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 0.1em 0.5em;
   border-radius: var(--radius-sm);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--color-text-subtle);
+  background: color-mix(in oklch, var(--color-accent) 12%, var(--color-bg));
+  color: var(--color-accent-ink);
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.01em;
+  white-space: nowrap;
 }
-.cockpit-toggle__btn:hover { color: var(--color-text); text-decoration: none; }
-.cockpit-toggle__btn.is-active { background: var(--color-surface); color: var(--color-accent-ink); box-shadow: var(--shadow); }
+.tag--quiet { background: var(--color-sunken); color: var(--color-text-subtle); font-weight: 600; }
 
-/* Decision strip: target + status + equivalence + actions on one line. */
+/* ---- The cockpit body stacks the console, suggestions and logs ---------- */
+.cockpit-body { display: grid; gap: var(--space-md); }
+
+/* ---- Decision console (the "Bar") ------------------------------------- */
 .cockpit-bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space) var(--space-md);
   padding: var(--space) var(--space-md);
-  border: 1px solid color-mix(in oklch, var(--color-accent) 30%, var(--color-border));
-  border-radius: var(--radius);
-  background: linear-gradient(90deg, color-mix(in oklch, var(--color-accent) 7%, var(--color-surface)), var(--color-surface) 60%);
-}
-.cockpit-bar__target { display: grid; gap: 0.1rem; min-inline-size: 13rem; flex: 1; }
-.cockpit-bar__equivalence { display: flex; align-items: center; gap: var(--space-xs); }
-.cockpit-bar__equivalence .field__label { margin: 0; }
-.cockpit-bar__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
-.cockpit-bar form { margin: 0; }
-
-/* In the hero layout the strip sits at the bottom as a quiet override. */
-.cockpit--hero .cockpit-bar {
-  border-color: var(--color-border);
-  background: var(--color-sunken);
-}
-
-.cockpit-search { display: flex; gap: var(--space-sm); }
-@media (max-width: 40rem) {
-  .cockpit-bar,
-  .cockpit-bar__equivalence,
-  .cockpit-bar__actions,
-  .cockpit-search {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .cockpit-bar__target {
-    min-inline-size: 0;
-  }
-}
-
-/* Featured best-match candidate. */
-.candidate-card--hero {
-  border-color: color-mix(in oklch, var(--color-accent) 45%, var(--color-border));
-  background: linear-gradient(135deg, color-mix(in oklch, var(--color-accent) 9%, var(--color-surface)), var(--color-surface) 55%);
+  border: 1px solid color-mix(in oklch, var(--color-accent) 34%, var(--color-border));
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(120deg, color-mix(in oklch, var(--color-accent) 9%, var(--color-surface)), var(--color-surface) 64%);
   box-shadow: var(--shadow);
 }
-.candidate-card--hero h4 { font-size: 1.15rem; }
-.candidate-card--hero .candidate-card__rank { color: var(--color-accent-ink); letter-spacing: 0.04em; }
+.cockpit-bar form { margin: 0; }
+.cockpit-bar__target { display: grid; gap: 0.25rem; min-inline-size: 0; }
+.cockpit-bar__target .eyebrow { display: inline-flex; align-items: center; gap: var(--space-xs); }
+.cockpit-bar__concept { font-size: 1.05rem; line-height: 1.2; }
+.cockpit-bar__coords { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm); }
+.cockpit-bar__empty {
+  display: inline-flex; align-items: center; gap: var(--space-xs);
+  color: var(--color-text-subtle); font-style: italic;
+}
+.cockpit-bar__controls { display: grid; gap: var(--space-sm); justify-items: end; }
+.cockpit-bar__state { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-sm); }
+.cockpit-bar__equivalence { display: flex; align-items: center; gap: var(--space-xs); }
+.cockpit-bar__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-xs); }
+
+/* Decision buttons carry a quiet tint that intensifies when active. */
+.decide.is-active { border-color: transparent; color: var(--color-on-accent); }
+.decide--approve.is-active { background: var(--color-ok); }
+.decide--flag.is-active    { background: var(--color-warn); }
+.decide--invalid.is-active { background: var(--color-bad); }
+.decide--invalid:not(.is-active):hover { border-color: color-mix(in oklch, var(--color-bad) 50%, var(--color-border)); color: var(--color-bad); }
+
+/* ---- Suggestions console (search + candidate table) -------------------- */
+.suggest {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.suggest__head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm);
+  padding: var(--space-sm) var(--space);
+  border-block-start: 1px solid var(--color-border);
+  background: var(--color-sunken);
+}
+.suggest__title { display: flex; align-items: center; gap: var(--space-xs); margin: 0; font-size: 0.95rem; }
+.suggest__title .icon { color: var(--color-accent-ink); }
+.suggest__meta { display: flex; align-items: center; gap: var(--space-sm); }
+.suggest__panel { min-inline-size: 0; }
+.suggest__empty { display: flex; align-items: center; gap: var(--space-xs); padding: var(--space-md); }
+
+.cockpit-search { display: flex; gap: var(--space-sm); padding: var(--space); }
+.cockpit-search .search { min-inline-size: 0; }
+
+@media (max-width: 48rem) {
+  .cockpit-bar { grid-template-columns: minmax(0, 1fr); }
+  .cockpit-bar__controls { justify-items: stretch; }
+  .cockpit-bar__state,
+  .cockpit-bar__actions { justify-content: flex-start; }
+}
+@media (max-width: 40rem) {
+  .cockpit-head { grid-template-columns: minmax(0, 1fr); }
+  .cockpit-head__nav { justify-items: start; }
+  .cockpit-search { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .cockpit-bar__equivalence { flex: 1; }
+  .cockpit-bar__equivalence .select { flex: 1; }
+}
+
 .eyebrow {
   color: var(--color-text-subtle);
   font-size: 0.78rem;
@@ -337,104 +416,142 @@
 }
 .result:hover { border-color: var(--color-accent); background: color-mix(in oklch, var(--color-accent) 6%, var(--color-bg)); text-decoration: none; }
 
-.candidate-list { display: grid; gap: var(--space-sm); }
-.candidate-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space);
-  padding: var(--space);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-}
-.candidate-card.is-selected {
-  border-color: var(--color-ok);
-  background: color-mix(in oklch, var(--color-ok) 6%, var(--color-surface));
-}
-.candidate-card__rank {
+/* ---- Candidate table ---------------------------------------------------- */
+/* Columns size to their content (rank / id / match / action shrink-to-fit);
+   the concept column takes the rest. No fixed pixel widths to fight. */
+.cand-table-wrap { inline-size: 100%; overflow-x: auto; }
+.cand-table { inline-size: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.cand-table thead th {
+  text-align: start;
+  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;
   color: var(--color-text-subtle);
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  padding: var(--space-sm) var(--space);
+  border-block-end: 1px solid var(--color-border);
 }
-.candidate-card h4 {
-  font-size: 1rem;
-  margin-block-start: 0.15rem;
+.cand-table__rank,
+.cand-table__id,
+.cand-table__match,
+.cand-table__act { inline-size: 1%; white-space: nowrap; }
+.cand-table__rank { text-align: center; }
+
+.cand { border-block-end: 1px solid var(--color-border); transition: background-color 130ms ease; }
+.cand:last-child { border-block-end: 0; }
+.cand:hover { background: color-mix(in oklch, var(--color-accent) 4%, transparent); }
+.cand.is-selected { background: color-mix(in oklch, var(--color-ok) 9%, transparent); box-shadow: inset 3px 0 0 var(--color-ok); }
+.cand > td { padding: var(--space) var(--space); vertical-align: top; }
+
+.cand__rank { text-align: center; }
+.cand__ord {
+  display: inline-grid; place-items: center;
+  inline-size: 1.7rem; block-size: 1.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-sunken); color: var(--color-text-subtle);
+  font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600;
 }
-.candidate-card__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-block-start: var(--space-xs);
-  color: var(--color-text-subtle);
-  font-size: 0.85rem;
+.cand-table tbody tr:first-child .cand__ord { background: var(--color-accent-fill); color: var(--color-on-accent); }
+
+.cand__name {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-xs) var(--space-sm);
+  font-weight: 700; font-size: 1rem; line-height: 1.35;
 }
-.candidate-card__meta span + span::before {
-  content: "";
+.cand__chosen {
+  display: inline-flex; align-items: center; gap: 0.2em;
+  padding: 0.05em 0.5em; border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--color-ok) 18%, var(--color-bg));
+  color: color-mix(in oklch, var(--color-ok) 58%, var(--color-text));
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
 }
-.candidate-card__meta span:not(:last-child)::after {
-  content: "·";
-  margin-inline-start: var(--space-xs);
-  color: var(--color-border-strong);
+.cand__meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm);
+  margin-block-start: var(--space-sm); color: var(--color-text-subtle); font-size: 0.82rem;
 }
-.candidate-card__why {
+.cand__warn {
+  display: inline-flex; align-items: center; gap: var(--space-xs);
   margin-block-start: var(--space-sm);
+  color: color-mix(in oklch, var(--color-warn) 72%, var(--color-text)); font-size: 0.82rem;
+}
+.cand__warn .icon { color: var(--color-warn); }
+.cand__id .mono { font-size: 0.84rem; }
+
+.cand__act { white-space: nowrap; }
+.cand__act form { margin: 0; }
+.cand__act form + form { margin-block-start: var(--space-xs); }
+.cand__act .btn { inline-size: 100%; justify-content: center; }
+
+/* "Why this candidate" evidence drawer (native disclosure, no JS). */
+.candidate-why { margin-block-start: var(--space-sm); font-size: 0.84rem; }
+.candidate-why > summary {
+  display: inline-flex; align-items: center; gap: var(--space-xs);
+  cursor: pointer; color: var(--color-text-subtle); font-weight: 600;
+  list-style: none; inline-size: max-content;
+}
+.candidate-why > summary::-webkit-details-marker { display: none; }
+.candidate-why > summary::marker { content: ""; }
+.candidate-why > summary:hover { color: var(--color-text); }
+.candidate-why > summary .icon { color: var(--color-accent-ink); }
+.candidate-why[open] > summary { color: var(--color-text); margin-block-end: var(--space-sm); }
+.candidate-why__body {
+  display: grid; gap: var(--space);
+  padding-inline-start: var(--space);
+  border-inline-start: 2px solid var(--color-border);
+}
+
+.candidate-evidence { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); }
+.evi {
+  padding: 0.3rem 0.6rem; border-radius: var(--radius-sm);
+  background: var(--color-sunken);
+  font-family: var(--font-mono); font-size: 0.76rem; color: var(--color-text-subtle);
+}
+.evi strong { font-weight: 600; color: var(--color-text); }
+
+.candidate-facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm); }
+.candidate-facts__label {
+  font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--color-text-subtle);
-  font-size: 0.85rem;
 }
-.candidate-card__why summary {
-  cursor: pointer;
-  color: var(--color-text);
-  font-weight: 700;
-}
-.candidate-evidence {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-sm);
-  margin-block-start: var(--space-xs);
-}
-.candidate-evidence span,
-.candidate-kv,
-.candidate-warning {
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius);
-  background: var(--color-sunken);
-}
-.candidate-kv,
-.candidate-warning {
-  display: flex;
-  gap: var(--space-xs);
-  margin-block-start: var(--space-xs);
-}
-.candidate-warning { color: color-mix(in oklch, var(--color-warn) 80%, var(--color-text)); }
-.candidate-facts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-  margin-block-start: var(--space-xs);
-}
-.candidate-facts__label { font-weight: 700; font-size: 0.82rem; }
 .candidate-facts__item {
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius);
-  background: var(--color-sunken);
-  font-size: 0.82rem;
+  padding: 0.3rem 0.6rem; border-radius: var(--radius-sm);
+  background: var(--color-sunken); font-size: 0.78rem;
 }
 .candidate-facts__item strong { color: var(--color-text-subtle); font-weight: 600; }
-.candidate-card__actions {
-  display: grid;
-  align-content: start;
-  gap: var(--space-xs);
-  min-inline-size: 8.5rem;
+
+/* ---- Score bar: the one match-confidence readout (number + meter) ------ */
+.scorebar { display: grid; gap: 0.3rem; min-inline-size: 4.5rem; }
+.scorebar__num {
+  font-family: var(--font-mono); font-weight: 600; font-size: 0.92rem; line-height: 1;
+  font-variant-numeric: tabular-nums; color: var(--color-text);
 }
+.scorebar__pct { font-size: 0.72em; color: var(--color-text-subtle); margin-inline-start: 0.05em; }
+.scorebar__track { block-size: 5px; border-radius: var(--radius-pill); background: var(--color-sunken); overflow: hidden; }
+.scorebar__fill {
+  display: block; block-size: 100%; border-radius: inherit;
+  transform-origin: left center; animation: scorebar-grow 700ms var(--ease-out) both;
+}
+@keyframes scorebar-grow { from { transform: scaleX(0); } }
+.scorebar--ok   .scorebar__fill { background: var(--color-ok); }
+.scorebar--warn .scorebar__fill { background: var(--color-warn); }
+.scorebar--bad  .scorebar__fill { background: var(--color-bad); }
+.scorebar--ok   .scorebar__num { color: color-mix(in oklch, var(--color-ok) 55%, var(--color-text)); }
+.scorebar--bad  .scorebar__num { color: color-mix(in oklch, var(--color-bad) 62%, var(--color-text)); }
+
+/* Candidate table collapses to stacked cards on phones. */
 @media (max-width: 40rem) {
-  .candidate-card {
-    grid-template-columns: minmax(0, 1fr);
+  .cand-table thead { display: none; }
+  .cand-table, .cand-table tbody { display: block; }
+  .cand {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-xs) var(--space-sm);
+    padding: var(--space);
   }
-  .candidate-card__actions {
-    min-inline-size: 0;
-  }
+  .cand > td { padding: 0; }
+  .cand__rank { grid-column: 1; grid-row: 1; }
+  .cand__concept { grid-column: 2; grid-row: 1; }
+  .cand__match { grid-column: 3; grid-row: 1; justify-self: end; }
+  .cand__id { grid-column: 2 / -1; grid-row: 2; }
+  .cand__act { grid-column: 1 / -1; grid-row: 3; display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-block-start: var(--space-sm); }
+  .cand__act form { flex: 1 1 8rem; }
 }
 
 /* History timeline */

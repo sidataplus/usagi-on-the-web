@@ -56,7 +56,8 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_includes mappings_css, "@media (max-width: 40rem)"
     assert_includes mappings_css, ".review-lane__metrics"
     assert_includes mappings_css, ".cockpit-bar__actions"
-    assert_includes mappings_css, ".candidate-card"
+    assert_includes mappings_css, ".cand-table"
+    assert_includes mappings_css, ".scorebar"
   end
 
   test "settings page lets the reviewer save preferences" do

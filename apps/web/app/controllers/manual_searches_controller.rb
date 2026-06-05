@@ -36,7 +36,7 @@ class ManualSearchesController < ApplicationController
         render turbo_stream: turbo_stream.replace(
           helpers.dom_id(@mapping, :candidate_panel),
           partial: "mappings/candidate_panel",
-          locals: { mapping: @mapping, candidates: @candidates, next_id: next_mapping_id(@mapping), hero: cockpit_layout == "hero" }
+          locals: { mapping: @mapping, candidates: @candidates, next_id: next_mapping_id(@mapping) }
         )
       end
       format.html { redirect_to mapping_path(@mapping), notice: "Search finished." }

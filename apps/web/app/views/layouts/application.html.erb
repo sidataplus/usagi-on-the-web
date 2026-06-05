@@ -18,8 +18,8 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Order matters: tokens → base → layout → components → page specifics. %>
-    <%= stylesheet_link_tag "tokens", "base", "layout", "components", "mappings", "data-turbo-track": "reload" %>
+    <%# Order matters: fonts → tokens → base → layout → components → page specifics. %>
+    <%= stylesheet_link_tag "fonts", "tokens", "base", "layout", "components", "mappings", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 

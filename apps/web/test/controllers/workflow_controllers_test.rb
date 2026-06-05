@@ -535,7 +535,8 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Review cockpit"
-    assert_select "details.candidate-card__why"
+    assert_select "table.cand-table"
+    assert_select "details.candidate-why"
     assert_select ".details-panel", minimum: 1
     assert_includes response.body, "Why this candidate"
     assert_includes response.body, "Final 0.93"
@@ -796,14 +797,16 @@ class WorkflowControllersTest < ActionDispatch::IntegrationTest
     assert_equal @user, mapping.reviewed_by
   end
 
-  test "cockpit layout toggle persists per user" do
+  test "cockpit renders the single decision-bar layout" do
     mapping = create_mapping!(project: @project)
 
-    get mapping_path(mapping, layout: "hero")
+    get mapping_path(mapping)
 
     assert_response :success
-    assert_equal "hero", @user.reload.prefs["cockpit_layout"]
-    assert_includes response.body, "Best match"
+    assert_select "section.cockpit-bar"
+    # The Best-match layout was removed: no toggle, no stored layout preference.
+    assert_not_includes response.body, "Best match"
+    assert_select ".cockpit-toggle", false
   end
 
   test "member management rejects unknown emails and protects the owner" do

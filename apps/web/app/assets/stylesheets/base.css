@@ -14,7 +14,8 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
-h1, h2, h3, h4 { line-height: 1.2; font-weight: 700; }
+h1, h2, h3, h4 { line-height: 1.15; font-weight: 700; letter-spacing: -0.012em; }
+h1 { letter-spacing: -0.02em; }
 
 a {
   color: var(--color-accent-ink);
