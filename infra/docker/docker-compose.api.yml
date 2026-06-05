@@ -19,7 +19,7 @@ services:
       SAPBERT_INDEX_DIR: /data/search/sapbert
       SAPBERT_MODEL_DIR: /data/models/sapbert
       SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
-      USAGI_API_KEYS: ${USAGI_API_KEYS:?Set USAGI_API_KEYS to a comma-separated API key list for API services}
+      USAGI_API_KEYS: ${USAGI_API_KEYS:-}
 
   search-api:
     build:
@@ -40,7 +40,7 @@ services:
       SAPBERT_INDEX_DIR: /data/search/sapbert
       SAPBERT_MODEL_DIR: /data/models/sapbert
       SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
-      USAGI_API_KEYS: ${USAGI_API_KEYS:?Set USAGI_API_KEYS to a comma-separated API key list for API services}
+      USAGI_API_KEYS: ${USAGI_API_KEYS:-}
 
   mapper-api:
     build:
@@ -60,7 +60,7 @@ services:
       THIRAWAT_ARTIFACT_DIR: /data/mapper/thirawat-drug
       TACHIOM_INDEX_DIR: /data/mapper/thirawat-drug/tachiom
       THIRAWAT_QUERY_EMBEDDINGS_PATH: /data/mapper/thirawat-drug/query_embeddings.json
-      USAGI_API_KEYS: ${USAGI_API_KEYS:?Set USAGI_API_KEYS to a comma-separated API key list for API services}
+      USAGI_API_KEYS: ${USAGI_API_KEYS:-}
 
   api-worker:
     build:

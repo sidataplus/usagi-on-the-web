@@ -547,6 +547,17 @@ backup notes
 runbook skeleton
 ```
 
+Current implementation note:
+
+```text
+full-stack Compose: infra/docker/docker-compose.yml
+debug port override: infra/docker/docker-compose.debug.yml
+Kamal template: apps/web/config/deploy.yml
+deployment runbook: docs/manual/web/04-deployment.md
+signed auth smoke: scripts/smoke-signed-auth.sh
+deployment smoke: scripts/smoke-deploy.sh
+```
+
 ### Acceptance criteria
 
 ```text

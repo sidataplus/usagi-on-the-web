@@ -38,6 +38,7 @@ class DeploymentChecks
     return false if host.blank?
     return true if host.exclude?(".")
     return true if host.end_with?(".internal")
+    return true if tailscale_host?(host)
 
     private_ip?(host)
   rescue URI::InvalidURIError
@@ -45,17 +46,26 @@ class DeploymentChecks
   end
   private_class_method :private_engine_url?
 
+  def self.tailscale_host?(host)
+    host.end_with?(".ts.net")
+  end
+  private_class_method :tailscale_host?
+
   def self.private_ip?(host)
     ip = IPAddr.new(host)
-    [
-      IPAddr.new("10.0.0.0/8"),
-      IPAddr.new("172.16.0.0/12"),
-      IPAddr.new("192.168.0.0/16"),
-      IPAddr.new("fc00::/7"),
-      IPAddr.new("fe80::/10")
-    ].any? { |range| range.include?(ip) }
+    PRIVATE_IP_RANGES.any? { |range| range.include?(ip) }
   rescue IPAddr::InvalidAddressError
     false
   end
   private_class_method :private_ip?
+
+  PRIVATE_IP_RANGES = [
+    IPAddr.new("10.0.0.0/8"),
+    IPAddr.new("100.64.0.0/10"), # RFC 6598 shared space; Tailscale CGNAT range
+    IPAddr.new("172.16.0.0/12"),
+    IPAddr.new("192.168.0.0/16"),
+    IPAddr.new("fc00::/7"),
+    IPAddr.new("fe80::/10")
+  ].freeze
+  private_constant :PRIVATE_IP_RANGES
 end

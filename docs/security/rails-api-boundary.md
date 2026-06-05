@@ -73,7 +73,7 @@ Docker Compose should use an internal network:
 
 ```text
 rails-web
-  can reach catalog-api/search-api/mapper-api/jobs-api
+  can reach catalog-api/search-api/mapper-api job routes
 
 browser
   can reach rails-web only by default
@@ -162,7 +162,7 @@ ENGINE_API_OPEN_TIMEOUT_SECONDS=5
 CATALOG_API_URL=http://catalog-api:8788
 SEARCH_API_URL=http://search-api:8789
 MAPPER_API_URL=http://mapper-api:8790
-JOBS_API_URL=http://api-worker:8791
+JOBS_API_URL=http://mapper-api:8790
 ```
 
 ### 4.2 Request signer
@@ -257,13 +257,15 @@ For every signed endpoint:
 | Endpoint kind | Signing required in production |
 |---|---:|
 | `/health` liveness | optional if private network only |
-| `/status` endpoints | yes |
+| `/status` endpoints | optional public probe if private network only |
 | search/query endpoints | yes |
 | mapper endpoints | yes |
 | job endpoints | yes |
 | build/index endpoints | yes |
 
-If unsure, require signing. Shocking concept: safer defaults.
+The current API implementation treats health and status endpoints as public
+orchestration probes. Keep them on the private network. If a future endpoint
+does not need to be a probe, require signing.
 
 ---
 
@@ -487,6 +489,7 @@ Before production:
 [ ] API auth mode is signed
 [ ] health/status smoke test passes
 [ ] invalid unsigned request to engine is rejected
+[ ] scripts/smoke-signed-auth.sh passes
 [ ] request IDs appear in Rails and API logs
 [ ] secrets are not logged
 ```

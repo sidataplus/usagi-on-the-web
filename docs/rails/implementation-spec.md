@@ -106,7 +106,7 @@ No model/index artifacts leaking into Rails.
 | Non-drug auto-suggest | Hybrid RRF search using Tantivy + SapBERT/USearch |
 | Auto-approval | Disabled by default |
 | Translation | Deferred optional module |
-| Deployment | Docker Compose locally; Kamal later |
+| Deployment | Docker Compose locally; Kamal on DO or AWS (RDS) |
 
 ---
 
@@ -126,7 +126,8 @@ usagi-api services
   +-- catalog-api
   +-- search-api
   +-- mapper-api
-  +-- jobs-api/api-worker
+  +-- job routes on API services
+  +-- api-worker background processor
 ```
 
 Production rule:

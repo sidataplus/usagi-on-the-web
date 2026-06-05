@@ -12,9 +12,9 @@ Audience: Rails developers and API integrators
 | `SEARCH_API_URL` | required for HTTP mode | `search-api` base URL |
 | `MAPPER_API_URL` | required for HTTP mode | `mapper-api` base URL |
 | `JOBS_API_URL` | falls back to `MAPPER_API_URL` | Jobs endpoint base URL |
-| `USAGI_API_KEY` | unset | Optional API key sent as `X-API-Key` |
-| `USAGI_API_BEARER_TOKEN` | unset | Optional bearer token |
 | `USAGI_API_SHARED_SECRET` | `test-secret` | HMAC request signing secret |
+| `USAGI_API_KEY` | unset | Optional local API-key mode header |
+| `USAGI_API_BEARER_TOKEN` | unset | Optional local bearer token |
 | `ENGINE_API_TIMEOUT_SECONDS` | `30` | HTTP read timeout |
 | `ENGINE_API_OPEN_TIMEOUT_SECONDS` | `5` | HTTP connection timeout |
 | `ENGINE_API_GET_RETRIES` | `1` | Transient retry count for safe GET requests |
@@ -28,8 +28,8 @@ Required behavior:
 
 ```text
 request ID propagation
-API key or bearer auth when configured
-signed request headers outside test mode
+signed request headers
+API key or bearer auth only when configured for local API-key mode
 JSON request/response handling
 standard error envelope parsing
 timeouts

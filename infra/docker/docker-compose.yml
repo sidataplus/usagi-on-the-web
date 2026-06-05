@@ -1,0 +1,144 @@
+name: usagi-on-the-web
+
+x-engine-env: &engine-env
+  USAGI_API_ENV: ${USAGI_API_ENV:-development}
+  USAGI_API_AUTH_MODE: ${USAGI_API_AUTH_MODE:-signed}
+  USAGI_API_SHARED_SECRET: ${USAGI_API_SHARED_SECRET:-local-compose-shared-secret}
+  USAGI_API_KEYS: ${USAGI_API_KEYS:-}
+  JOBS_DB_PATH: /data/jobs/jobs.sqlite
+  JOB_RESULTS_DIR: /data/jobs/results
+
+x-engine-build: &engine-build
+  context: ../..
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-usagi_production}
+      POSTGRES_USER: ${POSTGRES_USER:-usagi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-usagi-local-password}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_private
+
+  rails-web:
+    build:
+      context: ../../apps/web
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-api:
+        condition: service_started
+      search-api:
+        condition: service_started
+      mapper-api:
+        condition: service_started
+    ports:
+      - "${RAILS_PUBLISH_HOST:-127.0.0.1}:${RAILS_PUBLISH_PORT:-3000}:80"
+    volumes:
+      - rails_storage:/rails/storage
+    environment:
+      RAILS_ENV: production
+      RAILS_LOG_LEVEL: ${RAILS_LOG_LEVEL:-info}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-local-compose-secret-key-base-change-before-production}
+      DATABASE_URL: postgres://${POSTGRES_USER:-usagi}:${POSTGRES_PASSWORD:-usagi-local-password}@postgres:5432/${POSTGRES_DB:-usagi_production}
+      SOLID_QUEUE_IN_PUMA: ${SOLID_QUEUE_IN_PUMA:-true}
+      ENGINE_CLIENT_MODE: http
+      USAGI_API_SHARED_SECRET: ${USAGI_API_SHARED_SECRET:-local-compose-shared-secret}
+      CATALOG_API_URL: http://catalog-api:8788
+      SEARCH_API_URL: http://search-api:8789
+      MAPPER_API_URL: http://mapper-api:8790
+      JOBS_API_URL: http://mapper-api:8790
+      APP_HOSTS: ${APP_HOSTS:-localhost,127.0.0.1}
+      FORCE_SSL: ${FORCE_SSL:-false}
+    networks:
+      - public
+      - app_private
+
+  catalog-api:
+    build:
+      <<: *engine-build
+      dockerfile: services/catalog-api/Dockerfile
+    volumes:
+      - ../../data:/data
+      - ../../fixtures:/fixtures:ro
+    environment:
+      <<: *engine-env
+      CATALOG_DB_PATH: /data/catalog/catalog.sqlite
+      TANTIVY_INDEX_DIR: /data/search/tantivy/index
+      SAPBERT_INDEX_DIR: /data/search/sapbert
+      SAPBERT_MODEL_DIR: /data/models/sapbert
+      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
+    networks:
+      - app_private
+
+  search-api:
+    build:
+      <<: *engine-build
+      dockerfile: services/search-api/Dockerfile
+    volumes:
+      - ../../data:/data
+    environment:
+      <<: *engine-env
+      CATALOG_DB_PATH: /data/catalog/catalog.sqlite
+      TANTIVY_INDEX_DIR: /data/search/tantivy/index
+      SAPBERT_INDEX_DIR: /data/search/sapbert
+      SAPBERT_MODEL_DIR: /data/models/sapbert
+      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
+    networks:
+      - app_private
+
+  mapper-api:
+    build:
+      <<: *engine-build
+      dockerfile: services/mapper-api/Dockerfile
+    volumes:
+      - ../../data:/data
+    environment:
+      <<: *engine-env
+      THIRAWAT_MODEL_DIR: /data/models/thirawat-sapbert
+      THIRAWAT_ARTIFACT_DIR: /data/mapper/thirawat-drug
+      TACHIOM_INDEX_DIR: /data/mapper/thirawat-drug/tachiom
+      THIRAWAT_QUERY_EMBEDDINGS_PATH: /data/mapper/thirawat-drug/query_embeddings.json
+    networks:
+      - app_private
+
+  api-worker:
+    build:
+      <<: *engine-build
+      dockerfile: services/api-worker/Dockerfile
+    volumes:
+      - ../../data:/data
+      - ../../fixtures:/fixtures:ro
+    environment:
+      <<: *engine-env
+      CATALOG_DB_PATH: /data/catalog/catalog.sqlite
+      WORKER_QUEUES: ${WORKER_QUEUES:-catalog,index,embed,map}
+      TANTIVY_INDEX_DIR: /data/search/tantivy/index
+      SAPBERT_INDEX_DIR: /data/search/sapbert
+      SAPBERT_MODEL_DIR: /data/models/sapbert
+      SAPBERT_PRECOMPUTED_EMBEDDINGS_PATH: /data/search/sapbert-doc-embeddings.json
+      SAPBERT_QUERY_EMBEDDINGS_PATH: /data/search/sapbert-query-embeddings.json
+      THIRAWAT_MODEL_DIR: /data/models/thirawat-sapbert
+      THIRAWAT_ARTIFACT_DIR: /data/mapper/thirawat-drug
+      TACHIOM_INDEX_DIR: /data/mapper/thirawat-drug/tachiom
+      THIRAWAT_QUERY_EMBEDDINGS_PATH: /data/mapper/thirawat-drug/query_embeddings.json
+    networks:
+      - app_private
+
+networks:
+  public:
+  app_private:
+    internal: true
+
+volumes:
+  postgres_data:
+  rails_storage:

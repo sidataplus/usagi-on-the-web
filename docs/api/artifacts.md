@@ -872,6 +872,10 @@ usagi-indexpack-athena-20250827-standard-full.zip
 
 API v0.1 only needs local artifact directories and manifests.
 
+For operator build commands and the required catalog, Tantivy, SapBERT/USearch,
+THIRAWAT, and Tachiom build order, see
+`docs/manual/api/05-artifact-builds.md`.
+
 ## 15. Security constraints
 
 Build endpoints must not accept arbitrary host paths in production.

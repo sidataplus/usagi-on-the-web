@@ -49,4 +49,20 @@ class DeploymentChecksTest < ActiveSupport::TestCase
     assert_not_includes errors, "MAPPER_API_URL must point at a private engine host in production"
     assert_not_includes errors, "JOBS_API_URL must point at a private engine host in production"
   end
+
+  test "production engine URLs accept Tailscale IPs and MagicDNS hostnames" do
+    errors = DeploymentChecks.production_errors(
+      {
+        "USAGI_API_SHARED_SECRET" => "secret",
+        "SECRET_KEY_BASE" => "rails-secret",
+        "DATABASE_URL" => "postgres://db/usagi",
+        "CATALOG_API_URL" => "http://100.64.0.5:8788",
+        "SEARCH_API_URL" => "http://100.127.255.255:8789",
+        "MAPPER_API_URL" => "http://usagi-api.my-tailnet.ts.net:8790",
+        "JOBS_API_URL" => "http://usagi-api.my-tailnet.ts.net:8790"
+      }
+    )
+
+    assert_empty errors
+  end
 end

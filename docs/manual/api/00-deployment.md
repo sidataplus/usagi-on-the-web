@@ -23,32 +23,47 @@ directly.
 
 ## Security
 
-All non-probe endpoints require an API key.
+Local API-only development may use API-key auth. Production must use signed
+Rails-to-engine requests.
 
-Set:
+For local API-only development, set:
 
 ```bash
-export USAGI_API_KEYS="replace-with-local-or-deployment-secret"
+export USAGI_API_AUTH_MODE=api_key
+export USAGI_API_KEYS="replace-with-local-secret"
 ```
 
 Clients send either:
 
 ```http
-X-API-Key: replace-with-local-or-deployment-secret
+X-API-Key: replace-with-local-secret
 ```
 
 or:
 
 ```http
-Authorization: Bearer replace-with-local-or-deployment-secret
+Authorization: Bearer replace-with-local-secret
 ```
 
-`/catalog/health`, `/catalog/status`, `/search/health`, `/search/status`,
-`/mapper/health`, and `/mapper/status` stay public for probes. All other
-endpoints fail closed when `USAGI_API_KEYS` is unset or empty.
+For production, set:
 
-The Docker Compose file publishes ports on `127.0.0.1` by default. Only set
-`USAGI_PUBLISH_HOST=0.0.0.0` behind a trusted network boundary or reverse proxy.
+```bash
+export USAGI_API_ENV=production
+export USAGI_API_AUTH_MODE=signed
+export USAGI_API_SHARED_SECRET="replace-with-shared-hmac-secret"
+```
+
+Rails sends `X-Usagi-*` HMAC headers with every engine request. Use the same
+`USAGI_API_SHARED_SECRET` for Rails and all API services.
+
+`/catalog/health`, `/catalog/status`, `/search/health`, `/search/status`,
+`/mapper/health`, and `/mapper/status` stay public for orchestration probes.
+All other endpoints require the configured auth mode.
+
+The API-only Docker Compose file publishes ports on `127.0.0.1` by default.
+Only set `USAGI_PUBLISH_HOST=0.0.0.0` behind a trusted network boundary or
+reverse proxy. The full-stack Compose file keeps engine ports private by
+default; use `infra/docker/docker-compose.debug.yml` only for local debugging.
 
 ## Shared Data Layout
 
@@ -93,6 +108,43 @@ docker compose -f infra/docker/docker-compose.api.yml down
 
 The smoke test checks health, status, catalog build, Tantivy build, job polling,
 and a known lexical query against the tiny fixture catalog.
+
+## Local API Compute Server Over Tailscale
+
+For production option 3, Rails and PostgreSQL run on a cloud web host
+(DigitalOcean or AWS EC2 + RDS) while the compute-heavy API services run on a
+local server connected over Tailscale.
+
+On the local server:
+
+```bash
+export USAGI_PUBLISH_HOST=100.x.y.z
+export USAGI_API_ENV=production
+export USAGI_API_AUTH_MODE=signed
+export USAGI_API_SHARED_SECRET=...
+
+docker compose -f infra/docker/docker-compose.api.yml up -d --build
+```
+
+Use the local server's Tailscale IP or MagicDNS name from Rails:
+
+```text
+CATALOG_API_URL=http://usagi-api.my-tailnet.ts.net:8788
+SEARCH_API_URL=http://usagi-api.my-tailnet.ts.net:8789
+MAPPER_API_URL=http://usagi-api.my-tailnet.ts.net:8790
+JOBS_API_URL=http://usagi-api.my-tailnet.ts.net:8790
+```
+
+Firewall the local server so `8788`, `8789`, and `8790` are reachable only over
+Tailscale. Do not expose them to the public internet.
+
+Build catalog, search, and mapper artifacts on the local compute server. See
+`docs/manual/api/05-artifact-builds.md` for the full build order.
+
+For API compute host sizing, see **API Compute Server Sizing** in
+`docs/manual/web/04-deployment.md`. A practical starting point is **8 vCPU /
+32 GB RAM** with a **160 GB** `/data` volume for a full Athena standard-concept
+build.
 
 ## Running Services Directly
 
@@ -168,6 +220,7 @@ Before treating a deployment as ready:
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+scripts/smoke-signed-auth.sh
 USAGI_API_KEYS=smoke-secret docker compose -f infra/docker/docker-compose.api.yml up -d --build
 USAGI_SMOKE_API_KEY=smoke-secret scripts/smoke-api.sh
 cd apps/web
@@ -200,22 +253,24 @@ CATALOG_API_URL=http://catalog-api:8788
 SEARCH_API_URL=http://search-api:8789
 MAPPER_API_URL=http://mapper-api:8790
 JOBS_API_URL=http://mapper-api:8790
-USAGI_API_KEY=...
+USAGI_API_SHARED_SECRET=...
 ENGINE_API_TIMEOUT_SECONDS=30
 ENGINE_API_JOB_POLL_INTERVAL_SECONDS=2
 ```
 
-Rails should centralize API calls, propagate `X-Request-Id`, attach the API key,
-parse the shared error envelope, and mirror engine jobs in Rails-owned tables.
-Rails should fetch artifact-backed job results through `/jobs/:id/results` with
-`Accept: application/jsonl`; if that stream fails, Rails should preserve the
-engine error on the mirror instead of treating the job as an empty success.
+Rails should centralize API calls, propagate `X-Request-Id`, attach signed
+request headers, parse the shared error envelope, and mirror engine jobs in
+Rails-owned tables. API keys are acceptable only for local API-only development
+and transitional smoke paths. Rails should fetch artifact-backed job results
+through `/jobs/:id/results` with `Accept: application/jsonl`; if that stream
+fails, Rails should preserve the engine error on the mirror instead of treating
+the job as an empty success.
 
 ## Troubleshooting
 
 | Symptom | Check |
 |---|---|
-| `401 UNAUTHORIZED` on protected endpoints | `USAGI_API_KEYS` on the service and `X-API-Key` from the client |
+| `401 UNAUTHORIZED` on protected endpoints | local: `USAGI_API_KEYS` and `X-API-Key`; production: `USAGI_API_AUTH_MODE=signed` and matching `USAGI_API_SHARED_SECRET` |
 | Build job remains `queued` | `api-worker` is running with the matching queue |
 | Search returns `INDEX_NOT_READY` | Tantivy/SapBERT artifact paths and build jobs |
 | Mapper returns `MODEL_NOT_READY` | THIRAWAT model artifacts and manifest |

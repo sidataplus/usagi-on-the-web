@@ -14,6 +14,12 @@ docs/rails/03_routes-controllers-views.md
 docs/security/rails-api-boundary.md
 
 docs/testing/contract-fixtures.md
+
+docs/manual/api/00-deployment.md
+docs/manual/api/05-artifact-builds.md
+docs/manual/web/03-verification.md
+docs/manual/web/04-deployment.md
+infra/aws/README.md
 ```
 
 ## Reading order
@@ -26,6 +32,8 @@ docs/testing/contract-fixtures.md
 6. `docs/rails/03_routes-controllers-views.md`
 7. `docs/security/rails-api-boundary.md`
 8. `docs/testing/contract-fixtures.md`
+9. `docs/manual/web/04-deployment.md`
+10. `docs/manual/api/05-artifact-builds.md`
 
 ## Core rule
 

@@ -235,7 +235,8 @@ request ID propagation
 JSON serialization
 timeouts
 error envelope parsing
-X-API-Key or Authorization bearer authentication
+signed request headers in production
+optional X-API-Key or Authorization bearer authentication for local API-key mode
 structured logs
 safe retries for GET
 idempotency keys for job creation
@@ -247,7 +248,8 @@ idempotency keys for job creation
 CATALOG_API_URL=http://catalog-api:8788
 SEARCH_API_URL=http://search-api:8789
 MAPPER_API_URL=http://mapper-api:8790
-USAGI_API_KEY=...
+JOBS_API_URL=http://mapper-api:8790
+USAGI_API_SHARED_SECRET=...
 ENGINE_API_TIMEOUT_SECONDS=30
 ENGINE_API_JOB_POLL_INTERVAL_SECONDS=2
 ```

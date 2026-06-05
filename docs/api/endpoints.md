@@ -65,16 +65,25 @@ All responses include:
 X-Request-Id: req_...
 ```
 
-### 2.2.1 API Keys
+### 2.2.1 Authentication
 
-Deployments require API keys by setting `USAGI_API_KEYS` to a comma-separated list of accepted keys. The API-only Docker Compose file fails closed if `USAGI_API_KEYS` is not set and binds published ports to `127.0.0.1` unless `USAGI_PUBLISH_HOST` is explicitly overridden. All non-probe endpoints require one of:
+Local API-only deployments may use API keys by setting `USAGI_API_KEYS` to a
+comma-separated list of accepted keys and `USAGI_API_AUTH_MODE=api_key`. The
+API-only Docker Compose file fails closed if `USAGI_API_KEYS` is not set and
+binds published ports to `127.0.0.1` unless `USAGI_PUBLISH_HOST` is explicitly
+overridden. In API-key mode, all non-probe endpoints require one of:
 
 ```http
 X-API-Key: ...
 Authorization: Bearer ...
 ```
 
-Health and status endpoints remain unauthenticated for local and orchestration probes. All other endpoints fail closed when `USAGI_API_KEYS` is unset or empty, including when running a service binary directly.
+Production deployments must use `USAGI_API_AUTH_MODE=signed` with
+`USAGI_API_SHARED_SECRET`. Rails attaches the `X-Usagi-*` HMAC headers defined
+in `docs/security/rails-api-boundary.md`.
+
+Health and status endpoints remain unauthenticated for local and orchestration
+probes. All other endpoints fail closed according to the configured auth mode.
 
 ### 2.3 Error envelope
 
@@ -98,7 +107,7 @@ Standard error codes:
 | Code | Meaning |
 |---|---|
 | `BAD_REQUEST` | Request validation failed |
-| `UNAUTHORIZED` | Missing or invalid API key |
+| `UNAUTHORIZED` | Missing or invalid API key or signed request |
 | `NOT_FOUND` | Requested resource does not exist |
 | `CATALOG_NOT_READY` | Catalog artifact is missing or invalid |
 | `INDEX_NOT_READY` | Search or mapper index is missing or invalid |

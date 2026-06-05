@@ -23,34 +23,49 @@ gated live smoke tests
 
 Normal Rails tests must pass without running `usagi-api`.
 
+## Deployment Smoke
+
+Validate signed engine auth:
+
+```bash
+scripts/smoke-signed-auth.sh
+```
+
+Validate the full local deployment topology:
+
+```bash
+scripts/smoke-deploy.sh
+```
+
+The deployment smoke starts the full-stack Compose file by default, checks
+Rails `/up` from the host, checks engine health from inside the Rails container,
+and asks Rails engine clients to call the private API services with signed
+headers.
+
 ## Live API Smoke
 
-Start the API stack first:
+### Full-stack compose (signed, recommended)
+
+Start the full local deployment stack:
 
 ```bash
-USAGI_API_KEYS=smoke-secret \
-docker compose -f infra/docker/docker-compose.api.yml up -d --build
+docker compose -f infra/docker/docker-compose.yml up -d --build
+scripts/smoke-deploy.sh
 ```
 
-Then verify the API stack itself:
+For host-side live Rails tests, enable the debug override so engine services are
+reachable from the host on non-conflicting ports:
 
 ```bash
-USAGI_SMOKE_API_KEY=smoke-secret scripts/smoke-api.sh
+USAGI_DEPLOY_SMOKE_START=0 \
+USAGI_DEPLOY_SMOKE_DEBUG_PORTS=1 \
+USAGI_DEPLOY_SMOKE_RUN_LIVE_TESTS=1 \
+scripts/smoke-deploy.sh
 ```
 
-Finally verify Rails against the live API stack:
-
-```bash
-cd apps/web
-USAGI_LIVE_ENGINE=1 \
-ENGINE_CLIENT_MODE=http \
-USAGI_API_KEY=smoke-secret \
-CATALOG_API_URL=http://127.0.0.1:8788 \
-SEARCH_API_URL=http://127.0.0.1:8789 \
-MAPPER_API_URL=http://127.0.0.1:8790 \
-JOBS_API_URL=http://127.0.0.1:8790 \
-bin/rails test test/integration/live_engine_smoke_test.rb
-```
+The debug override publishes `127.0.0.1:28788-28790` by default. Use
+`USAGI_API_SHARED_SECRET=local-compose-shared-secret` unless you changed the
+compose env.
 
 The Rails live smoke checks:
 
@@ -65,20 +80,28 @@ mapper batch-job creation, polling, and JSONL result streaming
 It is intentionally gated so CI and local Rails work do not accidentally depend
 on a live distributed stack.
 
-## Live Rails Workflow E2E
+### API-only compose (api_key, development)
 
-After the client-level smoke passes, run the Rails workflow proof:
+For API-only development against `docker-compose.api.yml`:
 
 ```bash
-cd apps/web
-USAGI_LIVE_ENGINE=1 \
-ENGINE_CLIENT_MODE=http \
-USAGI_API_KEY=smoke-secret \
-CATALOG_API_URL=http://127.0.0.1:8788 \
-SEARCH_API_URL=http://127.0.0.1:8789 \
-MAPPER_API_URL=http://127.0.0.1:8790 \
-JOBS_API_URL=http://127.0.0.1:8790 \
-bin/rails test test/integration/live_workflow_e2e_test.rb
+USAGI_API_KEYS=smoke-secret \
+docker compose -f infra/docker/docker-compose.api.yml up -d --build
+USAGI_SMOKE_API_KEY=smoke-secret scripts/smoke-api.sh
+```
+
+That path uses `USAGI_API_KEY` rather than signed requests.
+
+## Live Rails Workflow E2E
+
+After the client-level smoke passes, run the Rails workflow proof against the
+signed full-stack compose file:
+
+```bash
+USAGI_DEPLOY_SMOKE_START=0 \
+USAGI_DEPLOY_SMOKE_DEBUG_PORTS=1 \
+USAGI_DEPLOY_SMOKE_RUN_LIVE_TESTS=1 \
+scripts/smoke-deploy.sh
 ```
 
 This proof creates projects through Rails, imports source terms, runs manual
@@ -98,16 +121,17 @@ Rails-local hybrid job mirrors render from local state when no API job id exists
 When the in-app Browser is available, run the same product path through the
 rendered Rails UI before claiming the workflow is flawless end to end.
 
-Start Rails with the live API environment:
+Start Rails with the live API environment while the signed compose stack is
+running with debug ports:
 
 ```bash
 cd apps/web
 ENGINE_CLIENT_MODE=http \
-USAGI_API_KEY=smoke-secret \
-CATALOG_API_URL=http://127.0.0.1:8788 \
-SEARCH_API_URL=http://127.0.0.1:8789 \
-MAPPER_API_URL=http://127.0.0.1:8790 \
-JOBS_API_URL=http://127.0.0.1:8790 \
+USAGI_API_SHARED_SECRET=local-compose-shared-secret \
+CATALOG_API_URL=http://127.0.0.1:28788 \
+SEARCH_API_URL=http://127.0.0.1:28789 \
+MAPPER_API_URL=http://127.0.0.1:28790 \
+JOBS_API_URL=http://127.0.0.1:28790 \
 bin/rails server -p 3220 -b 127.0.0.1
 ```
 

@@ -1,0 +1,23 @@
+# Host-side live Rails tests should use these ports instead of 8788-8790 when
+# native usagi-api dev servers may already be bound on the default ports.
+services:
+  catalog-api:
+    networks:
+      - app_private
+      - public
+    ports:
+      - "${USAGI_PUBLISH_HOST:-127.0.0.1}:${CATALOG_PUBLISH_PORT:-28788}:8788"
+
+  search-api:
+    networks:
+      - app_private
+      - public
+    ports:
+      - "${USAGI_PUBLISH_HOST:-127.0.0.1}:${SEARCH_PUBLISH_PORT:-28789}:8789"
+
+  mapper-api:
+    networks:
+      - app_private
+      - public
+    ports:
+      - "${USAGI_PUBLISH_HOST:-127.0.0.1}:${MAPPER_PUBLISH_PORT:-28790}:8790"
