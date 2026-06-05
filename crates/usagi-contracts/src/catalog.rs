@@ -110,4 +110,8 @@ pub struct CatalogBuildJobRequest {
     pub idempotency_key: String,
     #[serde(default)]
     pub overwrite: bool,
+    #[serde(default)]
+    pub vocabulary_version: Option<String>,
+    #[serde(default)]
+    pub artifact_id: Option<String>,
 }

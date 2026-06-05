@@ -164,8 +164,8 @@ fn precomputed_query_lookup_returns_none_for_unknown_queries() {
     )
     .unwrap();
 
-    let vector = lookup_precomputed_sapbert_query_vector(&query_path, "metformin 500 mg tablet")
-        .unwrap();
+    let vector =
+        lookup_precomputed_sapbert_query_vector(&query_path, "metformin 500 mg tablet").unwrap();
     assert!(vector.is_none());
 
     let vector =

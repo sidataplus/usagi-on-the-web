@@ -336,6 +336,45 @@ fn set_stage_updates_job_and_records_event() {
 }
 
 #[test]
+fn set_progress_updates_counts_and_records_event() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = JobStore::open(dir.path().join("jobs.sqlite")).unwrap();
+    store.migrate().unwrap();
+
+    let job = store
+        .create_job(CreateJob {
+            kind: JobKind::SapbertBuild,
+            queue: "embed".to_string(),
+            idempotency_key: "sapbert-progress-v1".to_string(),
+            input: json!({}),
+            total: 0,
+        })
+        .unwrap();
+
+    let updated = store
+        .set_progress(
+            &job.id,
+            1_000,
+            3_528_860,
+            Some(json!({"stage": "embedding_documents"})),
+        )
+        .unwrap();
+    let events = store.events(&job.id).unwrap();
+
+    assert_eq!(updated.processed, 1_000);
+    assert_eq!(updated.total, 3_528_860);
+    assert_eq!(store.get(&job.id).unwrap().unwrap().processed, 1_000);
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].message, "progress");
+    assert_eq!(events[0].payload.as_ref().unwrap()["processed"], 1_000);
+    assert_eq!(events[0].payload.as_ref().unwrap()["total"], 3_528_860);
+    assert_eq!(
+        events[0].payload.as_ref().unwrap()["stage"],
+        "embedding_documents"
+    );
+}
+
+#[test]
 fn cancel_and_retry_follow_documented_state_transitions() {
     let dir = tempfile::tempdir().unwrap();
     let store = JobStore::open(dir.path().join("jobs.sqlite")).unwrap();

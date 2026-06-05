@@ -36,7 +36,23 @@ APP_NAME = "usagi-artifact-builds"
 VOLUME_NAME = os.environ.get("USAGI_MODAL_VOLUME", "usagi-artifacts-data")
 GPU = os.environ.get("USAGI_MODAL_GPU", "L40S")
 HF_SECRET_NAME = os.environ.get("USAGI_MODAL_HF_SECRET")
-REPO_ROOT = Path(__file__).resolve().parents[2]
+RUST_IMAGE = os.environ.get("USAGI_MODAL_RUST_IMAGE", "rust:1.94-bookworm")
+EPHEMERAL_DISK_MIB = int(os.environ.get("USAGI_MODAL_EPHEMERAL_DISK_MIB", "524288"))
+
+
+def _repo_root_from_script(script_path: Path) -> Path:
+    if len(script_path.parents) >= 3:
+        candidate = script_path.parents[2]
+        if (candidate / "Cargo.toml").exists():
+            return candidate
+    return Path("/repo")
+
+
+REPO_ROOT = (
+    Path(os.environ["USAGI_REPO_ROOT"])
+    if os.environ.get("USAGI_REPO_ROOT")
+    else _repo_root_from_script(Path(__file__).resolve())
+)
 REMOTE_REPO = Path("/repo")
 MOUNT_ROOT = Path("/mnt/usagi")
 DATA_ROOT = MOUNT_ROOT / "data"
@@ -50,6 +66,9 @@ function_secrets = [modal.Secret.from_name(HF_SECRET_NAME)] if HF_SECRET_NAME el
 
 
 def _ignore_local_repo(path: str) -> bool:
+    parts = Path(path).parts
+    if len(parts) >= 2 and parts[:2] == ("apps", "web"):
+        return True
     ignored_parts = {
         ".git",
         ".bundle",
@@ -61,11 +80,11 @@ def _ignore_local_repo(path: str) -> bool:
         "tmp",
         "vendor",
     }
-    return any(part in ignored_parts for part in Path(path).parts)
+    return any(part in ignored_parts for part in parts)
 
 
 image = (
-    modal.Image.from_registry("rust:1.85-bookworm", add_python="3.12")
+    modal.Image.from_registry(RUST_IMAGE, add_python="3.12")
     .apt_install(
         "build-essential",
         "ca-certificates",
@@ -81,6 +100,7 @@ image = (
         str(REPO_ROOT),
         remote_path=str(REMOTE_REPO),
         ignore=_ignore_local_repo,
+        copy=True,
     )
     .run_commands(
         "cd /repo && cargo build --release -p search-api -p mapper-api -p api-worker",
@@ -93,7 +113,7 @@ image = (
     gpu=GPU,
     timeout=24 * 60 * 60,
     volumes={str(MOUNT_ROOT): volume},
-    ephemeral_disk=250_000,
+    ephemeral_disk=EPHEMERAL_DISK_MIB,
     secrets=function_secrets,
 )
 def build_sapbert_index(
@@ -177,7 +197,7 @@ def build_sapbert_index(
     gpu=GPU,
     timeout=24 * 60 * 60,
     volumes={str(MOUNT_ROOT): volume},
-    ephemeral_disk=250_000,
+    ephemeral_disk=EPHEMERAL_DISK_MIB,
     secrets=function_secrets,
 )
 def build_thirawat_doc_embeddings(
@@ -265,7 +285,7 @@ def build_thirawat_doc_embeddings(
     gpu=GPU,
     timeout=24 * 60 * 60,
     volumes={str(MOUNT_ROOT): volume},
-    ephemeral_disk=250_000,
+    ephemeral_disk=EPHEMERAL_DISK_MIB,
     secrets=function_secrets,
 )
 def build_thirawat_indexes(
@@ -276,6 +296,7 @@ def build_thirawat_indexes(
     tachiom_artifact_id: str,
     catalog_artifact_id: str,
     model_artifact_id: str,
+    tachiom_build_bin: str,
     batch_size: int = 16,
     domain_id: str = "Drug",
     target_vocabulary_ids: tuple[str, ...] = ("RxNorm", "RxNorm Extension"),
@@ -288,12 +309,12 @@ def build_thirawat_indexes(
 
     _ensure_catalog_inputs()
     _ensure_thirawat_inputs()
-    _ensure_tachiom_inputs()
+    _ensure_tachiom_inputs(tachiom_build_bin)
     EXPORT_ROOT.mkdir(parents=True, exist_ok=True)
     _clean_job_state()
 
     api_key = "modal-build-secret"
-    env = _build_env(api_key)
+    env = _build_env(api_key, tachiom_build_bin=tachiom_build_bin)
     mapper = subprocess.Popen(
         [str(BIN_DIR / "mapper-api")],
         cwd=str(REMOTE_REPO),
@@ -388,7 +409,7 @@ def build_thirawat_indexes(
     gpu=GPU,
     timeout=24 * 60 * 60,
     volumes={str(MOUNT_ROOT): volume},
-    ephemeral_disk=250_000,
+    ephemeral_disk=EPHEMERAL_DISK_MIB,
     secrets=function_secrets,
 )
 def build_all_indexes(
@@ -402,6 +423,7 @@ def build_all_indexes(
     catalog_artifact_id: str,
     sapbert_model_artifact_id: str,
     thirawat_model_artifact_id: str,
+    tachiom_build_bin: str,
     sapbert_batch_size: int = 32,
     thirawat_batch_size: int = 16,
     overwrite: bool = False,
@@ -426,6 +448,7 @@ def build_all_indexes(
         tachiom_artifact_id=tachiom_artifact_id,
         catalog_artifact_id=catalog_artifact_id,
         model_artifact_id=thirawat_model_artifact_id,
+        tachiom_build_bin=tachiom_build_bin,
         batch_size=thirawat_batch_size,
         overwrite=overwrite,
     )
@@ -456,7 +479,7 @@ def build_all_indexes(
     return result
 
 
-def _build_env(api_key: str) -> dict[str, str]:
+def _build_env(api_key: str, *, tachiom_build_bin: str | None = None) -> dict[str, str]:
     env = os.environ.copy()
     env.update(
         {
@@ -478,6 +501,9 @@ def _build_env(api_key: str) -> dict[str, str]:
             ),
         }
     )
+    if tachiom_build_bin:
+        env["TACHIOM_BACKEND"] = "cli"
+        env["TACHIOM_BUILD_BIN"] = tachiom_build_bin
     return env
 
 
@@ -508,8 +534,7 @@ def _ensure_thirawat_inputs() -> None:
     _ensure_paths(required)
 
 
-def _ensure_tachiom_inputs() -> None:
-    build_bin = os.environ.get("TACHIOM_BUILD_BIN")
+def _ensure_tachiom_inputs(build_bin: str | None) -> None:
     if not build_bin:
         raise FileNotFoundError(
             "Set TACHIOM_BUILD_BIN to a staged Tachiom build binary before running "
@@ -702,7 +727,7 @@ def _stamp_artifact_provenance(
     extra["modal"] = {
         "volume": VOLUME_NAME,
         "gpu": GPU,
-        "image": "rust:1.85-bookworm",
+        "image": RUST_IMAGE,
     }
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
@@ -843,6 +868,7 @@ def run(
     sapbert_artifact_id = f"athena-{vocabulary_version}-sapbert-v1"
     doc_artifact_id = f"athena-{vocabulary_version}-thirawat-drug-docemb-v1"
     tachiom_artifact_id = f"athena-{vocabulary_version}-thirawat-drug-tachiom-v1"
+    tachiom_build_bin = os.environ.get("TACHIOM_BUILD_BIN")
     common = {
         "catalog_artifact_id": catalog_artifact_id,
         "overwrite": overwrite,
@@ -864,6 +890,7 @@ def run(
             doc_artifact_id=doc_artifact_id,
             tachiom_artifact_id=tachiom_artifact_id,
             model_artifact_id=thirawat_model_artifact_id,
+            tachiom_build_bin=tachiom_build_bin,
             batch_size=thirawat_batch_size,
             **common,
         )
@@ -877,6 +904,7 @@ def run(
             tachiom_artifact_id=tachiom_artifact_id,
             sapbert_model_artifact_id=sapbert_model_artifact_id,
             thirawat_model_artifact_id=thirawat_model_artifact_id,
+            tachiom_build_bin=tachiom_build_bin,
             sapbert_batch_size=sapbert_batch_size,
             thirawat_batch_size=thirawat_batch_size,
             **common,

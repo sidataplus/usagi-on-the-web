@@ -43,6 +43,8 @@ def load_pipeline():
             return decorator
 
     class FakeImage:
+        last_add_local_dir_kwargs = None
+
         @classmethod
         def from_registry(cls, *_args, **_kwargs):
             return cls()
@@ -53,7 +55,8 @@ def load_pipeline():
         def pip_install(self, *_args, **_kwargs):
             return self
 
-        def add_local_dir(self, *_args, **_kwargs):
+        def add_local_dir(self, *_args, **kwargs):
+            type(self).last_add_local_dir_kwargs = kwargs
             return self
 
         def run_commands(self, *_args, **_kwargs):
@@ -80,6 +83,41 @@ def load_pipeline():
 
 
 class ModalArtifactPipelineTest(unittest.TestCase):
+    def test_repo_is_copied_before_modal_image_build_steps(self):
+        pipeline = load_pipeline()
+
+        self.assertTrue(
+            pipeline.modal.Image.last_add_local_dir_kwargs["copy"],
+            "Modal requires copy=True when build steps run after add_local_dir",
+        )
+
+    def test_modal_rust_image_matches_lockfile_toolchain_floor(self):
+        pipeline = load_pipeline()
+
+        self.assertEqual(pipeline.RUST_IMAGE, "rust:1.94-bookworm")
+
+    def test_modal_ephemeral_disk_meets_gpu_minimum(self):
+        pipeline = load_pipeline()
+
+        self.assertGreaterEqual(pipeline.EPHEMERAL_DISK_MIB, 524_288)
+
+    def test_modal_repo_copy_excludes_web_app_assets(self):
+        pipeline = load_pipeline()
+
+        self.assertTrue(
+            pipeline._ignore_local_repo(
+                "apps/web/app/assets/fonts/HankenGrotesk-Variable.woff2"
+            )
+        )
+
+    def test_repo_root_falls_back_to_baked_repo_in_modal_container(self):
+        pipeline = load_pipeline()
+
+        self.assertEqual(
+            pipeline._repo_root_from_script(Path("/root/modal_artifact_pipeline.py")),
+            Path("/repo"),
+        )
+
     def test_submit_sapbert_build_job_posts_to_search_api(self):
         pipeline = load_pipeline()
         response = mock.Mock()
@@ -168,7 +206,9 @@ class ModalArtifactPipelineTest(unittest.TestCase):
     def test_run_dispatches_requested_pipeline_mode(self):
         pipeline = load_pipeline()
 
-        with mock.patch.object(
+        with mock.patch.dict(
+            "os.environ", {"TACHIOM_BUILD_BIN": "/mnt/usagi/data/bin/tachiom-build"}
+        ), mock.patch.object(
             pipeline.build_all_indexes, "remote", return_value={"mode": "all"}
         ) as all_remote, mock.patch.object(
             pipeline.build_sapbert_index, "remote", return_value={"mode": "sapbert"}
@@ -182,6 +222,26 @@ class ModalArtifactPipelineTest(unittest.TestCase):
         all_remote.assert_called_once()
         sapbert_remote.assert_called_once()
         thirawat_remote.assert_called_once()
+        self.assertEqual(
+            thirawat_remote.call_args.kwargs["tachiom_build_bin"],
+            "/mnt/usagi/data/bin/tachiom-build",
+        )
+        self.assertEqual(
+            all_remote.call_args.kwargs["tachiom_build_bin"],
+            "/mnt/usagi/data/bin/tachiom-build",
+        )
+
+    def test_build_env_includes_tachiom_build_binary_when_provided(self):
+        pipeline = load_pipeline()
+
+        env = pipeline._build_env(
+            "secret", tachiom_build_bin="/mnt/usagi/data/bin/tachiom-build"
+        )
+
+        self.assertEqual(env["TACHIOM_BACKEND"], "cli")
+        self.assertEqual(
+            env["TACHIOM_BUILD_BIN"], "/mnt/usagi/data/bin/tachiom-build"
+        )
 
 
 if __name__ == "__main__":

@@ -291,12 +291,17 @@ async fn status(State(state): State<AppState>) -> ApiResult<Json<CatalogStatus>>
     }
     let store = CatalogStore::open(&state.catalog_db_path)?;
     let concept_count = store.concept_count()?;
+    let manifest = catalog_manifest_summary(&state.catalog_dir);
     Ok(Json(CatalogStatus {
         status: "ready".to_string(),
         api_version: "0.1.0".to_string(),
         catalog: Some(CatalogStatusDetail {
-            artifact_id: "local-catalog-standard-v1".to_string(),
-            vocabulary_version: "unknown".to_string(),
+            artifact_id: manifest
+                .artifact_id
+                .unwrap_or_else(|| "local-catalog-standard-v1".to_string()),
+            vocabulary_version: manifest
+                .vocabulary_version
+                .unwrap_or_else(|| "unknown".to_string()),
             concept_count,
             scope: CatalogScope {
                 standard_concept: "S".to_string(),
@@ -310,6 +315,32 @@ async fn status(State(state): State<AppState>) -> ApiResult<Json<CatalogStatus>>
         }),
         message: None,
     }))
+}
+
+#[derive(Default)]
+struct CatalogManifestSummary {
+    artifact_id: Option<String>,
+    vocabulary_version: Option<String>,
+}
+
+fn catalog_manifest_summary(catalog_dir: &std::path::Path) -> CatalogManifestSummary {
+    let manifest_path = catalog_dir.join("manifest.json");
+    let Ok(bytes) = std::fs::read(manifest_path) else {
+        return CatalogManifestSummary::default();
+    };
+    let Ok(manifest) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
+        return CatalogManifestSummary::default();
+    };
+    CatalogManifestSummary {
+        artifact_id: manifest
+            .get("artifact_id")
+            .and_then(serde_json::Value::as_str)
+            .map(ToString::to_string),
+        vocabulary_version: manifest
+            .pointer("/extra/vocabulary/version")
+            .and_then(serde_json::Value::as_str)
+            .map(ToString::to_string),
+    }
 }
 
 async fn build_job(

@@ -593,6 +593,74 @@ impl JobStore {
         Ok(job)
     }
 
+    pub fn set_progress(
+        &self,
+        job_id: &str,
+        processed: i64,
+        total: i64,
+        payload: Option<Value>,
+    ) -> Result<JobDto> {
+        let mut conn = self.connection()?;
+        let tx = conn
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(db_error)?;
+        if select_job(&tx, job_id)?.is_none() {
+            return Err(UsagiError::new(ErrorCode::JobNotFound, "job not found"));
+        }
+        let now = now();
+        tx.execute(
+            "UPDATE jobs
+             SET processed = ?2,
+                 total = ?3,
+                 updated_at = ?4
+             WHERE id = ?1",
+            params![job_id, processed, total, now],
+        )
+        .map_err(db_error)?;
+
+        let seq: i64 = tx
+            .query_row(
+                "SELECT COALESCE(MAX(seq), 0) + 1 FROM job_events WHERE job_id = ?1",
+                [job_id],
+                |row| row.get(0),
+            )
+            .map_err(db_error)?;
+        let mut event_payload = payload.unwrap_or(Value::Object(Default::default()));
+        if let Some(map) = event_payload.as_object_mut() {
+            map.insert(
+                "processed".to_string(),
+                Value::Number(serde_json::Number::from(processed)),
+            );
+            map.insert(
+                "total".to_string(),
+                Value::Number(serde_json::Number::from(total)),
+            );
+        } else {
+            event_payload = serde_json::json!({
+                "processed": processed,
+                "total": total,
+                "details": event_payload
+            });
+        }
+        tx.execute(
+            "INSERT INTO job_events (
+                id, job_id, seq, level, message, payload_json, created_at
+             ) VALUES (?1, ?2, ?3, 'info', 'progress', ?4, ?5)",
+            params![
+                format!("job_event_{}", Uuid::new_v4().simple()),
+                job_id,
+                seq,
+                serde_json::to_string(&event_payload)?,
+                now,
+            ],
+        )
+        .map_err(db_error)?;
+        let job = select_job(&tx, job_id)?
+            .ok_or_else(|| UsagiError::internal("progressed job missing"))?;
+        tx.commit().map_err(db_error)?;
+        Ok(job)
+    }
+
     pub fn events(&self, job_id: &str) -> Result<Vec<JobEventDto>> {
         let conn = self.connection()?;
         if select_job(&conn, job_id)?.is_none() {

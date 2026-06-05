@@ -207,7 +207,10 @@ fn extract_unitless_slash_mg_strengths(original: &str) -> Vec<String> {
                 return Vec::new();
             }
 
-            parts.into_iter().map(|amount| format!("{amount}mg")).collect()
+            parts
+                .into_iter()
+                .map(|amount| format!("{amount}mg"))
+                .collect()
         })
         .collect()
 }

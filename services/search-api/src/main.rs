@@ -398,8 +398,7 @@ fn sapbert_query_results(
     q: &str,
     limit: usize,
 ) -> Result<Vec<usagi_contracts::search::SearchResult>, ApiError> {
-    let query_vector = if let Some(query_embeddings_path) = &state.sapbert_query_embeddings_path
-    {
+    let query_vector = if let Some(query_embeddings_path) = &state.sapbert_query_embeddings_path {
         lookup_precomputed_sapbert_query_vector(query_embeddings_path, q)?
     } else {
         None

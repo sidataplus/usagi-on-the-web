@@ -14,8 +14,8 @@ use usagi_contracts::mapper::{
 };
 use usagi_embed::artifact::{validate_sapbert_model_artifact, SapbertModelArtifactPaths};
 use usagi_embed::xlm_roberta::{
-    encode_projected_tokens, encode_sapbert_cls, XlmRobertaEncodeOptions,
-    XlmRobertaTokenEncodeOptions,
+    encode_projected_tokens, encode_projected_tokens_with_progress,
+    encode_sapbert_cls_with_progress, XlmRobertaEncodeOptions, XlmRobertaTokenEncodeOptions,
 };
 use usagi_jobs::store::JobStore;
 use usagi_search::dense_index::{
@@ -61,17 +61,10 @@ pub async fn run_worker() -> anyhow::Result<()> {
                     std::env::var("CATALOG_DB_PATH")
                         .unwrap_or_else(|_| "data/catalog/catalog.sqlite".to_string()),
                 );
-                let output_dir = catalog_db_path
-                    .parent()
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| PathBuf::from("data/catalog"));
+                let build_options =
+                    catalog_build_options_from_payload(payload, catalog_db_path.as_path());
                 set_stage(&store, &job.id, "writing_sqlite", None)?;
-                match build_catalog_from_athena(BuildCatalogOptions {
-                    athena_dir: PathBuf::from(payload.athena_dir),
-                    output_dir,
-                    vocabulary_version: None,
-                    artifact_id: Some("local-catalog-standard-v1".to_string()),
-                }) {
+                match build_catalog_from_athena(build_options) {
                     Ok(summary) => {
                         set_stage(&store, &job.id, "validating_artifact", None)?;
                         store.finish_success(&job.id, serde_json::to_value(summary)?)?;
@@ -179,12 +172,23 @@ pub async fn run_worker() -> anyhow::Result<()> {
                             .ok()
                             .and_then(|value| value.parse::<usize>().ok())
                             .unwrap_or(96);
-                        let embeddings = encode_sapbert_cls(
+                        let progress_interval = embedding_progress_interval();
+                        let embeddings = encode_sapbert_cls_with_progress(
                             XlmRobertaEncodeOptions {
                                 model_dir: artifact.model_dir,
                                 max_length,
                             },
                             &concept_names,
+                            |processed, total| {
+                                record_embedding_progress(
+                                    &store,
+                                    &job.id,
+                                    "embedding_documents",
+                                    processed,
+                                    total,
+                                    progress_interval,
+                                )
+                            },
                         );
                         let embeddings = match embeddings {
                             Ok(embeddings) => embeddings,
@@ -261,7 +265,8 @@ pub async fn run_worker() -> anyhow::Result<()> {
                             "embedding_documents",
                             Some(serde_json::json!({"concept_count": concept_names.len()})),
                         )?;
-                        let embeddings = encode_projected_tokens(
+                        let progress_interval = embedding_progress_interval();
+                        let embeddings = encode_projected_tokens_with_progress(
                             XlmRobertaTokenEncodeOptions {
                                 model_dir: thirawat_model_dir.clone(),
                                 projection_safetensors: thirawat_model_dir
@@ -270,6 +275,16 @@ pub async fn run_worker() -> anyhow::Result<()> {
                                 output_dim: 128,
                             },
                             &concept_names,
+                            |processed, total| {
+                                record_embedding_progress(
+                                    &store,
+                                    &job.id,
+                                    "embedding_documents",
+                                    processed,
+                                    total,
+                                    progress_interval,
+                                )
+                            },
                         );
                         let embeddings = match embeddings {
                             Ok(embeddings) => embeddings,
@@ -696,6 +711,22 @@ fn error_json(err: &UsagiError) -> serde_json::Value {
     })
 }
 
+fn catalog_build_options_from_payload(
+    payload: CatalogBuildJobRequest,
+    catalog_db_path: &std::path::Path,
+) -> BuildCatalogOptions {
+    let output_dir = catalog_db_path
+        .parent()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("data/catalog"));
+    BuildCatalogOptions {
+        athena_dir: PathBuf::from(payload.athena_dir),
+        output_dir,
+        vocabulary_version: payload.vocabulary_version,
+        artifact_id: payload.artifact_id,
+    }
+}
+
 fn payload_input_item(
     item_id: &str,
     items: &[usagi_contracts::mapper::MapperDrugBatchItemRequest],
@@ -716,6 +747,34 @@ fn set_stage(
     store.set_stage(job_id, stage, payload)?;
     println!("job id={job_id} stage={stage}");
     Ok(())
+}
+
+fn record_embedding_progress(
+    store: &JobStore,
+    job_id: &str,
+    stage: &str,
+    processed: usize,
+    total: usize,
+    interval: usize,
+) -> usagi_common::error::Result<()> {
+    if processed == total || processed % interval == 0 {
+        store.set_progress(
+            job_id,
+            processed as i64,
+            total as i64,
+            Some(serde_json::json!({"stage": stage})),
+        )?;
+        println!("job id={job_id} stage={stage} processed={processed} total={total}");
+    }
+    Ok(())
+}
+
+fn embedding_progress_interval() -> usize {
+    std::env::var("EMBED_PROGRESS_INTERVAL")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(1_000)
 }
 
 #[cfg(test)]
@@ -744,5 +803,31 @@ mod tests {
 
         assert!(config.run_once);
         assert_eq!(config.queue_names(), vec!["map"]);
+    }
+
+    #[test]
+    fn catalog_build_options_preserve_versioned_artifact_ids() {
+        let payload = CatalogBuildJobRequest {
+            athena_dir: "/vocab/vocabulary_v20260227".to_string(),
+            idempotency_key: "catalog-athena-20260227-standard-v1".to_string(),
+            overwrite: false,
+            vocabulary_version: Some("20260227".to_string()),
+            artifact_id: Some("athena-20260227-standard-v1".to_string()),
+        };
+        let options = catalog_build_options_from_payload(
+            payload,
+            PathBuf::from("/data/catalog/catalog.sqlite").as_path(),
+        );
+
+        assert_eq!(
+            options.athena_dir,
+            PathBuf::from("/vocab/vocabulary_v20260227")
+        );
+        assert_eq!(options.output_dir, PathBuf::from("/data/catalog"));
+        assert_eq!(options.vocabulary_version.as_deref(), Some("20260227"));
+        assert_eq!(
+            options.artifact_id.as_deref(),
+            Some("athena-20260227-standard-v1")
+        );
     }
 }

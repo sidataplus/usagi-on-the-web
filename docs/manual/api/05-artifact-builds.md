@@ -114,6 +114,13 @@ Stop and inspect logs if a job ends as `failed`, `cancelled`, or
 
 ## 1. Build Catalog SQLite
 
+Choose the vocabulary version once and reuse it in every artifact id:
+
+```bash
+export VOCAB_VERSION=20260227
+export VOCAB_SOURCE=/Users/na399/Downloads/vocabulary_v20260227
+```
+
 Create the catalog build job:
 
 ```bash
@@ -121,9 +128,11 @@ curl -fsS \
   -H 'X-API-Key: local-build-secret' \
   -H 'Content-Type: application/json' \
   -d '{
-    "athena_dir": "/data/athena/20250827",
-    "idempotency_key": "catalog-athena-20250827-standard-v1",
-    "overwrite": false
+    "athena_dir": "/data/athena/20260227",
+    "idempotency_key": "catalog-athena-20260227-standard-v1",
+    "overwrite": false,
+    "vocabulary_version": "20260227",
+    "artifact_id": "athena-20260227-standard-v1"
   }' \
   http://127.0.0.1:8788/catalog/build-job
 ```
@@ -269,43 +278,59 @@ The Modal path reuses the same API job flow:
 
 ```text
 Modal Volume /data
+  -> search-api
+  -> /search/sapbert/build-job
+  -> api-worker --queues embed --once
+  -> data/search/sapbert/
   -> mapper-api
   -> /mapper/thirawat/build-embeddings-job
   -> api-worker --queues embed --once
   -> data/mapper/thirawat-drug/doc_embeddings/
-  -> /exports/usagi-thirawat-docemb-*.tar.zst
+  -> mapper-api
+  -> /mapper/tachiom/build-index-job
+  -> api-worker --queues index --once
+  -> data/mapper/thirawat-drug/tachiom/
+  -> /exports/usagi-*.tar.zst
 ```
+
+Build `catalog.sqlite` locally first and stage only the compact catalog into
+Modal. Do not upload the full Athena CSV vocabulary unless a future remote stage
+actually needs the raw CSVs.
 
 Stage only the required inputs into the Modal Volume:
 
 ```text
 data/catalog/catalog.sqlite
 data/catalog/manifest.json
+data/models/sapbert/
 data/models/thirawat-sapbert/
+data/bin/<tachiom build binary>
 ```
 
-Run:
+Run SapBERT only, THIRAWAT/Tachiom only, or all remote indexes with the Modal
+pipeline modes documented in `infra/modal/README.md`:
 
 ```bash
 modal volume create usagi-artifacts-data
-modal volume put usagi-artifacts-data ./data/catalog /data/catalog
+modal volume put usagi-artifacts-data ./temp/vocab-20260227/data/catalog /data/catalog
+modal volume put usagi-artifacts-data ./data/models/sapbert /data/models/sapbert
 modal volume put usagi-artifacts-data ./data/models/thirawat-sapbert /data/models/thirawat-sapbert
 
 USAGI_MODAL_GPU=L40S \
-uv run infra/modal/modal_artifact_pipeline.py \
-  --idempotency-key thirawat-docemb-athena-20250827-drug-v1 \
-  --artifact-id athena-20250827-thirawat-drug-docemb-v1 \
-  --catalog-artifact-id athena-20250827-standard-v1 \
-  --model-artifact-id sidataplus-thirawat-sapbert-merged-v1 \
-  --batch-size 16
+uv run --with modal --with requests --with huggingface_hub \
+  modal run infra/modal/modal_artifact_pipeline.py \
+  --mode all \
+  --vocabulary-version 20260227
 ```
 
 Expected Modal outputs:
 
 ```text
 /data/mapper/thirawat-drug/doc_embeddings/
-/exports/usagi-thirawat-docemb-athena-20250827-thirawat-drug-docemb-v1.tar.zst
-/exports/usagi-thirawat-docemb-athena-20250827-thirawat-drug-docemb-v1.tar.zst.manifest.json
+/data/mapper/thirawat-drug/tachiom/
+/data/search/sapbert/
+/exports/usagi-*.tar.zst
+/exports/usagi-*.tar.zst.manifest.json
 ```
 
 Download and restore on the API compute server:
@@ -319,9 +344,9 @@ tar --zstd -xf artifacts/usagi-thirawat-docemb-athena-20250827-thirawat-drug-doc
   -C data
 ```
 
-Then continue with Stage 5 on the API compute server. See
-`infra/modal/README.md` for Hugging Face upload, Volume layout, and restore
-details.
+See `infra/modal/README.md` for Hugging Face upload, Volume layout, restore
+details, and the required `TACHIOM_BUILD_BIN` setting for production Tachiom
+builds.
 
 Keep Modal exports private unless Athena vocabulary, model, and derived
 embedding redistribution rights have been reviewed.

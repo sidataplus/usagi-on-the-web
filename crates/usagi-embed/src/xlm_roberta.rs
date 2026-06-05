@@ -37,6 +37,14 @@ pub fn encode_sapbert_cls(
     options: XlmRobertaEncodeOptions,
     texts: &[impl AsRef<str>],
 ) -> Result<Vec<ClsEmbedding>> {
+    encode_sapbert_cls_with_progress(options, texts, |_processed, _total| Ok(()))
+}
+
+pub fn encode_sapbert_cls_with_progress(
+    options: XlmRobertaEncodeOptions,
+    texts: &[impl AsRef<str>],
+    mut progress: impl FnMut(usize, usize) -> Result<()>,
+) -> Result<Vec<ClsEmbedding>> {
     if options.max_length == 0 {
         return Err(UsagiError::bad_request(
             "SapBERT max_length must be greater than zero",
@@ -67,23 +75,32 @@ pub fn encode_sapbert_cls(
     let device = Device::Cpu;
     let model = load_xlm_roberta_model(&artifact.model_safetensors, &config, &device)?;
 
-    texts
-        .iter()
-        .map(|text| {
-            encode_one(
-                &model,
-                &tokenizer,
-                &device,
-                text.as_ref(),
-                options.max_length,
-            )
-        })
-        .collect()
+    let total = texts.len();
+    let mut embeddings = Vec::with_capacity(total);
+    for (index, text) in texts.iter().enumerate() {
+        embeddings.push(encode_one(
+            &model,
+            &tokenizer,
+            &device,
+            text.as_ref(),
+            options.max_length,
+        )?);
+        progress(index + 1, total)?;
+    }
+    Ok(embeddings)
 }
 
 pub fn encode_projected_tokens(
     options: XlmRobertaTokenEncodeOptions,
     texts: &[impl AsRef<str>],
+) -> Result<Vec<TokenEmbedding>> {
+    encode_projected_tokens_with_progress(options, texts, |_processed, _total| Ok(()))
+}
+
+pub fn encode_projected_tokens_with_progress(
+    options: XlmRobertaTokenEncodeOptions,
+    texts: &[impl AsRef<str>],
+    mut progress: impl FnMut(usize, usize) -> Result<()>,
 ) -> Result<Vec<TokenEmbedding>> {
     if options.max_length == 0 {
         return Err(UsagiError::bad_request(
@@ -133,19 +150,20 @@ pub fn encode_projected_tokens(
         &device,
     )?;
 
-    texts
-        .iter()
-        .map(|text| {
-            encode_projected_token_one(
-                &model,
-                &projection,
-                &tokenizer,
-                &device,
-                text.as_ref(),
-                options.max_length,
-            )
-        })
-        .collect()
+    let total = texts.len();
+    let mut embeddings = Vec::with_capacity(total);
+    for (index, text) in texts.iter().enumerate() {
+        embeddings.push(encode_projected_token_one(
+            &model,
+            &projection,
+            &tokenizer,
+            &device,
+            text.as_ref(),
+            options.max_length,
+        )?);
+        progress(index + 1, total)?;
+    }
+    Ok(embeddings)
 }
 
 fn load_xlm_roberta_model(

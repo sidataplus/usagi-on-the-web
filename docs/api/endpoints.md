@@ -385,7 +385,9 @@ Request:
 {
   "athena_dir": "/fixtures/athena-mini",
   "idempotency_key": "catalog-athena-mini-standard-v1",
-  "overwrite": false
+  "overwrite": false,
+  "vocabulary_version": "20260227",
+  "artifact_id": "athena-20260227-standard-v1"
 }
 ```
 
